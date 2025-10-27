@@ -1,0 +1,46 @@
+.mobile-menu {
+  position: fixed;
+  top: 56px; /* below navbar */
+  left: 0;
+  width: 250px;
+  height: calc(100vh - 56px);
+  background-color: #f8f9fa;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+  padding: 20px;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu a {
+  padding: 12px 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.mobile-menu a.active,
+.mobile-menu a:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  align-self: flex-end;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 56px);
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1040;
+}

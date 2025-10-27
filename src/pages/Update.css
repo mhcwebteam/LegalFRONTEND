@@ -1,0 +1,155 @@
+.timeline-cell {
+  position: relative;
+  width: 30px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: auto;
+  border-radius: 50%;
+  background-color: grey;
+  z-index: 2;
+  position: relative;
+}
+
+.dot.green {
+  background-color: green;
+}
+.dot.red {
+  background-color: red;
+}
+.dot.grey {
+  background-color: grey;
+}
+
+.line {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 2px;
+  height: 100%;
+  background-color: grey;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.line.green {
+  background-color: green;
+}
+
+/* Plant selector styling */
+/* .plant-selector select,
+.plant-selector .form-select,
+.plant-selector .form-control {
+  border: 1px solid #7b2cbf !important;
+} */
+/* styles.css or in your global/app css */
+
+
+/* .glow-select:focus {
+  border-color: #7b2cbf;
+  box-shadow: 0 0 10px #9d4edd;
+  animation: glowPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 5px #9d4edd;
+  }
+  100% {
+    box-shadow: 0 0 12px #c77dff;
+  }
+} */
+
+
+/* Alternative - target all selects in the component */
+/* select {
+  border: 1px solid #7b2cbf !important;
+} */
+
+/* table css */
+.table-sm > :not(caption) > * > * {
+  padding: 10px 2px !important; /* top/bottom = 2px, left/right = 4px */
+}
+.table td {
+  font-size: 14px; 
+}
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; 
+}
+.custom-thead th {
+  background-color: #a8c5d1 !important;
+}
+
+
+.table-scroll-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* .table-scroll-wrapper table {
+  min-width: 1800px !important; 
+  width: auto !important;
+} */
+
+.table th, .table td {
+  white-space: nowrap;
+}
+
+/*---------modal css-------------*/
+.amend-modal-lg .modal-dialog {
+  max-width: 900px;
+  width: 90%;
+}
+
+@media (max-width: 1396px) {
+  .table-sm > :not(caption) > * > * {
+    padding: 0px 2px !important;
+  }
+
+  .table td {
+    font-size: 12px;
+  }
+}
+@media (min-width: 1400px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+        max-width: 1620px ;
+    }
+}
+@media (max-width: 1900px) {
+  .table-scroll-wrapper table {
+    min-width: 1800px !important;
+    width: auto !important;
+  }
+}
+
+/* Add to your CSS file */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+.wiggle-icon {
+  transition: transform 0.3s ease;
+}
+
+button:hover .wiggle-icon {
+  animation: wiggle 1s ease-in-out infinite;
+}
+
+.custom-tooltip {
+  background-color: #0d6efd !important; /* Bootstrap Primary Blue */
+  color: white;
+  font-size: 0.75rem;
+  padding: 6px 6px;
+  border-radius: 5px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+}

@@ -1,0 +1,13 @@
+/* NavbarPage.css */
+
+.navbar {
+  z-index: 1050; /* Ensure it stays on top */
+}
+
+.navbar-brand img {
+  max-height: 36px;
+}
+
+button {
+  margin-left: auto;
+}

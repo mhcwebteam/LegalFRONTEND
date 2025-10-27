@@ -1,0 +1,491 @@
+Water Document Upload Modal Styles
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+  position: relative;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  padding: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.modal-title-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  flex: 1;
+}
+
+.modal-icon {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px;
+  border-radius: 12px;
+  margin-top: 2px;
+}
+
+.modal-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 5px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modal-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin: 0;
+  font-weight: 300;
+  line-height: 1.4;
+}
+
+.close-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.modal-body {
+  padding: 30px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.upload-summary {
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
+  padding: 15px 20px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.summary-icon {
+  color: #4caf50;
+}
+
+.upload-section {
+  margin-bottom: 30px;
+  border: 1px solid #e1e5e9;
+  border-radius: 16px;
+  padding: 25px;
+  background: #fafbfc;
+  transition: all 0.3s ease;
+}
+
+.upload-section:hover {
+  border-color: #4facfe;
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.section-icon {
+  background: rgba(79, 172, 254, 0.1);
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.file-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #2e7d32;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.success-icon {
+  color: #4caf50;
+}
+
+.section-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
+.upload-zone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  background: white;
+  transition: all 0.3s ease;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: #4facfe;
+  background: rgba(79, 172, 254, 0.02);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(79, 172, 254, 0.15);
+}
+
+.file-input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.upload-icon {
+  color: #4facfe;
+  background: rgba(79, 172, 254, 0.1);
+  padding: 12px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.upload-zone:hover .upload-icon {
+  background: rgba(79, 172, 254, 0.2);
+  transform: scale(1.1);
+}
+
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.primary-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.secondary-text {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border: 1px solid #e1e5e9;
+  border-radius: 10px;
+  padding: 12px 15px;
+  transition: all 0.3s ease;
+}
+
+.file-item:hover {
+  border-color: #4facfe;
+  box-shadow: 0 2px 8px rgba(79, 172, 254, 0.1);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-icon {
+  color: #4facfe;
+  background: rgba(79, 172, 254, 0.1);
+  padding: 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.9rem;
+}
+
+.file-size {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.remove-file-btn {
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.remove-file-btn:hover {
+  background: rgba(244, 67, 54, 0.2);
+  border-color: rgba(244, 67, 54, 0.4);
+  transform: scale(1.05);
+}
+
+.upload-info {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f57c00;
+  font-size: 0.85rem;
+  margin-top: 20px;
+}
+
+.info-icon {
+  flex-shrink: 0;
+}
+
+.modal-footer {
+  background: #f8f9fa;
+  padding: 25px 30px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  border-top: 1px solid #e1e5e9;
+}
+
+.cancel-button {
+  background: white;
+  border: 2px solid #e1e5e9;
+  color: #666;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+  border-color: #c1c9d0;
+  background: #f8f9fa;
+}
+
+.done-button {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border: none;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.done-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+  
+  .modal-container {
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 20px;
+  }
+  
+  .modal-title-section {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .modal-title {
+    font-size: 1.5rem;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
+  .upload-section {
+    padding: 20px;
+  }
+  
+  .upload-zone {
+    padding: 20px;
+  }
+  
+  .modal-footer {
+    padding: 20px;
+    flex-direction: column;
+  }
+  
+  .cancel-button,
+  .done-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-title {
+    font-size: 1.3rem;
+  }
+  
+  .modal-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .upload-zone {
+    padding: 15px;
+  }
+  
+  .primary-text {
+    font-size: 1rem;
+  }
+  
+  .secondary-text {
+    font-size: 0.8rem;
+  }
+}
+
+/* Custom scrollbar for modal body */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

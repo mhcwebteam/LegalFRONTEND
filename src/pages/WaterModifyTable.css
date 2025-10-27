@@ -1,0 +1,65 @@
+/* Custom CSS for WaterModifyTable */
+
+/* Ensure the nav pills are scrollable horizontally on small screens */
+.step-nav {
+  flex-wrap: nowrap; /* Prevent wrapping */
+  overflow-x: auto; /* Enable horizontal scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  padding-bottom: 10px; /* Space for scrollbar */
+}
+
+/* Adjust nav link padding for smaller screens */
+.nav-link-small {
+  padding: 0.5rem 0.75rem; /* Smaller padding for pills */
+  font-size: 0.875rem; /* Smaller font size */
+  white-space: nowrap; /* Prevent text wrapping in pills */
+}
+
+/* Adjust form padding and font size for smaller screens */
+.small-form {
+  padding: 1rem !important; /* Important to override Bootstrap default */
+  font-size: 0.875rem; /* Smaller font size for form elements */
+}
+
+.small-form .form-label {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.small-form .form-control,
+.small-form .form-select {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Adjust button size for smaller screens */
+.small-form .btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Hide scrollbar for a cleaner look (optional) */
+.step-nav::-webkit-scrollbar {
+  height: 5px;
+}
+
+.step-nav::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.step-nav::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.step-nav::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive adjustments for columns */
+@media (max-width: 767.98px) {
+  .step-nav {
+    margin-bottom: 1rem; /* Add space below horizontal nav on small screens */
+  }
+}
