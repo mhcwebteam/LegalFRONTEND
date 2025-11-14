@@ -23,3 +23,15 @@ export const TabLabels = {
   rera: 'RERA',
   miscellaneous: 'Miscellaneous/Others',
 };
+
+
+export const Tabs = {
+ 
+  pollution: 'Pollution Control Board',
+  airport: 'Airport Authority',
+  hmda: 'HMDA/GHMC',
+  fire: 'Fire',
+  water: 'Water',
+  rera: 'RERA',
+  miscellaneous: 'Miscellaneous/Others',
+};

@@ -1,17 +1,17 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Nav, Form, Button, Row, Col } from "react-bootstrap";
 import axios from "axios";
-import { API_BASE_URL } from "../config/Config";
+import { API_BASE_URL, API_BASE_URLS } from "../config/Config";
 import { FaUpload } from "react-icons/fa";
 import { Context } from "../context/ContextData";
 import ReusableDialog from "./ReusableDialog";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import WaterDocUploadModal from "./WaterDocUploadModal";
-import PreviousGhmcDocs from "./PreviousGhmcDocs"; // Ensure this import is correct
-import { getMasterByLoc } from "../api/Api"
+import PreviousGhmcDocs from "./PreviousGhmcDocs";
+import { getMasterByLoc } from "../api/Api";
 import EmailSelectionModal from "./EmailSelectionModal";
 
-const GhmcModify = () => {
+const GhmcUpdate = () => {
   const {
     storeData,
     setStoreData,
@@ -27,13 +27,18 @@ const GhmcModify = () => {
   const [nextStepDetails, setNextStepDetails] = useState(null);
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailRecipients, setEmailRecipients] = useState([]);
-  const [selectedEmails, setSelectedEmails] = useState([]);
+ const [loc, setLoc] = useState([]);
+
+
+
+  // 👇 state to track which step user is viewing
+  const [viewedStep, setViewedStep] = useState(null);
+  const [viewedStepDetails, setViewedStepDetails] = useState(null); // This will hold the combined doc data for the *currently viewed* step
+
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
-    Comments: "", // Added Comments here
+    comments: "", // Make sure this is initialized
     process: "",
     organisation: "",
     project_name: "",
@@ -47,7 +52,9 @@ const GhmcModify = () => {
   const [linkDocs, setLinkDocs] = useState([]);
   const [landDocs, setLandDocs] = useState([]);
   const [othDocs, setOthDocs] = useState([]);
-
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState([]);
+  const [selectedEmails, setSelectedEmails] = useState([]);
   const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
   const [amountPaidDocModal, setAmountPaidDocModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -56,8 +63,10 @@ const GhmcModify = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Track which process is being displayed in the center form
+  const [currentProcess, setCurrentProcess] = useState("");
+
   const [errors, setErrors] = useState({});
-  const [loc, setLoc] = useState([]);
   const [dialogConfig, setDialogConfig] = useState({
     title: "",
     message: "",
@@ -65,7 +74,7 @@ const GhmcModify = () => {
     open: false,
   });
 
-
+  
         const handleEmailSubmit = () => {
     const newErrors = {};
     if (!formData.loc) newErrors.loc = "Plant selection is required";
@@ -89,10 +98,11 @@ const GhmcModify = () => {
     await handleConfirmSubmit(emails);
   };
 
-  // Determine first process
-  useEffect(() => {
-    setIsFirstProcess(immediateNextStepIndex === 0);
-  }, [immediateNextStepIndex]);
+
+
+
+
+
 
   useEffect(() => {
     axios
@@ -102,17 +112,15 @@ const GhmcModify = () => {
       })
       .catch((err) => console.error("Error fetching locations:", err));
   }, []);
-  // fetch process steps
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/GHMC-process`)
-      .then((res) => {
-        setSteps(res.data || []);
-        if (res.data && res.data.length > 0) setActiveStep(0);
-      })
-      .catch((err) => console.error("Error fetching processes", err));
-  }, []);
 
+
+
+  // Determine first process
+  useEffect(() => {
+    setIsFirstProcess(immediateNextStepIndex === 0);
+  }, [immediateNextStepIndex]);
+
+  // fetch process steps
   useEffect(() => {
     if (!selectedPlant) return; // only run when a plant is selected
 
@@ -130,6 +138,7 @@ const GhmcModify = () => {
       .catch((err) => console.error("Error fetching processes:", err));
   }, [selectedPlant]);
 
+  // THIS IS THE BLOCK YOU NEED TO UPDATE
   // compute next step based on UPDATED = YES logic
   useEffect(() => {
     if (steps.length > 0 && Array.isArray(storeData)) {
@@ -140,12 +149,31 @@ const GhmcModify = () => {
       if (next) {
         setImmediateNextStep(next);
         setImmediateNextStepIndex(steps.indexOf(next));
+        // ⭐ ADDED LOGIC STARTS HERE ⭐
+        // After identifying the immediate next step, also set it as the *viewed* step
+        // This will trigger the useEffect for viewedStep, which fetches its details
+        // If you already have `nextStepDetails` populated at this point, you can directly use it
+        // but it's safer to call handleStepClick to ensure full data parsing and consistency
+        if (selectedPlant && next) {
+          handleStepClick(next, selectedPlant);
+        }
+        // ⭐ ADDED LOGIC ENDS HERE ⭐
       } else {
         setImmediateNextStep(null);
         setImmediateNextStepIndex(-1);
+        // ⭐ ADDED: If all steps are completed, clear viewed step details ⭐
+        setViewedStep(null);
+        setViewedStepDetails(null);
+        // ⭐ END ADDED LOGIC ⭐
       }
+    } else {
+      // If no steps or storeData, ensure everything is cleared
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setViewedStep(null);
+      setViewedStepDetails(null);
     }
-  }, [steps, storeData]);
+  }, [steps, storeData, selectedPlant]); // Add selectedPlant to dependencies
 
   // fetch GHMC data + master details for selected plant
   useEffect(() => {
@@ -225,7 +253,41 @@ const GhmcModify = () => {
     fetchPlantData();
   }, [selectedPlant]);
 
+  // helper to safely parse JSON or CSV string
+  function parseJsonArraySafe(value) {
+    if (!value) return [];
+    try {
+      if (Array.isArray(value)) return value;
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [parsed]; // If not array, wrap in one
+    } catch {
+      if (typeof value === "string")
+        return value
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      return [];
+    }
+  }
+
+  // ⭐ NEW HELPER FUNCTION FOR COMBINING DOCS (copied from GhmcModify) ⭐
+  // Combines separate name and path arrays into a single array of { name, path } objects
+  const combineAndParseDocArrays = (data, namesKey, pathsKey) => {
+    const names = parseJsonArraySafe(data[namesKey]);
+    const paths = parseJsonArraySafe(data[pathsKey]);
+    const combined = [];
+    const minLength = Math.min(names.length, paths.length);
+    for (let i = 0; i < minLength; i++) {
+      if (names[i] && paths[i]) {
+        combined.push({ name: names[i], path: paths[i] });
+      }
+    }
+    return combined;
+  };
+  // ⭐ END NEW HELPER FUNCTION ⭐
+
   // fetch details for immediate next step
+  // This useEffect will populate `nextStepDetails` for the *next immediate step*
   useEffect(() => {
     if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
       const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
@@ -239,45 +301,24 @@ const GhmcModify = () => {
         )
         .then((res) => {
           const data = res.data || {};
-          console.log("Raw GHMC-step-details response:", data); // Debugging
-
-          // Helper to combine names and paths
-          const combineAndParseDocArrays = (namesKey, pathsKey) => {
-            const names = parseJsonArraySafe(data[namesKey]);
-            const paths = parseJsonArraySafe(data[pathsKey]);
-            const combined = [];
-            const minLength = Math.min(names.length, paths.length);
-            for (let i = 0; i < minLength; i++) {
-              if (names[i] && paths[i]) {
-                combined.push({ name: names[i], path: paths[i] });
-              }
-            }
-            return combined;
-          };
+          console.log("Raw GHMC-step-details response (Immediate Next Step):", data);
 
           const parsed = {
             ...data,
-            // Now use the helper to combine name and path arrays
             tower_docs: combineAndParseDocArrays(
-              "tower_doc_name",
-              "tower_doc_path"
+              data, "tower_doc_name", "tower_doc_path"
             ),
             feas_docs: combineAndParseDocArrays(
-              "feas_doc_name",
-              "feas_doc_path"
+              data, "feas_doc_name", "feas_doc_path"
             ),
             amount_docs: combineAndParseDocArrays(
-              "amount_doc_name",
-              "amount_doc_path"
+              data, "amount_doc_name", "amount_doc_path"
             ),
-            // We can add other document types here if needed later, e.g.:
-            // plan_docs: combineAndParseDocArrays("PLAN_DOC_NAME", "PLAN_DOC_PATH"),
           };
-          console.log("Parsed nextStepDetails for PreviousGhmcDocs:", parsed); // Debugging
-          setNextStepDetails(parsed); // This object will now contain { name: '...', path: '...' } arrays
+          setNextStepDetails(parsed);
         })
         .catch((err) => {
-          console.error("Error fetching GHMC-step-details:", err);
+          console.error("Error fetching GHMC-step-details (Immediate Next Step):", err);
           setNextStepDetails(null);
         });
     } else {
@@ -285,66 +326,60 @@ const GhmcModify = () => {
     }
   }, [selectedPlant, immediateNextStepIndex, steps]);
 
-  // update formData when nextStepDetails changes
+
+  // update formData when nextStepDetails changes (for the *immediate next step*)
   useEffect(() => {
     if (nextStepDetails) {
       console.log("🧩 Next Step Details Fetched:", nextStepDetails);
       setFormData((prev) => ({
         ...prev,
         applyDate: nextStepDetails.applyDate || "",
-        Comments: nextStepDetails.Comments || "", // Set Comments from fetched data
-        // Other fields (status, reason, Comments, noOfFlats etc.)
-        // should be uncommented and mapped if your nextStepDetails object contains them.
-        // For now, I've kept it minimal based on your previous example.
+        status: nextStepDetails.STATUS || "",
+        reason: nextStepDetails.REASON || "",
+        comments: nextStepDetails.Comments || nextStepDetails.COMMENTS || "",
+        noOfFlats:
+          nextStepDetails.NUMBER_OF_FLATS || nextStepDetails.noOfFlats || "",
+        KLD: nextStepDetails.feas_doc_name || "", // Assuming this is still a direct value, not doc array
+        amountPaid: nextStepDetails.AMOUNT_PAID || "",
+        Ghmc: nextStepDetails.GHMC || "",
+        OldAmount:
+          nextStepDetails.OLD_AMOUNT || nextStepDetails.OldAmount || "",
+        Size: nextStepDetails.SIZE_OF_CONNECTION || nextStepDetails.Size || "",
+        TotalAmount: nextStepDetails.TOTAL_AMOUNT || "",
+        TotalProjectArea: nextStepDetails.TOTAL_PROJECT_AREA || "",
+        noOfTowers: nextStepDetails.noOfTowers || "",
+        ProjectBuildArea: nextStepDetails.PROJECT_BUILD_AREA || "",
       }));
     } else {
-      // 🧹 Clear relevant form fields when no step data found
+      // 🧹 Clear everything when no step data found
       setFormData((prev) => ({
         ...prev,
         applyDate: "",
-        Comments: "", // Clear Comments
-        // Comments: "",
-        // process: "",
-        // reason: "",
-        // status: "",
-        // noOfFlats: "",
-        // KLD: "",
-        // amountPaid: "",
-        // Ghmc: "",
-        // OldAmount: "",
-        // Size: "",
-        // TotalAmount: "",
-        // TotalProjectArea: "",
-        // noOfTowers: "",
-        // ProjectBuildArea: "",
+        comments: "",
+        process: "",
+        reason: "",
+        status: "",
+        noOfFlats: "",
+        KLD: "",
+        amountPaid: "",
+        Ghmc: "",
+        OldAmount: "",
+        Size: "",
+        TotalAmount: "",
+        TotalProjectArea: "",
+        noOfTowers: "",
+        ProjectBuildArea: "",
       }));
 
-      // Also clear doc arrays if they are being populated here based on nextStepDetails
-      // (Currently, your WaterDocUploadModal states are separate, so this might not be needed)
-      // setFeasibilityDocs([]);
-      // setAmountPaidDocs([]);
-      // setLinkDocs([]);
-      // setLandDocs([]);
-      // setOthDocs([]);
+      // Also clear doc arrays
+      setFeasibilityDocs([]);
+      setAmountPaidDocs([]);
+      setLinkDocs([]);
+      setLandDocs([]);
+      setOthDocs([]);
     }
   }, [nextStepDetails]);
 
-  // helper to safely parse JSON or CSV string
-  function parseJsonArraySafe(value) {
-    if (!value) return [];
-    try {
-      if (Array.isArray(value)) return value; // Already an array, return it
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [parsed]; // If not array, wrap in one
-    } catch {
-      if (typeof value === "string")
-        return value
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-      return [];
-    }
-  }
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
@@ -418,9 +453,16 @@ const GhmcModify = () => {
     }
   };
 
-
+  const handleSubmitClick = () => {
+    const newErrors = {};
+    if (!formData.loc) newErrors.loc = "Plant selection is required";
+    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) setConfirmOpen(true);
+  };
 
   const handleConfirmSubmit = async (emails) => {
+    if (isSubmitting) return; // 🚫 Prevent double submit
     setIsSubmitting(true);
 
     const payload = new FormData();
@@ -435,7 +477,7 @@ const GhmcModify = () => {
     payload.append("loc", formData.loc);
     payload.append("applyDate", formData.applyDate);
     payload.append("process", immediateNextStep?.PROCESS || "");
-    payload.append("Comments", formData.Comments || "");
+    payload.append("comments", formData.comments || ""); // Append comments to payload
     payload.append("GHMC", formData.Ghmc || "");
     payload.append("OldAmount", formData.OldAmount || "");
     payload.append("Size_Of_Connection", formData.Size || "");
@@ -444,49 +486,23 @@ const GhmcModify = () => {
     payload.append("projectBuildArea", formData.ProjectBuildArea || "");
     payload.append("noOfTowers", formData.noOfTowers || "");
     payload.append("TotalAmount", formData.TotalAmount || "");
-
+    
   emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
 
     // ✅ Append uploaded documents
-    feasibilityDocs.forEach((file) => {
-      payload.append("feas_doc_name[]", file);
-    });
+    feasibilityDocs.forEach((file) => payload.append("feas_doc_name[]", file));
 
-    console.log("🧾 Preparing payload for submission...");
-    const payloadDebug = {};
-    payload.forEach((value, key) => {
-      if (value instanceof File) payloadDebug[key] = value.name;
-      else payloadDebug[key] = value;
-    });
-    console.log("📦 Data being sent to API:", payloadDebug);
+    console.log("📦 Payload being sent to GHMC-update:", payload);
 
     try {
-      // ✅ 1️⃣ Determine if record already exists for this step + plant
-      const existingRecord = storeData?.find(
-        (item) =>
-          item.PROCESS?.trim().toLowerCase() ===
-            immediateNextStep?.PROCESS?.trim().toLowerCase() &&
-          item.loc?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
-      );
-
-      let apiUrl = `${API_BASE_URL}/GHMC-submit`;
-      let apiType = "submit";
-
-      if (existingRecord) {
-        apiUrl = `${API_BASE_URL}/GHMC-modify`;
-        apiType = "modify";
-      }
-
-      console.log(`🚀 Using ${apiType.toUpperCase()} API:`, apiUrl);
-
-      // ✅ 2️⃣ Send the form data
-      const res = await axios.post(apiUrl, payload, {
+      // ✅ Only one API hit
+      const res = await axios.post(`${API_BASE_URL}/GHMC-update`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // ✅ 3️⃣ Refresh data after submission
+      // ✅ Refresh data
       const refreshed = await axios.get(
         `${API_BASE_URL}/GHMC-data?plant=${formData.loc}`
       );
@@ -495,17 +511,17 @@ const GhmcModify = () => {
       const master = await getMasterByLoc(formData.loc);
       if (master) setHeaderData(master);
 
-      // ✅ 4️⃣ Reset form
+      // ✅ Reset form
       setFormData((prev) => ({
         ...prev,
         applyDate: "",
-        Comments: "", // Clear Comments after submission
+        comments: "",
         noOfFlats: "",
         KLD: "",
         amountPaid: "",
         status: "",
         reason: "",
-        noOfTowers: "",
+                noOfTowers: "",
         ProjectBuildArea: "",
       }));
 
@@ -517,10 +533,11 @@ const GhmcModify = () => {
       setNextStepDetails(null);
       setSubmitted(true);
 
-      setRespModifyData && setRespModifyData(res?.data?.data);
+      setRespModifyData?.(res?.data?.data);
+
       setDialogConfig({
         title: "Success",
-        message: `Form ${apiType}ed successfully!`,
+        message: "Form submitted successfully!",
         confirmText: "OK",
         open: true,
       });
@@ -538,6 +555,95 @@ const GhmcModify = () => {
     }
   };
 
+  // helper to check if process is completed
+  const isProcessCompleted = (processName) => {
+    return storeData?.some(
+      (item) => item.PROCESS === processName && item.UPDATED === "YES"
+    );
+  };
+
+  // 👇 when user clicks a step in sidebar
+  const handleStepClick = async (step, plant) => {
+    if (!plant) return;
+    setViewedStep(step);
+    setCurrentProcess(step.PROCESS); // ✅ Set center title process
+
+    try {
+      // Find if this step is already 'UPDATED=YES' in storeData
+      const storedCompletedStep = storeData.find(
+        (item) => item.PROCESS === step.PROCESS && item.UPDATED === "YES"
+      );
+
+      let dataToParse;
+      if (storedCompletedStep) {
+        console.log("📜 Viewing completed process from storeData:", step.PROCESS);
+        dataToParse = storedCompletedStep; // Use the data from storeData
+        setSubmitted(true); // ✅ Disable & show Submitted/Updated button
+      } else {
+        console.log("🌐 Fetching live step details for:", step.PROCESS);
+        const res = await axios.get(
+          `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
+            plant
+          )}/${encodeURIComponent(step.PROCESS)}`
+        );
+        dataToParse = res.data || {};
+        setSubmitted(false); // ✅ Reset button when new (not updated)
+      }
+
+      const parsed = {
+        ...dataToParse,
+        tower_docs: combineAndParseDocArrays(
+          dataToParse, "tower_doc_name", "tower_doc_path"
+        ),
+        feas_docs: combineAndParseDocArrays(
+          dataToParse, "feas_doc_name", "feas_doc_path"
+        ),
+        amount_docs: combineAndParseDocArrays(
+          dataToParse, "amount_doc_name", "amount_doc_path"
+        ),
+        // Add other document types here if needed, e.g.:
+        // plan_docs: combineAndParseDocArrays(dataToParse, "PLAN_DOC_NAME", "PLAN_DOC_PATH"),
+      };
+
+      // Set the formData fields based on the fetched/stored step details
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: parsed.applyDate || "",
+        status: parsed.STATUS || "",
+        reason: parsed.REASON || "",
+        comments: parsed.Comments || parsed.COMMENTS || "",
+        noOfFlats: parsed.NUMBER_OF_FLATS || parsed.noOfFlats || "",
+        KLD: parsed.feas_doc_name || "", // Assuming this is still a direct value
+        amountPaid: parsed.AMOUNT_PAID || "",
+        Ghmc: parsed.GHMC || "",
+        OldAmount: parsed.OLD_AMOUNT || parsed.OldAmount || "",
+        Size: parsed.SIZE_OF_CONNECTION || parsed.Size || "",
+        TotalAmount: parsed.TOTAL_AMOUNT || "",
+        TotalProjectArea: parsed.TOTAL_PROJECT_AREA || "",
+        noOfTowers: parsed.noOfTowers || "",
+        ProjectBuildArea: parsed.PROJECT_BUILD_AREA || "",
+      }));
+
+      setViewedStepDetails(parsed); // This holds details for the LEFT SIDEBAR clicked step
+      // The PreviousGhmcDocs component should probably display docs for the *viewed* step, not the *next immediate* step.
+      // So, let's pass `viewedStepDetails` to PreviousGhmcDocs.
+      // We will adjust the render line for PreviousGhmcDocs below.
+
+    } catch (err) {
+      console.error("❌ Error fetching step details:", err);
+      setViewedStepDetails(null);
+      setSubmitted(false);
+      // Also clear form data related to the step if there's an error fetching its details
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "", comments: "", process: "", reason: "", status: "",
+        noOfFlats: "", KLD: "", amountPaid: "", Ghmc: "", OldAmount: "",
+        Size: "", TotalAmount: "", TotalProjectArea: "", noOfTowers: "",
+        ProjectBuildArea: "",
+      }));
+    }
+  };
+
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -548,33 +654,39 @@ const GhmcModify = () => {
             <h6 className="text-center mb-3">Process Steps</h6>
             <Nav variant="pills" className="flex-column">
               {steps.map((step, idx) => {
+                const allCompleted = immediateNextStepIndex === -1;
+                const isClickable =
+                  allCompleted || idx <= immediateNextStepIndex;
+
                 let variant = "secondary";
-                let clickable = false;
                 let statusIcon = "⏸️";
-                if (idx < immediateNextStepIndex) {
+
+                if (allCompleted) {
+                  // ✅ all completed → all green
                   variant = "success";
-                  clickable = true;
+                  statusIcon = "✅";
+                } else if (idx < immediateNextStepIndex) {
+                  variant = "success";
                   statusIcon = "✅";
                 } else if (idx === immediateNextStepIndex) {
                   variant = "warning";
-                  clickable = true;
                   statusIcon = "⚠️";
                 }
 
                 return (
-                  <Nav.Item key={idx} className="mb-2">
+                  <Nav.Item className="mb-2" key={idx}>
                     <Nav.Link
-                      eventKey={idx}
-                      disabled={!clickable}
-                      onClick={() => {
-                        if (!clickable) return;
-                        setActiveStep(idx);
-                      }}
+                      active={viewedStep?.PROCESS === step.PROCESS}
+                      disabled={!isClickable}
+                      onClick={() =>
+                        isClickable && handleStepClick(step, selectedPlant)
+                      }
                       className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-                      style={{ cursor: clickable ? "pointer" : "not-allowed" }}
+                      style={{
+                        cursor: isClickable ? "pointer" : "not-allowed",
+                      }}
                     >
-                      {statusIcon}
-                      <span>{step.PROCESS}</span>
+                      {statusIcon} <span>{step.PROCESS}</span>
                     </Nav.Link>
                   </Nav.Item>
                 );
@@ -590,33 +702,33 @@ const GhmcModify = () => {
           style={{ height: "400px", overflowY: "auto" }}
         >
           <Form className="p-3 border rounded bg-light">
-            {immediateNextStep && (
-              <h4 className="mb-3 text-warning fw-bold">
-                {immediateNextStep.PROCESS}
-              </h4>
-            )}
+            <h4 className="mb-3 text-warning fw-bold">
+              {currentProcess ||
+                immediateNextStep?.PROCESS ||
+                "Select a Process"}
+            </h4>
 
             <Row className="mb-2">
               <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Plant</Form.Label>
-                  <Form.Select
-                    name="loc"
-                    value={formData.loc || ""}
-                    onChange={handleChange}
-                    isInvalid={!!errors.loc}
-                  >
-                    <option value="">Select Plant</option>
-                    {loc.map((ele, index) => (
-                      <option key={index} value={ele.loc}>
-                        {ele.loc}
-                      </option>
-                    ))}
-                  </Form.Select>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.loc}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                 <Form.Group>
+                          <Form.Label>Plant</Form.Label>
+                          <Form.Select
+                            name="loc"
+                            value={formData.loc || ""}
+                            onChange={handleChange}
+                            isInvalid={!!errors.loc}
+                          >
+                            <option value="">Select Plant</option>
+                            {loc.map((ele, index) => (
+                              <option key={index} value={ele.loc}>
+                                {ele.loc}
+                              </option>
+                            ))}
+                          </Form.Select>
+                          <Form.Control.Feedback type="invalid">
+                            {errors.loc}
+                          </Form.Control.Feedback>
+                        </Form.Group>
               </Col>
 
               <Col md={6}>
@@ -627,8 +739,8 @@ const GhmcModify = () => {
                     name="applyDate"
                     value={formData.applyDate || ""}
                     onChange={handleChange}
-                    isInvalid={!!errors.applyDate}
-                    disabled={!formData.loc}
+                    // isInvalid={!!errors.applyDate}
+                    disabled // Always disabled for display only
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.applyDate}
@@ -637,54 +749,66 @@ const GhmcModify = () => {
               </Col>
             </Row>
 
+            {/* Comments Field for Display */}
             <Row className="mb-2">
               <Col md={12}>
-                <Form.Group controlId="formComments">
+                <Form.Group controlId="formCommentsDisplay">
                   <Form.Label>Comments</Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={3}
-                    name="Comments"
-                    value={formData.Comments || ""}
-                    onChange={handleChange}
-                    disabled={!formData.loc}
+                    name="comments"
+                    value={formData.comments || ""}
+                    disabled // Disabled for display only
                   />
                 </Form.Group>
               </Col>
             </Row>
 
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Label>Upload Feasibility Document</Form.Label>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary form-control"
-                  onClick={() => setShowFeasibilityModal(true)}
-                  disabled={!formData.loc}
-                >
-                  <FaUpload className="me-2" /> Upload Document
-                  <span className="ms-2 text-muted">
-                    {feasibilityDocs.length > 0 &&
-                      `(${feasibilityDocs.length} selected)`}
-                  </span>
-                </button>
-              </Col>
-            </Row>
+            {/* <Row className="mb-3">
+
+              {viewedStep?.PROCESS === immediateNextStep?.PROCESS && (
+                <Col md={6}>
+                  <Form.Label>Upload Feasibility Document</Form.Label>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary form-control"
+                    onClick={() => setShowFeasibilityModal(true)}
+                    disabled={!formData.loc}
+                  >
+                    <FaUpload className="me-2" /> Upload Document
+                    <span className="ms-2 text-muted">
+                      {feasibilityDocs.length > 0 &&
+                        `(${feasibilityDocs.length} selected)`}
+                    </span>
+                  </button>
+                </Col>
+              )}
+            </Row> */}
 
             <div className="d-grid">
-              <Button
-                variant={submitted ? "success" : "primary"}
-                size="md"
-                onClick={handleEmailSubmit}
-                className="w-100 fw-semibold"
-                disabled={!formData.loc || isSubmitting || submitted}
-              >
-                {isSubmitting
-                  ? "Submitting..."
-                  : submitted
-                  ? "Submitted"
-                  : "Submit"}
-              </Button>
+              {/* Show submit button only if the currently displayed process is the immediateNextStep */}
+              {viewedStep?.PROCESS === immediateNextStep?.PROCESS && (
+                <Button
+                  variant={submitted ? "success" : "primary"}
+                  size="md"
+                  onClick={handleEmailSubmit}
+                  className="w-100 fw-semibold"
+                  disabled={!formData.loc || isSubmitting || submitted}
+                >
+                  {isSubmitting
+                    ? "Submitting..."
+                    : submitted
+                    ? "Submitted"
+                    : "Submit"}
+                </Button>
+              )}
+               {/* Optionally show an "Updated" button for completed steps that are not the immediate next step */}
+              {viewedStep?.PROCESS !== immediateNextStep?.PROCESS && isProcessCompleted(viewedStep?.PROCESS) && (
+                <Button variant="success" size="md" className="w-100 fw-semibold" disabled>
+                  Updated (View Only)
+                </Button>
+              )}
             </div>
           </Form>
         </Col>
@@ -692,8 +816,8 @@ const GhmcModify = () => {
         {/* Right Section: Previous Docs */}
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            {/* Pass the fully processed nextStepDetails which now includes combined doc arrays */}
-            <PreviousGhmcDocs docsData={nextStepDetails} />
+            {/* ⭐ MODIFICATION: Pass viewedStepDetails instead of nextStepDetails ⭐ */}
+            <PreviousGhmcDocs docsData={viewedStepDetails} />
           </div>
         </Col>
       </Row>
@@ -723,7 +847,7 @@ const GhmcModify = () => {
         processName={immediateNextStep?.PROCESS}
         plantName={formData.loc}
         applyDate={formData.applyDate}
-        comments={formData.Comments}
+        comments={formData.comments}
       />
       <WaterDocUploadModal
         show={showFeasibilityModal}
@@ -759,4 +883,4 @@ const GhmcModify = () => {
   );
 };
 
-export default GhmcModify;
+export default GhmcUpdate;

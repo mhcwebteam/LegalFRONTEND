@@ -568,7 +568,7 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
     setDocToDelete(null);
   };
 
-  return (
+   return (
     <>
       <h6 className="mt-2 mb-1 text-warning">{title}</h6>
       <ListGroup variant="flush">
@@ -578,7 +578,7 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
             className="d-flex align-items-center justify-content-between"
           >
             {/* Document link */}
-            <div className="d-flex align-items-center">
+            {/* <div className="d-flex align-items-center">
               <BoxArrowUpRight className="me-3" color="royalblue" size={20} />
               <a
                 href={doc.url}
@@ -588,9 +588,21 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
               >
                 {doc.name}
               </a>
-            </div>
+            </div> */}
 
-            {/* Delete button */}
+            <div
+      key={doc.id}
+      style={{
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+      title={doc.name}
+    >
+      📄 {doc.name}
+    </div>
+
+        
             <Button
               variant="outline-danger"
               size="sm"
@@ -632,11 +644,76 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
       </Dialog>
     </>
   );
+  // return (
+  //   <>
+  //     <h6 className="mt-2 mb-1 text-warning">{title}</h6>
+  //     <ListGroup variant="flush">
+  //       {filteredDocs.map((doc, idx) => (
+  //         <ListGroup.Item
+  //           key={`${docType}-${doc.name}-${idx}`}
+  //           className="d-flex align-items-center justify-content-between"
+  //         >
+  //           {/* Document link */}
+  //           <div className="d-flex align-items-center">
+  //             <BoxArrowUpRight className="me-3" color="royalblue" size={20} />
+  //             <a
+  //               href={doc.url}
+  //               target="_blank"
+  //               rel="noopener noreferrer"
+  //               className="fw-bold text-decoration-none"
+  //             >
+  //               {doc.name}
+  //             </a>
+  //           </div>
+
+  //           {/* Delete button */}
+  //           <Button
+  //             variant="outline-danger"
+  //             size="sm"
+  //             onClick={() => handleDeleteClick(doc)}
+  //           >
+  //             <FaTrashAlt />
+  //           </Button>
+  //         </ListGroup.Item>
+  //       ))}
+  //     </ListGroup>
+
+  //     {/* Delete Confirmation Dialog */}
+  //     <Dialog
+  //       open={deleteConfirmOpen}
+  //       onClose={cancelDelete}
+  //       aria-labelledby="alert-dialog-title"
+  //       aria-describedby="alert-dialog-description"
+  //     >
+  //       <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center' }}>
+  //         <Delete color="error" sx={{ mr: 1 }} />
+  //         Confirm Deletion
+  //       </DialogTitle>
+  //       <DialogContent>
+  //         <Typography>
+  //           Are you sure you want to delete <strong>"{docToDelete?.name}"</strong>? 
+  //           This action cannot be undone.
+  //         </Typography>
+  //       </DialogContent>
+  //       <DialogActions>
+  //         <Button onClick={cancelDelete}
+  //          style={{ backgroundColor: "#9b9e94ff", color: "white", border: "none" }} 
+  //         >
+  //           Cancel
+  //         </Button>
+  //         <Button onClick={confirmDelete} color="error" autoFocus>
+  //           Delete
+  //         </Button>
+  //       </DialogActions>
+  //     </Dialog>
+  //   </>
+  // );
 };
 
 // ------------------ Main Panel ------------------
 const PreviousUploadedDocsPanel = ({ firstStep, onDocumentsChange }) => {
-  // State to track deleted documents locally
+
+
   const [deletedDocuments, setDeletedDocuments] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -708,6 +785,7 @@ const PreviousUploadedDocsPanel = ({ firstStep, onDocumentsChange }) => {
   // Regular documents
   const planDocs = parseDocs("PLAN_DOC_NAME", "PLAN_DOC_PATH");
   const linkDocs = parseDocs("TITLE_DOC_NAME", "TITLE_DOC_PATH");
+  const linkDocs1 = parseDocs("LINK_DOC_NAME","LINK_DOC_PATH");
   const landDocs = parseDocs("LAND_DOC_NAME", "LAND_DOC_PATH");
   const othDocs = parseDocs("OTH_DOC_NAME", "OTH_DOC_PATH");
   const feasDocs = parseDocs("FEAS_DOC_NAME", "FEAS_DOC_PATH");
@@ -723,6 +801,7 @@ const PreviousUploadedDocsPanel = ({ firstStep, onDocumentsChange }) => {
     const allDocs = [
       { docs: planDocs, type: "PLAN" },
       { docs: linkDocs, type: "TITLE" },
+      {docs: linkDocs1, type: "LINK"},
       { docs: landDocs, type: "LAND" },
       { docs: othDocs, type: "OTH" },
       { docs: feasDocs, type: "FEAS" },
@@ -743,100 +822,198 @@ const PreviousUploadedDocsPanel = ({ firstStep, onDocumentsChange }) => {
   };
 
   return (
-    <Card className="h-100 shadow-sm">
-      <Card.Body className="d-flex flex-column h-100">
-        <Card.Title as="h5" className="mb-3 border-bottom pb-2">
-          Previously Uploaded Documents
-        </Card.Title>
+  <Card className="h-100 shadow-sm d-flex flex-column">
+  {/* Top section — 80% height */}
+  <div style={{ flex: "0 0 80%", overflowY: "auto", padding: "10px" }}>
+    <Card.Title as="h5" className="mb-3 border-bottom pb-2">
+      Previously Uploaded Documents
+    </Card.Title>
 
-        {!hasAnyDocuments() ? (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1">
-            <p className="text-muted mb-0">No documents available.</p>
-          </div>
-        ) : (
-          <div
-            className="flex-grow-1 overflow-auto"
-            style={{ maxHeight: "300px", scrollbarWidth:'thin' }}
-          >
-            {/* Regular Docs */}
-            <DocumentList
-              title="Plan Documents"
-              docs={planDocs}
-              docType="PLAN"
-              onDelete={handleDelete}
-              deletedDocs={deletedDocuments}
-            />
-            <DocumentList
-              title="Link Documents"
-              docs={linkDocs}
-              docType="TITLE"
-              onDelete={handleDelete}
-              deletedDocs={deletedDocuments}
-            />
-            <DocumentList
-              title="Land Documents"
-              docs={landDocs}
-              docType="LAND"
-              onDelete={handleDelete}
-              deletedDocs={deletedDocuments}
-            />
-            <DocumentList
-              title="Other Documents"
-              docs={othDocs}
-              docType="OTH"
-              onDelete={handleDelete}
-              deletedDocs={deletedDocuments}
-            />
-            <DocumentList
-              title="Feasibility Documents"
-              docs={feasDocs}
-              docType="FEAS"
-              onDelete={handleDelete}
-              deletedDocs={deletedDocuments}
-            />
-            <DocumentList
-              title="Amount Documents"
-              docs={amountDocs}
-              docType="AMOUNT_PAID"
-              onDelete={handleDelete}
-              deletedDocs={deletedDocuments}
-            />
+    {!hasAnyDocuments() ? (
+      <div className="d-flex align-items-center justify-content-center h-100">
+        <p className="text-muted mb-0">No documents available.</p>
+      </div>
+    ) : (
+      <>
+        <DocumentList
+          title="Plan Documents"
+          docs={planDocs}
+          docType="PLAN"
+          onDelete={handleDelete}
+          deletedDocs={deletedDocuments}
+        />
+        <DocumentList
+          title="Link Documents"
+          docs={linkDocs}
+          docType="TITLE"
+          onDelete={handleDelete}
+          deletedDocs={deletedDocuments}
+        />
 
-            {/* Amendment Docs */}
-            {(amendLinkDocs.length > 0 ||
-              amendLandDocs.length > 0 ||
-              amendOthDocs.length > 0) && (
-              <>
-                <hr className="my-3" />
-                <h6 className="text-danger">Amendment Documents</h6>
-                <DocumentList
-                  title="Amendment Link Documents"
-                  docs={amendLinkDocs}
-                  docType="AMEND_LINK"
-                  onDelete={handleDelete}
-                  deletedDocs={deletedDocuments}
-                />
-                <DocumentList
-                  title="Amendment Land Documents"
-                  docs={amendLandDocs}
-                  docType="AMEND_LAND"
-                  onDelete={handleDelete}
-                  deletedDocs={deletedDocuments}
-                />
-                <DocumentList
-                  title="Amendment Other Documents"
-                  docs={amendOthDocs}
-                  docType="AMEND_OTH"
-                  onDelete={handleDelete}
-                  deletedDocs={deletedDocuments}
-                />
-              </>
-            )}
-          </div>
-        )}
-      </Card.Body>
-    </Card>
+           <DocumentList
+          title="Link Documents"
+          docs={linkDocs1}
+          docType="LINK"
+          onDelete={handleDelete}
+          deletedDocs={deletedDocuments}
+        />
+        <DocumentList
+          title="Land Documents"
+          docs={landDocs}
+          docType="LAND"
+          onDelete={handleDelete}
+          deletedDocs={deletedDocuments}
+        />
+        <DocumentList
+          title="Other Documents"
+          docs={othDocs}
+          docType="OTH"
+          onDelete={handleDelete}
+          deletedDocs={deletedDocuments}
+        />
+        <DocumentList
+          title="Feasibility Documents"
+          docs={feasDocs}
+          docType="FEAS"
+          onDelete={handleDelete}
+          deletedDocs={deletedDocuments}
+        />
+      </>
+    )}
+  </div>
+
+  {/* Bottom section — 20% height */}
+  <div
+    style={{
+      flex: "0 0 20%",
+      borderTop: "1px solid #ddd",
+      padding: "10px",
+      backgroundColor: "#fafafa",
+      overflow: "hidden",
+    }}
+  >
+    <h6 className="mb-2">Comments</h6>
+    <div
+      style={{
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+      title={firstStep?.COMMENTS}
+    >
+      {firstStep?.COMMENTS || "No comments available"}
+    </div>
+  </div>
+</Card>
+
+ 
   );
+
+
+  // return (
+  //   <Card className="h-100 shadow-sm">
+  //     <Card.Body className="d-flex flex-column h-100">
+  //       <Card.Title as="h5" className="mb-3 border-bottom pb-2">
+  //         Previously Uploaded Documents
+  //       </Card.Title>
+
+  //       {!hasAnyDocuments() ? (
+  //         <div className="d-flex align-items-center justify-content-center flex-grow-1">
+  //           <p className="text-muted mb-0">No documents available.</p>
+  //         </div>
+  //       ) : (
+  //         <div
+  //           className="flex-grow-1 overflow-auto"
+  //             style={{
+  //   maxHeight: "300px",
+  //   overflowY: "auto",
+
+  //   width: "100%",      
+  // }}
+  //         >
+  //           {/* Regular Docs */}
+  //           <DocumentList
+  //             title="Plan Documents"
+  //             docs={planDocs}
+  //             docType="PLAN"
+  //             onDelete={handleDelete}
+  //             deletedDocs={deletedDocuments}
+  //           />
+  //           <DocumentList
+  //             title="Link Documents"
+  //             docs={linkDocs}
+  //             docType="TITLE"
+  //             onDelete={handleDelete}
+  //             deletedDocs={deletedDocuments}
+  //           />
+  //           <DocumentList
+  //             title="Land Documents"
+  //             docs={landDocs}
+  //             docType="LAND"
+  //             onDelete={handleDelete}
+  //             deletedDocs={deletedDocuments}
+  //           />
+  //           <DocumentList
+  //             title="Other Documents"
+  //             docs={othDocs}
+  //             docType="OTH"
+  //             onDelete={handleDelete}
+  //             deletedDocs={deletedDocuments}
+  //           />
+  //           <DocumentList
+  //             title="Feasibility Documents"
+  //             docs={feasDocs}
+  //             docType="FEAS"
+  //             onDelete={handleDelete}
+  //             deletedDocs={deletedDocuments}
+  //           />
+  //           <DocumentList
+  //             title="Amount Documents"
+  //             docs={amountDocs}
+  //             docType="AMOUNT_PAID"
+  //             onDelete={handleDelete}
+  //             deletedDocs={deletedDocuments}
+  //           />
+
+  //           {/* Amendment Docs */}
+  //           {(amendLinkDocs.length > 0 ||
+  //             amendLandDocs.length > 0 ||
+  //             amendOthDocs.length > 0) && (
+  //             <>
+  //               <hr className="my-3" />
+  //               <h6 className="text-danger">Amendment Documents</h6>
+  //               <DocumentList
+  //                 title="Amendment Link Documents"
+  //                 docs={amendLinkDocs}
+  //                 docType="AMEND_LINK"
+  //                 onDelete={handleDelete}
+  //                 deletedDocs={deletedDocuments}
+  //               />
+  //               <DocumentList
+  //                 title="Amendment Land Documents"
+  //                 docs={amendLandDocs}
+  //                 docType="AMEND_LAND"
+  //                 onDelete={handleDelete}
+  //                 deletedDocs={deletedDocuments}
+  //               />
+  //               <DocumentList
+  //                 title="Amendment Other Documents"
+  //                 docs={amendOthDocs}
+  //                 docType="AMEND_OTH"
+  //                 onDelete={handleDelete}
+  //                 deletedDocs={deletedDocuments}
+  //               />
+  //             </>
+  //           )}
+  //         </div>
+  //       )}
+
+  //       <div className="border-top pb-2 p-3" >
+  //     {firstStep?.COMMENTS}
+  //       </div>
+  //     </Card.Body>
+  //   </Card>
+  // );
 };
 
 export default PreviousUploadedDocsPanel;

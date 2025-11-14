@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PlantSelector = ({ plants, selectedPlant, onChange, customMarginTop }) => {
+
+
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null); // ✅ Add ref to root container
 
@@ -10,8 +12,13 @@ const PlantSelector = ({ plants, selectedPlant, onChange, customMarginTop }) => 
   }, []);
 
   const handleSelect = (plant) => {
+ 
     onChange({ target: { value: plant } });
+
+    
     setOpen(false);
+
+    
   };
 
   // ✅ Close dropdown on outside click
@@ -30,24 +37,25 @@ const PlantSelector = ({ plants, selectedPlant, onChange, customMarginTop }) => 
 
   const styles = {
     container: {
-      width: '350px',
+      width: '260px',
       margin: 'auto',
-  marginTop: window.innerWidth <= 1396 ? customMarginTop : '0px',
+  // marginTop: window.innerWidth <= 1396 ? customMarginTop : '0px',
   // //marginBottom: window.innerWidth <= 1396 ? '-5px' : '10px',
       position: 'relative',
       cursor: 'pointer',
-      fontSize: '10px',
+      fontSize: '7px',
     },
     header: {
       backgroundColor: '#f0f0f0',
-      padding: '9px 18px',
+      padding: '5px 10px',
       borderRadius: '6px',
+     marginTop:'-12px',
       fontWeight: 500,
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      minHeight: '34px',
-      fontSize: '15px',
+      minHeight: '15px',
+      fontSize: '12px',
       border: '2px solid #007bff', 
       boxShadow: '0 2px 6px rgba(0, 123, 255, 0.2)', 
       transition: 'all 0.3s ease-in-out', 

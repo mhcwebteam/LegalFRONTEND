@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Container } from 'react-bootstrap';
 import axios from 'axios';
 import { API_BASE_URL, API_DOC_URL } from '../config/Config';
@@ -10,6 +10,9 @@ import '../pages/Update.css';
 import '../components/PcbTabs.css';
 import DocumentModal from '../components/DocumentModal';
 import CardWithHeader from '../components/CardWithHeader';import Swal from 'sweetalert2';
+import ProjectInfoHeader from './ProjectInfoHeader';
+import { Context } from '../context/ContextData';
+import { getMasterByLoc } from '../api/Api';
 
 
 const PcbUpdateTable = () => {
@@ -30,7 +33,11 @@ const PcbUpdateTable = () => {
 
    const [amendmentRecords, setAmendmentRecords] = useState([]);   // Whole API response
   const [amendCategories, setAmendCategories] = useState([]);     // Unique categories
-  
+        const { 
+            totalMasterData = [],
+            setHeaderData, 
+            headerData 
+        } = useContext(Context);
 
   // For inputs, keep separate state for each row (process)
   const [inputData, setInputData] = useState({}); // { [process]: { applyDate, selectedFile } }
@@ -43,9 +50,12 @@ const PcbUpdateTable = () => {
     axios.get(`${API_BASE_URL}/plants`).then(res => setPlants(res.data));
   }, []);
 
-  const handlePlantChange = (e) => {
+  const handlePlantChange = async (e) => {
     const plant = e.target.value;
     setSelectedPlant(plant);
+  const res = await getMasterByLoc(plant);
+      setHeaderData(res);
+     
 
     if (plant) {
       axios.get(`${API_BASE_URL}/pcb-store/${plant}`)
@@ -99,6 +109,7 @@ const PcbUpdateTable = () => {
     }));
   };
 
+  
   const handleUpdate = async (process) => {
     const storeInfo = storeData.find(item => item.PROCESS === process);
 
@@ -268,26 +279,47 @@ if (currentTimelineMode === 'action') {
 const isAmendExists = amendmentRecords.length > 0;
  return(
     <>
-    
+   
     <PlantSelector
              plants={plants}
              selectedPlant={selectedPlant}
              onChange={handlePlantChange}
-             customMarginTop="-10px"
+             customMarginTop="-5px"
            />
-   
+    <div className='mt-1'>
+  <ProjectInfoHeader data={headerData}/>
+    </div>
            {!selectedPlant ? (
-             <div className="alert alert-info mt-4" style={{ 
-               backgroundColor: '#d1ecf1',
-               borderColor: '#bee5eb',
-               color: '#0c5460',
-               borderRadius: '8px'
-             }}
+             <div className="alert alert-info mt-4"        
+             
+             style={{ 
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginTop: '5px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
              >
                Please select a plant to view data.
                </div>
            ) : (
-             <div className="table-scroll-wrapper custom-tbl" style={{ width: '100%', overflowX: 'auto' }} >
+
+              <div 
+          className="custom-tbl" 
+          style={{ 
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginTop: '5px',
+            height: 'calc(100vh - 350px)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+             <div className="table-scroll-wrapper custom-tbl"  style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }} >
                
                <table className="table table-hover table-sm" 
                      style={{marginBottom:'0px'}}>
@@ -584,6 +616,7 @@ const isAmendExists = amendmentRecords.length > 0;
                    })}
                  </tbody>
                </table>
+             </div>
              </div>
            )}
 

@@ -20,6 +20,7 @@ import ProjectDetails from './pages/ProjectDetails';
 import Fireform from './pages/Fireform';
 import Ghmc from './pages/Ghmc';
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
+  const queryClient = new QueryClient();
 
   // Listen to window resize to update isMobile
   useEffect(() => {
@@ -48,87 +50,72 @@ function App() {
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
   const closeSidebar = () => setSidebarOpen(false);
 
-  return (
+return (
+  <QueryClientProvider client={queryClient}>
     <AppProvider>
       <NavbarPage toggleSidebar={toggleSidebar} />
 
-      {/* Sidebar: 
-          - On mobile: show only if isSidebarOpen 
-          - On desktop: always show */}
-          <div
-  style={{
-    // backgroundImage: `url(${bgImage})`,
-        backgroundColor: '#d8dad5ff',
-    backgroundSize: 'cover',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-    minHeight: '100vh',
-    margin: '0px',
-    padding: '0px',
-  }}
->
- 
-      {(isMobile && isSidebarOpen) || !isMobile ? (
-        <Sidebar
-          isMobile={isMobile}
-          isOpen={isSidebarOpen}
-          closeSidebar={closeSidebar}
-          setIsHovered={setIsSidebarHovered}
-          isHovered={isSidebarHovered}  // 👈 Pass the state setter
-        />
-      ) : null}
-
-      {/* Overlay only on mobile when sidebar is open */}
-      {isMobile && isSidebarOpen && (
-        <div className="overlay" onClick={closeSidebar} />
-      )}
-
-      {/* Main content padding: 
-          - On desktop add margin-left for sidebar space
-          - On mobile full width */}
       <div
-        className="main-content"
         style={{
-          marginTop: '50px',
-          padding: '20px',
-          marginLeft: !isMobile ? (isSidebarHovered ? 180 : 60) : 0,
-          transition: 'margin-left 0.3s ease',
+          backgroundColor: "#d8dad5ff",
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          minHeight: "100vh",
+          margin: "0px",
+          padding: "0px",
         }}
-        onClick={() => isSidebarOpen && isMobile && closeSidebar()}
       >
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/create" element={<Create />} />
-          <Route path="/update" element={<Update />} />
-          <Route path="/modify" element={<Modify />} />
-          <Route path="/amendment" element={<Amendment />} />
-          <Route path="/taxreturns" element={<TaxReturns/>} />
-          <Route path="/view" element={<View />} />
-
-          <Route path="/create/pollution" element={<PollutionForm />} />
-           <Route path="/create/airport" element={<Airport />} />
-           <Route path="/create/water" element={<WaterForm />} />
-             <Route path="/create/rera" element={<ReraForm />} />
-             <Route path="/create/fire" element={<Fireform />} />
-             <Route path = "/create/Ghmc" element = {<Ghmc/>} />
-             <Route path="/create/masterproject" element={<ProjectDetails />} />
-           
-
-             
-
-
-          {/*<Route path="/create/hmda" element={<HmdaForm />} />
-          <Route path="/create/fire" element={<FireForm />} /> */}
-          <Route
-            path="*"
-            element={<h2>Welcome! Select a tab from the sidebar.</h2>}
+        {(isMobile && isSidebarOpen) || !isMobile ? (
+          <Sidebar
+            isMobile={isMobile}
+            isOpen={isSidebarOpen}
+            closeSidebar={closeSidebar}
+            setIsHovered={setIsSidebarHovered}
+            isHovered={isSidebarHovered}
           />
-        </Routes>
+        ) : null}
+
+        {isMobile && isSidebarOpen && (
+          <div className="overlay" onClick={closeSidebar} />
+        )}
+
+        <div
+          className="main-content"
+          style={{
+            marginTop: "50px",
+            padding: "20px",
+            marginLeft: !isMobile ? (isSidebarHovered ? 180 : 60) : 0,
+            transition: "margin-left 0.3s ease",
+          }}
+          onClick={() => isSidebarOpen && isMobile && closeSidebar()}
+        >
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/create" element={<Create />} />
+            <Route path="/update" element={<Update />} />
+            <Route path="/modify" element={<Modify />} />
+            <Route path="/amendment" element={<Amendment />} />
+            <Route path="/taxreturns" element={<TaxReturns />} />
+            <Route path="/view" element={<View />} />
+            <Route path="/create/pollution" element={<PollutionForm />} />
+            <Route path="/create/airport" element={<Airport />} />
+            <Route path="/create/water" element={<WaterForm />} />
+            <Route path="/create/rera" element={<ReraForm />} />
+            <Route path="/create/fire" element={<Fireform />} />
+            <Route path="/create/Ghmc" element={<Ghmc />} />
+            <Route path="/create/masterproject" element={<ProjectDetails />} />
+            <Route
+              path="*"
+              element={<h2>Welcome! Select a tab from the sidebar.</h2>}
+            />
+          </Routes>
+        </div>
       </div>
-       
-</div>
     </AppProvider>
-  );
+  </QueryClientProvider>
+);
+
 }
 
 export default App;

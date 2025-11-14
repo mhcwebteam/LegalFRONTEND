@@ -10,14 +10,17 @@ import ApplyDateInput from '../components/ApplyDateInput';
 import { ToastContainer, toast } from 'react-toastify';
 import ProcessField from '../components/ProcessField';
 import ReusableDialog from "../components/ReusableDialog";
-import { submitReraForm } from "../api/Api";
+import { getMasterByLoc, submitReraForm } from "../api/Api";
 import { Context } from "../context/ContextData";
 import "../pages/Water.css"
+import ProjectInfoHeader from "../components/ProjectInfoHeader";
 
 
 const ReraForm = () => {
   const navigate = useNavigate();
-  const {setFormReraData } = useContext(Context);
+  const {setFormReraData, totalMasterData = [], setHeaderData, headerData  } = useContext(Context);
+
+
   const [showModal, setShowModal] = useState(false);
 const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
   const [planDocs, setplanDocs] = useState([]);
@@ -25,6 +28,7 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+ 
 
   const [formData, setFormData] = useState({
     loc: '',
@@ -36,11 +40,33 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
     Comments: '',
   });
 
+
+   const fetchDataForLoc = async (loc) => {
+      try {
+        const res = await getMasterByLoc(loc);
+  
+        if (res) {
+          setHeaderData(res);
+        }
+      } catch (error) {
+        console.error("Error fetching initial loc data:", error);
+      }
+    };
+  
+  
+    useEffect(() => {
+      if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+        const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+        if (defaultLoc) {
+          fetchDataForLoc(defaultLoc);
+        }
+      }
+    }, [totalMasterData]);
  
     useEffect(() => {
     const fetchProcess = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/water-process`);
+        const res = await axios.get(`${API_BASE_URL}/rera-process`);
         setFormData((prev) => ({
           ...prev,
           process: res.data[0].PROCESS,
@@ -53,20 +79,84 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
   }, []);
 
 
+  const handleChange = async (e) => {
+    const { name, value, type, checked } = e.target;
+
+    if (type === "radio") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+      return;
+    }
 
 
+   if (name === "loc") {
+      setFormData((prev) => ({
+        ...prev,
+        loc: value,
+      }));
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+      // If empty value, clear everything
+      if (!value || value.trim() === "") {
+        setHeaderData({});
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: ""
+        }));
+        return;
+      }
+
+      // Fetch master data for the selected location
+      try {
+        const res = await getMasterByLoc(value);
+        if (res && Object.keys(res).length > 0) {
+          setHeaderData(res);
+
+          setFormData((prev) => ({
+            ...prev,
+      
+          }));
+        } else {
+          console.warn('⚠️ No master data found for location:', value);
+          setHeaderData({});
+          setFormData((prev) => ({
+            ...prev,
+            applyDate: "",
+
+          }));
+        }
+      } catch (err) {
+        console.error("❌ Error fetching master by loc:", err);
+        setHeaderData({});
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+      
+        }));
+      }
+      return;
+    }
+
+    // Normal case
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
   };
+
+
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: value,
+  //   }));
+  //   // Clear error when user starts typing
+  //   if (errors[name]) {
+  //     setErrors(prev => ({ ...prev, [name]: '' }));
+  //   }
+  // };
 
   const handleProcessChange = (value) => {
     setFormData((prev) => ({
@@ -93,12 +183,12 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
 
   const formPayload = new FormData();
 
-  formPayload.append('PLANT_NAME', formData.loc);
-  formPayload.append('PROCESS_TYPE', formData.process);
-  formPayload.append('APPLICATION_DATE', formData.applyDate);
-  formPayload.append('PROJECT_NAME', formData.projectDetails);
-  formPayload.append('ADDRESS', formData.address);
-  formPayload.append('COMMENTS', formData.Comments || '');
+  formPayload.append('loc', formData.loc);
+  formPayload.append('process', formData.process);
+  formPayload.append('applyDate', formData.applyDate);
+  formPayload.append('prjName', formData.projectDetails);
+  formPayload.append('address', formData.address);
+  formPayload.append('comments', formData.Comments || '');
 
   // ✅ Append multiple uploaded docs (from AmountPaidDocs state)
   if (AmountPaidDocs && AmountPaidDocs.length > 0) {
@@ -124,7 +214,7 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
       Comments: '', 
     });
     setplanDocs([]);
-    setAmountPaidDocs([]); // ✅ clear uploaded docs
+    setAmountPaidDocs([]); 
 
     navigate('/create');
   } catch (err) {
@@ -208,9 +298,9 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
               <div className="icon-wrapper">
                 <University className="water-icon" size={32} />
               </div>
-              <h1 className="form-title">REre Control Board Application</h1>
+              <h1 className="form-title">RERA Control Board Application</h1>
               <p className="form-subtitle">
-                Submit your Rare management compliance application with ease
+                Submit your RERA management compliance application with ease
               </p>
             </div>
          
@@ -225,7 +315,7 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
             </button>
           </div>
         </header>
-
+   <ProjectInfoHeader data={headerData} />
         <div className="form-content">
           {/* PROJECT INFORMATION SECTION */}
           <div className="form-section" aria-labelledby="project-info-heading">
@@ -241,20 +331,19 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
                   Plant Name*
                 </label>
                 <div className="input-wrapper">
-                  <PlantSelect
-                    id="project-name"
+                      <select
+                    name="loc"
                     value={formData.loc}
                     onChange={handleChange}
-                    className={`highlight-input ${errors.loc ? 'error' : ''}`}
-                    aria-describedby={errors.loc ? "project-name-error" : undefined}
-                  />
-                  {errors.loc && (
-                    <div className="error-container">
-                      <p id="project-name-error" className="error-text" role="alert">
-                        {errors.loc}
-                      </p>
-                    </div>
-                  )}
+                    className="modern-input appearance-none cursor-pointer focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Select Plant</option>
+                    {Array.isArray(totalMasterData) && totalMasterData.map((ele, index) => (
+                      <option key={index} value={ele.LOC}>
+                        {ele.LOC}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

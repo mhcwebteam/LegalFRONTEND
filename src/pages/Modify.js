@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import CardWithHeader from '../components/CardWithHeader';
 import PcbTabs from '../components/PcbTabs';
 import PollutionTable from '../components/PcbModifyTable';
-import AirportModifyTable from '../components/AirportModifyTable1';
+import AirportModifyTable from "../components/AirportModifyTable"
 import WaterModifyTable from '../components/WaterModifyTable';
 import GhmcModify from '../components/GhmcModify';
+import FireModifyTable from '../components/FireModifyTable';
+import ReraModifyTable from '../components/ReraModifyTable';
 
 const tabList = [
   'Pollution Control Board',
@@ -12,7 +14,7 @@ const tabList = [
   'HMDA',
   'Fire',
   'Water',
-  'RERA',
+   'Rera',
   'Miscellaneous',
 ];
 
@@ -25,9 +27,9 @@ const Modify = () => {
         {key === 'Pollution Control Board' && <PollutionTable />}
         {key === 'Airport Authority' && <AirportModifyTable />}
         {key === 'HMDA' && <GhmcModify/>}
-        {key === 'Fire' && <p>This is the Fire tab.</p>}
+        {key === 'Fire' &&  <FireModifyTable />}
         {key === 'Water' && <WaterModifyTable/>}
-        {/* {key === 'RERA' && } */}
+        {key === 'Rera' &&  <ReraModifyTable/>}
         {key === 'Miscellaneous' && <p>This is the miscellaneous tab.</p>}
 
 

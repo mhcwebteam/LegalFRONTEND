@@ -1,646 +1,467 @@
+import React, { useEffect, useState, useRef,  useMemo  } from "react";
+import { Nav, Form, Button, Row, Col } from "react-bootstrap";
+import axios from "axios";
+import Swal from "sweetalert2";
+import { API_BASE_URL } from "../config/Config";
 
+import PreviousUploadedDocsModal from "./PreviousUploadedDocsPanel";
+import AirportDocUploadModal from "./AirportDocUploadModal";
+import AmendmentPanel from "./AmendmentPanel";
 
-import React, { useEffect, useState } from 'react';
-import { Form, Button, Row, Col, Container } from 'react-bootstrap';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/Config';
-import { CheckCircle } from "lucide-react";
-import WaterDocUploadModal from './WaterDocUploadModal';
-import { FaTrashAlt } from 'react-icons/fa';
-import ReusableDialog from './ReusableDialog'; // Missing import
-import { toast } from 'react-toastify'; // Missing import
-
-const WaterModifyTable = () => {
+const AirportModifyTable = () => {
   const [steps, setSteps] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
-  const [activeProcess, setActiveProcess] = useState(null);
   const [plants, setPlants] = useState([]);
   const [formData, setFormData] = useState({});
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState('');
+  const [selectedPlant, setSelectedPlant] = useState("");
   const [stepData, setStepData] = useState([]);
-  const [showModal, setShowModal] = useState(false);
+  const [storeData, setStoreData] = useState([]);
+  const [firstStep, setFirstStep] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
   const [linkDocs, setLinkDocs] = useState([]);
   const [landDocs, setLandDocs] = useState([]);
   const [othDocs, setOthDocs] = useState([]);
-  const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
-  const [immediateNextStep, setImmediateNextStep] = useState(null);
-  const [storeData, setStoreData] = useState([]);
-  const [nextStepDetails, setNextStepDetails] = useState(null);
-  const [firstStep, setFirstStep] = useState(null);
-  const [nextSteps, setNextSteps] = useState('');
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [dialogConfig, setDialogConfig] = useState({ 
-    title: '',
-    message: '',
-    confirmText: 'OK',
-    showCancel: false,
-    open: false
-  });
 
+  const [nextStepDetails, setNextStepDetails] = useState(null);
+  const [immediateNextStep, setImmediateNextStep] = useState(null);
+  const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
+  const [processingDt, setProcessingdt] = useState("Application");
+
+  // State for managing the amendment process
+  const [amendmentStatus, setAmendmentStatus] = useState(null);
+  const [isAmendmentActive, setIsAmendmentActive] = useState(false);
+
+   const [amendLinkDocs, setAmendLinkDocs] = useState([]);
+  const [amendLandDocs, setAmendLandDocs] = useState([]);
+  const [amendOthDocs, setAmendOthDocs] = useState([]);
+  const [modalContext, setModalContext] = useState('main'); // Can be 'main' or 'amendment'
+
+  
+  // Fetch steps
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/water-process`)
-      .then(res => {
+    axios
+      .get(`${API_BASE_URL}/airport-process`)
+      .then((res) => {
         setSteps(res.data);
         if (res.data.length > 0) setActiveStep(0);
       })
-      .catch(err => console.error('Error fetching processes', err));
+      .catch((err) => console.error("Error fetching processes", err));
   }, []);
 
+  // Fetch plants
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/water-plants`)
-      .then(res => setPlants(res.data))
-      .catch(err => console.error('Error fetching plants', err));
+    axios
+      .get(`${API_BASE_URL}/airport-plants`)
+      .then((res) => setPlants(res.data))
+      .catch((err) => console.error("Error fetching plants", err));
   }, []);
 
+  // Set the correct date label based on the next step
   useEffect(() => {
-    if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
-      const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
-      setNextSteps(nextStepName);
-
-      if (nextStepName) {
-        axios
-          .get(
-            `${API_BASE_URL}/water-step-details/${encodeURIComponent(
-              selectedPlant
-            )}/${encodeURIComponent(nextStepName)}`
-          )
-          .then((res) => {
-            setNextStepDetails(res.data);
-            console.log("nextStepDetails:", res.data);
-          })
-          .catch((err) =>
-            console.error("Error fetching next step details:", err)
-          );
+    if (immediateNextStep && immediateNextStep.PROCESS) {
+      const processName = immediateNextStep.PROCESS;
+      switch (processName) {
+        case "Submit Application": setProcessingdt("Application"); break;
+        case "Inspection by Consultant":
+        case "Inspection by Authority": setProcessingdt("Inspection"); break;
+        case "NOC Received or Not": setProcessingdt("NOC Received"); break;
+        case "Appeal Filled": setProcessingdt("Appeal"); break;
+        case "NOC for Appeal Status": setProcessingdt("NOC for Appeal"); break;
+        default: setProcessingdt("Process"); break;
       }
+    } else {
+      setProcessingdt("Application");
     }
-  }, [selectedPlant, immediateNextStepIndex, steps]);
+  }, [immediateNextStep]);
+
+  
 
   useEffect(() => {
-    console.log(nextStepDetails, "deeeeeeeeeeeeeee");
-    if (nextStepDetails) {
-      const details = nextStepDetails;
-      console.log(details, "detailsssssssssssssss");
+  // This will run after the component re-renders with the new storeData
+  console.log('storeData has been updated:', storeData);
+}, [storeData]);
 
-      // Only set form data without document fields
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        applyDate: details?.APPLY_DT || "",
-        comments: details?.COMMENTS || "",
-        Flats: details?.NO_OF_FLATS || "",
+  
+  useEffect(() => {
+    if (immediateNextStep && immediateNextStep.PROCESS) {
+      // ... your switch statement logic ...
+    } else {
+      setProcessingdt("Application");
+    }
+  }, [immediateNextStep]);
+
+// ✅ PASTE THE NEW CONSOLIDATED HOOK HERE ✅
+useEffect(() => {
+  // 1. Reset all states at the beginning
+  setAmendmentStatus(null);
+  setIsAmendmentActive(false);
+  setFormData((prev) => ({ 
+    plant: prev.plant, 
+    applyDate: "", 
+    comments: "",
+    amendComments: "",
+    amendDate: "",
+    totalPrjArea: "" ,
+    totalProjectArea: "",
+    noOfNocs: "",
+    noofNOCSModify: ""
+  }));
+  setNextStepDetails(null);
+  setImmediateNextStep(null);
+  setImmediateNextStepIndex(-1);
+  setStepData([]);
+  setStoreData([]);
+
+  // 2. Guard clause: only proceed if a plant and steps are selected/loaded
+  if (selectedPlant && steps.length > 0) {
+    const processName = "Airport Authority";
+    const airportDataUrl = `${API_BASE_URL}/airport-data?plant=${selectedPlant}`;
+    const amendmentCheckUrl = `${API_BASE_URL}/amendments/${selectedPlant}/${encodeURIComponent(processName)}`;
+
+    // Use Promise.all to fetch main data and amendment status concurrently
+    Promise.all([
+      axios.get(airportDataUrl),
+      axios.get(amendmentCheckUrl)
+    ])
+    .then(([airportRes, amendmentRes]) => {
+      const fetchedData = airportRes.data;
+      const amendmentRecord = amendmentRes.data?.data?.[0] || null;
+      
+      // Update data states
+      setStepData(fetchedData);
+      setStoreData(fetchedData);
+
+      // 3. Determine the correct "next step" USING the data we just fetched
+      let nextStep = null;
+      let nextStepIndex = -1;
+      const isAmendActive = amendmentRecord && amendmentRecord.STATUS === "created";
+
+      if (isAmendActive) {
+        setIsAmendmentActive(true);
+        setAmendmentStatus(amendmentRecord);
+        const completed = fetchedData.filter(i => i.AMEND_STATUS === 'YES').map(i => i.PROCESS);
+        nextStep = steps.find(s => !completed.includes(s.PROCESS));
+      } else {
+        setIsAmendmentActive(false);
+        setAmendmentStatus(null);
+        if (fetchedData.length > 0) {
+          const completed = fetchedData.filter(i => i.UPDATED === 'YES').map(i => i.PROCESS);
+          nextStep = steps.find(s => !completed.includes(s.PROCESS));
+        } else {
+          nextStep = steps[0]; // Default to the first step if no data exists
+        }
+      }
+
+      if (nextStep) {
+        nextStepIndex = steps.indexOf(nextStep);
+        setImmediateNextStep(nextStep);
+        setImmediateNextStepIndex(nextStepIndex);
+
+        // 4. NOW, fetch the details for the ONE, CORRECT next step
+        const nextStepName = nextStep.PROCESS;
+        const detailsUrl = `${API_BASE_URL}/airport-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(nextStepName)}`;
+        console.log("Fetching details for the correct next step:", detailsUrl);
+        
+        return axios.get(detailsUrl); // Return this promise for the next .then()
+      }
+      
+      return Promise.resolve(null); // Return a resolved promise if there's no next step
+
+    })
+    .then((detailsRes) => {
+      // 5. Set the details from the second API call
+      if (detailsRes) {
+        console.log("API Response for Step Details:", detailsRes.data);
+        setNextStepDetails(detailsRes.data);
+      }
+    })
+    .catch((err) => {
+      console.error("Error during data fetching process:", err.message);
+      // Reset states on error to be safe
+      setAmendmentStatus(null);
+      setIsAmendmentActive(false);
+    });
+  }
+}, [selectedPlant, steps]);
+
+
+// ... the rest of your useEffect hooks, like the one that populates the form, should remain ...
+  useEffect(() => {
+    // This hook is still needed to populate the form once nextStepDetails is ready
+    if (nextStepDetails && nextStepDetails.length > 0) {
+      // ...
+    } else {
+      // ...
+    }
+}, [nextStepDetails]);
+
+
+  // Populate form with fetched step details
+  useEffect(() => {
+    if (nextStepDetails && nextStepDetails.length > 0) {
+      const details = nextStepDetails[0];
+      setFormData((prev) => ({ ...prev, applyDate: details.APPLY_DT, 
+        comments: details.COMMENTS || "" , 
+         // Populate the new amendment fields
+      amendComments: details.AMEND_COMMENTS || "",
+      amendDate: details.AMEND_DATE || "" ,
+      totalPrjArea: details.AMEND_TOTAL_PRJ_AREA || "" ,
+      totalProjectArea: details.TOTAL_PRJ_AREA || "",
+        noOfNocs: details.AMEND_NO_OF_NOCS || "" ,
+        noofNOCSModify: details.NO_OF_NOCS || "",
       }));
-
-      // Clear document arrays for new process
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-
       setFirstStep(details);
     } else {
-      // Clear all data for new process
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        applyDate: "",
-        comments: "",
-        Flats: "",
+      setFormData((prev) => ({ ...prev, applyDate: "", comments: "", 
+         amendComments: "",
+      amendDate: "",
+      totalPrjArea: "",
+      totalProjectArea: "",
+        noOfNocs: "" ,
+        noofNOCSModify: ""
       }));
-
-      // Clear document arrays
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-
       setFirstStep(null);
     }
   }, [nextStepDetails]);
 
-  useEffect(() => {
-    if (selectedPlant) {
-      axios.get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
-        .then(res => {
-          setStepData(res.data);
-          setStoreData(res.data);
-          if (res.data.length > 0) {
-            console.log(res.data, "plantttttttttttttttttttttttttttttttttt");
-
-            setFormData(prev => ({
-              ...prev,
-              loc: selectedPlant,
-              applyDate: "",
-              comments: "",
-              Flats: "",
-            }));
-
-            // Clear document arrays when plant changes
-            setLinkDocs([]);
-            setLandDocs([]);
-            setOthDocs([]);
-
-            findActiveStep(res.data);
-          }
-        })
-        .catch(err => console.error('Error fetching step data', err));
-    }
-  }, [selectedPlant]);
-
-  // Clear documents when active step changes
-  useEffect(() => {
-    setLinkDocs([]);
-    setLandDocs([]);
-    setOthDocs([]);
-  }, [activeStep]);
-
-  const findActiveStep = (data) => {
-    console.log('hhhhhhiiiiiiiiiiiiiiiiiiiiii activeeeeeeeeeeeeeeeeeeeeeeee', data);
-    for (let i = 0; i < data.length; i++) {
-      if (data[i].UPDATED !== 'YES') {
-        setActiveStep(i);
-        return;
-      }
-    }
-    console.log(data, "actriverrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
-    setActiveProcess(data.PROCESS);
-  };
-
-  useEffect(() => {
-    if (steps.length > 0 && storeData.length > 0) {
-      const completedProcesses = storeData
-        .filter((item) => item.UPDATED === "YES")
-        .map((item) => item.PROCESS);
-
-      console.log(nextStepDetails, "complete it!!!!!!!!!!!!!!");
-
-      const nextStep = steps.find(
-        (step) => !completedProcesses.includes(step.PROCESS)
-      );
-      console.log(nextStep, "nextone!!!!!!!!!!!!!!!!!!!", steps);
-
-      if (nextStep) {
-        setImmediateNextStep(nextStep);
-        setImmediateNextStepIndex(steps.indexOf(nextStep));
-        console.log("Immediate Next Step from steps[]:", nextStep);
-
-        // Clear documents when switching to next step
-        setLinkDocs([]);
-        setLandDocs([]);
-        setOthDocs([]);
-      } else {
-        setImmediateNextStep(null);
-      }
-    }
-  }, [steps, storeData]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (name === 'loc') {
-      setSelectedPlant(value);
-    }
+    if (name === "plant") setSelectedPlant(value);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setSelectedFiles(files);
-  };
-
-  const handleSubmitClick = () => {
-    const newErrors = {};
-    if (!formData.loc) newErrors.loc = "Plant selection is required";
-    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
-    if (!formData.Flats) newErrors.Flats = "Number of flats is required";
-    if (linkDocs.length + landDocs.length + othDocs.length === 0) {
-      newErrors.documents = "Please upload at least one document";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast.error("Please fix the validation errors");
+  // ======================================================================== //
+  // =================== MODIFIED LOGIC IS IN THIS FUNCTION ================= //
+  // ======================================================================== //
+// In AirportModifyTable.js - This function receives the data and sends it
+const handleAmendmentUpdate = async (dataFromPanel) => {
+    if (!selectedPlant || !immediateNextStep) {
+      Swal.fire("Error", "No plant or active step selected.", "error");
       return;
     }
 
-    setErrors({});
-    setConfirmOpen(true);
-  };
+    // NEW: Log the raw data object received from the AmendmentPanel
+    console.log("Data received from AmendmentPanel:", dataFromPanel);
 
-  const handleConfirmSubmit = async () => {
-    setIsSubmitting(true);
-    
     const payload = new FormData();
-    payload.append("loc", formData.loc);
-    payload.append("applyDate", formData.applyDate);
+    // Data from parent state
+    payload.append("loc", selectedPlant);
     payload.append("process", immediateNextStep.PROCESS);
-    payload.append("noOfFlats", formData.Flats);
-    payload.append("comments", formData.comments || "");
 
-    linkDocs.forEach(f => payload.append("Plan_Doc[]", f));
-    landDocs.forEach(f => payload.append("Title_Doc[]", f));
-    othDocs.forEach(f => payload.append("Oth_Doc[]", f));
+    // Data from the child panel's state
+    payload.append("amendmentDate", dataFromPanel.amendmentDate);
+    payload.append("totalPrjArea", dataFromPanel.totalPrjArea);
+    payload.append("noOfNocs", dataFromPanel.noOfNocs);
+    payload.append("reason", dataFromPanel.reason); // <-- This is your amend_comments
+
+    // Appends any uploaded amendment files
+    amendLinkDocs.forEach((file) => payload.append("link_docs[]", file));
+    amendLandDocs.forEach((file) => payload.append("land_docs[]", file));
+    amendOthDocs.forEach((file) => payload.append("oth_docs[]", file));
+
+
+    // NEW: Log the final FormData payload before sending
+    console.log("--- Submitting Amendment Payload ---");
+    for (const [key, value] of payload.entries()) {
+      // If the value is a File, it will show the File object. Otherwise, it shows the string value.
+      console.log(`${key}:`, value);
+    }
+    console.log("------------------------------------");
+
+
+    const apiUrl = `${API_BASE_URL}/airport-amendment-submit`;
+    try {
+      // Makes the API call
+      await axios.post(apiUrl, payload, { headers: { "Content-Type": "multipart/form-data" } });
+      
+      await Swal.fire({ icon: "success", title: "Amendment Step Submitted!", showConfirmButton: false, timer: 2000 });
+      
+      // Clear amendment file states after successful submission
+      setAmendLinkDocs([]);
+      setAmendLandDocs([]);
+      setAmendOthDocs([]);
+
+      // ✅ VERY IMPORTANT: Refreshes the data from the server
+      const res = await axios.get(`${API_BASE_URL}/airport-data?plant=${selectedPlant}`);
+      setStoreData(res.data); // This will trigger your useEffect to find the next step
+
+    } catch (error) {
+      console.error("Amendment submission failed:", error);
+      Swal.fire("Submission Failed", "Please check the console for details.", "error");
+    }
+  };
+  const handleSubmit = async () => {
+    if (!formData.plant || !formData.applyDate) {
+      Swal.fire("Validation Error", "Please select a plant and provide a date.", "error");
+      return;
+    }
+
+    console.log(formData.totalPrjArea,"hiiiiiiiiiiiiiiiiiiiiii",nextStepDetails);
+    const payload = new FormData();
+    payload.append("loc", formData.plant);
+    payload.append("applyDate", formData.applyDate);
+    payload.append("comments", formData.comments || "");
+    payload.append("process", immediateNextStep.PROCESS);
+
+    payload.append("totalPrjArea", formData.totalProjectArea);
+
+      payload.append('noOfNocs', formData.noofNOCSModify);
+    
+    linkDocs.forEach((file) => payload.append("link_docs[]", file));
+    landDocs.forEach((file) => payload.append("land_docs[]", file));
+    othDocs.forEach((file) => payload.append("oth_docs[]", file));
+
+    const existingRecord = storeData.find(
+      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() && item.LOC?.trim() === formData.plant?.trim()
+    );
+    const apiUrl = existingRecord ? `${API_BASE_URL}/airport-modify` : `${API_BASE_URL}/airport-submit`;
 
     try {
-      const existingRecord = storeData.find(
-        item => item.PROCESS?.trim().toLowerCase() === immediateNextStep.PROCESS?.trim().toLowerCase() &&
-        item.LOC?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
-      );
-
-      const apiUrl = existingRecord
-        ? `${API_BASE_URL}/water-modify`
-        : `${API_BASE_URL}/water-submit`;
-
-      await axios.post(apiUrl, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      // Show success in dialog instead of alert
-      setDialogConfig({
-        title: 'Success',
-        message: 'Form submitted successfully!',
-        confirmText: 'OK',
-        showCancel: false,
-        open: true
-      });
-      
-      // Clear documents after successful submission
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-
-      // Refresh step data
-      if (selectedPlant) {
-        const res = await axios.get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`);
-        setStepData(res.data);
-        setStoreData(res.data);
-      }
-    } catch (err) {
-      console.error("Submission failed:", err);
-      setDialogConfig({
-        title: 'Error',
-        message: 'Submission failed. Please try again.',
-        confirmText: 'OK',
-        showCancel: false,
-        open: true
-      });
-    } finally {
-      setIsSubmitting(false);
-      setConfirmOpen(false);
+      await axios.post(apiUrl, payload, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await axios.get(`${API_BASE_URL}/airport-data?plant=${formData.plant}`);
+      setStoreData(res.data);
+      Swal.fire(existingRecord ? "Updated!" : "Submitted!", "Your data has been saved.", "success");
+      setLinkDocs([]); setLandDocs([]); setOthDocs([]);
+    } catch (error) {
+      console.error("Submission failed:", error);
+      Swal.fire("Error", "Submission failed. Please check the console.", "error");
     }
   };
 
-  const isReadOnly = stepData[activeStep]?.UPDATED === "YES";
-
-  const renderDocumentList = () => {
-    // Only show documents for the current immediate next step
-    if (!selectedPlant || !immediateNextStep || immediateNextStepIndex === -1) {
-      return (
-        <div className="border rounded p-3 bg-light" style={{ maxHeight: '320px', overflowY: 'auto', scrollbarWidth: 'thin' }}>
-          <strong className="d-block mb-3 text-dark">Previously Uploaded Files:</strong>
-          <p className="text-muted mb-0">No files uploaded yet</p>
-        </div>
-      );
-    }
-
-    const currentStepData = storeData.find(
-      item => item.PROCESS === immediateNextStep.PROCESS && item.LOC === selectedPlant
-    );
-
-    if (!currentStepData) {
-      return (
-        <div className="border rounded p-3 bg-light" style={{ maxHeight: '320px', overflowY: 'auto', scrollbarWidth: 'thin' }}>
-          <strong className="d-block mb-3 text-dark">Previously Uploaded Files:</strong>
-          <p className="text-muted mb-0">No files uploaded yet</p>
-        </div>
-      );
-    }
-
-    const linkDocs = JSON.parse(currentStepData.PLAN_DOC_NAME || '[]');
-    const linkPaths = JSON.parse(currentStepData.PLAN_DOC_PATH || '[]');
-    const landDocs = JSON.parse(currentStepData.TITLE_DOC_NAME || '[]');
-    const landPaths = JSON.parse(currentStepData.TITLE_DOC_PATH || '[]');
-    const othDocs = JSON.parse(currentStepData.OTH_DOC_NAME || '[]');
-    const othPaths = JSON.parse(currentStepData.OTH_DOC_PATH || '[]');
-
-    const renderDocList = (title, names, paths, onDelete) =>
-      names.length > 0 && (
-        <div className="mb-3">
-          <h6 className="text-primary">{title}</h6>
-          <ul className="list-unstyled">
-            {names.map((name, idx) => (
-              <li key={idx} className="mb-1">
-                <a
-                  href={`${API_BASE_URL}/storage/${paths[idx]}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-decoration-none"
-                  style={{ fontSize: '0.9rem' }}
-                >
-                  📄 {name}
-                </a>
-                <FaTrashAlt
-                  style={{
-                    color: 'red',
-                    cursor: 'pointer',
-                    marginLeft: '10px'
-                  }}
-                  onClick={() => onDelete(title, idx)}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-
-    const handleDelete = (type, index) => {
-      console.log(`Delete ${type} at index ${index}`);
-    };
-
-    return (
-      <div
-        className="border rounded p-3 bg-light"
-        style={{
-          maxHeight: '320px',
-          overflowY: 'auto',
-          scrollbarWidth: 'thin'
-        }}
-      >
-        <strong className="d-block mb-3 text-dark">Previously Uploaded Files:</strong>
-        {renderDocList('Plan Documents', linkDocs, linkPaths, handleDelete)}
-        {renderDocList('Title Documents', landDocs, landPaths, handleDelete)}
-        {renderDocList('Other Documents', othDocs, othPaths, handleDelete)}
-        {linkDocs.length === 0 && landDocs.length === 0 && othDocs.length === 0 && (
-          <p className="text-muted mb-0">No files uploaded yet</p>
-        )}
-      </div>
-    );
+  const openUploadModal = (context) => {
+    setModalContext(context); // Set 'main' or 'amendment'
+    setShowUploadModal(true);
   };
+
+  const totalProjectArea = stepData?.[0]?.TOTAL_PRJ_AREA;
+  const noofNOCS = stepData?.[0]?.NO_OF_NOCS;
+
+  const memoizedStepAmendData = useMemo(() => ({
+    date: formData.amendDate,
+    comments: formData.amendComments,
+    totalPrjArea: formData.totalPrjArea,
+    noOfNocs: formData.noOfNocs // <-- ADD THIS LINE
+}), [
+    formData.amendDate, 
+    formData.amendComments, 
+    formData.totalPrjArea, 
+    formData.noOfNocs // <-- ADD THE DEPENDENCY
+]);
 
   return (
-    <div className="rounded shadow-sm d-flex flex-column overflow-hidden">
-      <Container fluid className="d-flex flex-column" style={{ overflowX: 'hidden' }}>
-        <div
-          className="bg-white rounded shadow-sm p-2 mb-2"
-          style={{ flexShrink: 0 }}
-        >
-          <div className="d-flex justify-content-between align-items-center position-relative">
-            <div
-              style={{
-                position: 'absolute',
-                top: '20px',
-                left: '5%',
-                right: '5%',
-                height: '2px',
-                backgroundColor: '#dee2e6',
-                zIndex: 0,
-              }}
-            />
-
-            {steps.map((step, idx) => {
-              const completed = stepData[idx]?.UPDATED === 'YES';
-              const isCurrentStep = idx === activeStep;
-              const isNextStep = idx === immediateNextStepIndex;
-
-              let backgroundColor = '#dee2e6';
-              let borderColor = '#dee2e6';
-              let textColor = '#6c757d';
-
-              if (completed) {
-                backgroundColor = '#28a745';
-                borderColor = '#28a745';
-                textColor = 'white';
-              } else if (isNextStep) {
-                backgroundColor = '#ffc107';
-                borderColor = '#ffc107';
-                textColor = 'white';
-              }
-
-              return (
-                <div
-                  key={idx}
-                  className="text-center flex-fill position-relative"
-                  style={{ cursor: completed || isCurrentStep || isNextStep ? 'pointer' : 'not-allowed', zIndex: 1 }}
-                  onClick={() => (completed || isCurrentStep || isNextStep) && setActiveStep(idx)}
-                  title={step.PROCESS}
-                >
-                  <div
-                    className="mx-auto mb-2"
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: '50%',
-                      backgroundColor: backgroundColor,
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      color: textColor,
-                      fontWeight: 'bold',
-                      border: `3px solid ${borderColor}`,
-                      transition: 'all 0.3s ease',
-                      boxShadow: isCurrentStep ? '0 0 0 3px rgba(0,123,255,0.25)' :
-                        isNextStep ? '0 0 0 3px rgba(255,193,7,0.25)' : 'none'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (completed || isCurrentStep || isNextStep) {
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow =
-                        isCurrentStep ? '0 0 0 3px rgba(0,123,255,0.25)' :
-                          isNextStep ? '0 0 0 3px rgba(255,193,7,0.25)' : 'none';
-                    }}
-                  >
-                    {completed ? <CheckCircle size={20} /> : idx + 1}
-                  </div>
-                  <small
-                    className={`${isCurrentStep ? 'fw-bold text-secondary' :
-                      isNextStep ? 'fw-bold text-warning' :
-                        completed ? 'text-success' : 'text-muted'}`}
-                    style={{
-                      display: 'block',
-                      fontSize: '0.75rem',
-                      lineHeight: '1.2'
-                    }}
-                  >
-                    {step.PROCESS.length > 12 ? `${step.PROCESS.slice(0, 12)}...` : step.PROCESS}
-                  </small>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex-grow-1 d-flex flex-column">
-          <div className="row g-1 mx-0">
-            <Col lg={6} className="d-flex flex-column">
-              <div
-                className="bg-white rounded shadow-sm p-2 d-flex flex-column"
-                style={{ overflow: 'hidden' }}
-              >
-                <h5 className="mb-2 border-bottom pb-2">
-                  <span className="text-secondary">Process Details</span>
-                  {nextSteps && (
-                    <span style={{ color: '#ffc107' }}> --- {nextSteps}</span>
-                  )}
-                </h5>
-
-                <div
-                  className="flex-grow-1"
-                  style={{
-                    overflowY: 'auto',
-                    scrollbarWidth: 'thin'
-                  }}
-                >
-                  <Form>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="px-2">
-                          <Form.Label className="fw-semibold">Plant</Form.Label>
-                          <Form.Select
-                            name="loc"
-                            value={formData.loc || ''}
-                            onChange={handleChange}
-                            isInvalid={!!errors.loc}
-                          >
-                            <option value="">Select Plant</option>
-                            {plants.map((p, idx) => (
-                              <option key={idx} value={p.loc}>{p.loc}</option>
-                            ))}
-                          </Form.Select>
-                          <Form.Control.Feedback type="invalid">
-                            {errors.loc}
-                          </Form.Control.Feedback>
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="">
-                          <Form.Label className="fw-semibold">Apply Date</Form.Label>
-                          <Form.Control
-                            type="date"
-                            name="applyDate"
-                            value={formData.applyDate || ''}
-                            onChange={handleChange}
-                            isInvalid={!!errors.applyDate}
-                          />
-                          <Form.Control.Feedback type="invalid">
-                            {errors.applyDate}
-                          </Form.Control.Feedback>
-                        </Form.Group>
-                      </Col>
-                    </Row>
-
-                    <Form.Group className='px-2'>
-                      <Form.Label className="fw-semibold">Upload Documents</Form.Label>
-                      <button type="button" className="btn form-control" onClick={() => setShowModal(true)}>
-                        Upload Documents
-                      </button>
-                      {errors.documents && (
-                        <div className="text-danger small">{errors.documents}</div>
-                      )}
-                    </Form.Group>
-
-                    <Form.Group className="mb-2 px-2">
-                      <Form.Label className="fw-semibold">Number of Flats</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="Flats"
-                        value={formData.Flats || ''}
-                        onChange={handleChange}
-                        placeholder="Enter total number of flats"
-                        isInvalid={!!errors.Flats}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.Flats}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-
-                    <Form.Group className="mb-2">
-                      <Form.Label className="fw-semibold">Comments</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="comments"
-                        value={formData.comments || ''}
-                        onChange={handleChange}
-                        placeholder="Enter your comments here..."
-                      />
-                    </Form.Group>
-                  </Form>
-
-                  <div
-                    className="bg-white p-3 border-top"
-                    style={{
-                      position: "sticky",
-                      bottom: 0,
-                      zIndex: 10,
-                    }}
-                  >
-                    <Button
-                      variant="primary"
-                      size="md"
-                      onClick={handleSubmitClick}
-                      className="w-100 fw-semibold"
-                      disabled={isSubmitting}
+    <>
+      <Row className="align-items-stretch">
+        <Col md={3} className="d-flex">
+          <div className="border rounded p-3 bg-light flex-fill">
+            <h6 className="text-center mb-3">Process Steps</h6>
+            <Nav variant="pills" className="flex-column">
+              {steps.map((step, idx) => {
+                let variant = "secondary", clickable = false, statusIcon = "⏸️";
+                if (idx < immediateNextStepIndex) {
+                  variant = "success"; clickable = true; statusIcon = "✅";
+                } else if (idx === immediateNextStepIndex) {
+                  variant = "warning"; clickable = true; statusIcon = "⚠️";
+                }
+                return (
+                  <Nav.Item key={idx} className="mb-2">
+                    <Nav.Link
+                      eventKey={idx}
+                      disabled={!clickable}
+                      onClick={() => clickable && setActiveStep(idx)}
+                      className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+                      style={{ cursor: clickable ? "pointer" : "not-allowed" }}
                     >
-                      {isSubmitting ? "Submitting..." : "Submit"}
-                    </Button>
-                    <ReusableDialog
-                      open={confirmOpen}
-                      title="Confirm Submission"
-                      message="Are you sure you want to submit this form? This action cannot be undone."
-                      onClose={() => setConfirmOpen(false)}
-                      onConfirm={handleConfirmSubmit}
-                      confirmText="Submit"
-                      isLoading={isSubmitting}
-                    />
-                    <ReusableDialog
-                      open={dialogConfig.open}
-                      title={dialogConfig.title}
-                      message={dialogConfig.message}
-                      onClose={() => setDialogConfig({...dialogConfig, open: false})}
-                      onConfirm={() => setDialogConfig({...dialogConfig, open: false})}
-                      confirmText={dialogConfig.confirmText}
-                      showCancel={dialogConfig.showCancel}
-                    />
-                  </div>
-                </div>
-
-                <WaterDocUploadModal
-                  show={showModal}
-                  onClose={() => setShowModal(false)}
-                  linkDocs={linkDocs}
-                  setLinkDocs={setLinkDocs}
-                  landDocs={landDocs}
-                  setLandDocs={setLandDocs}
-                  othDocs={othDocs}
-                  setOthDocs={setOthDocs}
-                />
-              </div>
-            </Col>
-            <Col lg={6} className="d-flex flex-column">
-              <div
-                className="bg-white rounded shadow-sm p-4 d-flex flex-column overflow-hidden"
-                style={{ height: '100%' }}
-              >
-                <h5 className="mb-4 text-primary border-bottom pb-2">
-                  Document History
-                </h5>
-
-                <div
-                  className="flex-grow-1"
-                  style={{
-                    scrollbarWidth: 'thin'
-                  }}
-                >
-                  {renderDocumentList()}
-                </div>
-              </div>
-            </Col>
+                      {statusIcon} <span>{step.PROCESS}</span>
+                    </Nav.Link>
+                  </Nav.Item>
+                );
+              })}
+            </Nav>
           </div>
-        </div>
-      </Container>
-    </div>
+        </Col>
+
+        <Col md={6} className="d-flex flex-column">
+          <Form className="p-3 border rounded bg-light">
+            {immediateNextStep && (
+              <h4 className="mb-3 text-primary fw-bold">
+                {immediateNextStep.PROCESS}
+                {totalProjectArea && <> | Area: <span className="text-dark">{totalProjectArea}</span></>}
+                {noofNOCS && <> | NOCs: <span className="text-dark">{noofNOCS}</span></>}
+              </h4>
+            )}
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Plant</Form.Label>
+                  <Form.Select name="plant" value={formData.plant || ""} onChange={handleChange} disabled={!!amendmentStatus}>
+                    <option value="">Select Plant</option>
+                    {plants.map((p, idx) => <option key={idx} value={p.loc}>{p.loc}</option>)}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>{processingDt} Date</Form.Label>
+                  <Form.Control type="date" name="applyDate" value={formData.applyDate || ""} onChange={handleChange} disabled={!!amendmentStatus}/>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Comments</Form.Label>
+                  <Form.Control as="textarea" rows={1} name="comments" value={formData.comments || ""} onChange={handleChange} disabled={!!amendmentStatus}/>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Label>Upload Documents</Form.Label>
+                <Button variant="outline-secondary" className="form-control" onClick={() => setShowUploadModal(true)} disabled={!!amendmentStatus}>
+                  Upload Docs
+                </Button>
+              </Col>
+            </Row>
+            <div className="d-grid mt-4">
+              <Button variant="primary" size="lg" onClick={handleSubmit} disabled={!!amendmentStatus}>
+                Submit1111
+              </Button>
+            </div>
+          </Form>
+
+          {amendmentStatus && (
+              <div className="mt-4">
+                  <AmendmentPanel
+                      amendmentData={amendmentStatus}
+                      onUpdate={handleAmendmentUpdate}
+                      setAmendmentStatus={setAmendmentStatus}
+                      onUploadClick={() => openUploadModal('amendment')}
+
+                      // 👇 USE THE MEMOIZED VARIABLE HERE 👇
+                      stepAmendData={memoizedStepAmendData} 
+                  />
+              </div>
+          )}
+        </Col>
+
+        <Col md={3} className="d-flex">
+          <div className="border rounded p-3 bg-white flex-fill">
+            <PreviousUploadedDocsModal firstStep={firstStep} />
+          </div>
+        </Col>
+      </Row>
+
+      <AirportDocUploadModal
+        show={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        linkDocs={modalContext === 'main' ? linkDocs : amendLinkDocs}
+        setLinkDocs={modalContext === 'main' ? setLinkDocs : setAmendLinkDocs}
+        landDocs={modalContext === 'main' ? landDocs : amendLandDocs}
+        setLandDocs={modalContext === 'main' ? setLandDocs : setAmendLandDocs}
+        othDocs={modalContext === 'main' ? othDocs : amendOthDocs}
+        setOthDocs={modalContext === 'main' ? setOthDocs : setAmendOthDocs}
+      />
+    </>
   );
 };
 
-export default WaterModifyTable;
+export default AirportModifyTable;

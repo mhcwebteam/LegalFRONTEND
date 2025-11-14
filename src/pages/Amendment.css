@@ -1,3 +1,10 @@
 /* .amendment-plant-wrapper select {
   width: 70% !important;
 } */
+
+
+
+.table-sm td, 
+.table-sm th {
+  padding: 10px 8px !important;
+}

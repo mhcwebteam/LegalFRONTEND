@@ -33,9 +33,12 @@ const AirportDocUploadModal = ({
   setLandDocs,
   othDocs = [],
   setOthDocs,
+  comments
 }) => {
   if (!show) return null;
 
+
+  console.log(comments,"commentssssssssssssssssssss")
   const handleFilesAppend = (e, setter) => {
     const incoming = Array.from(e.target.files);
     setter(prev => [...prev, ...incoming]);

@@ -1,17 +1,47 @@
-// import React, { useEffect, useState } from 'react';
+// import React, { useContext, useEffect, useState } from 'react';
 // import axios from 'axios';
+// import { Context } from '../context/ContextData';
+// import { API_BASE_URL2 } from '../config/Config';
 
-// const PlantSelect = ({ value, onChange, required = true, className}) => {
-//   const [plants, setPlants] = useState([]);
+// const PlantSelect = ({ value, onChange, required = true, className }) => {
+//   const {  } = useContext(Context);
+
+//   console.log(totalMasterData,"tooooooooooooooooooooooooo")
+//   const [plantsData, setPlantsData] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
 
 //   useEffect(() => {
-//     axios.get("http://192.168.8.91:8084/inactive/phpapi/plant_api.php")
-//       .then(res => {
-//         setPlants(res.data)
-//         // console.log(plants);
-//   })
-//       .catch(err => console.error("Failed to fetch plant data", err));
-//   }, []);
+//     const fetchPlants = async () => {
+//       try {
+//         setLoading(true);
+//         const res = await axios.get(`API_BASE_URL2`,totalMasterData);
+        
+    
+//         if (res.data.plants) {
+//           setPlantsData(res.data.plants);
+//         } 
+
+//         else if (Array.isArray(res.data)) {
+//           setPlantsData(res.data);
+//         }
+        
+//         console.log(res.data, "API Response");
+//       } catch (err) {
+//         console.error("Failed to fetch plant data", err);
+//         setError(err.message);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchPlants();
+//   }, []); // Empty dependency array - runs only once on mount
+
+//   // Optional: Filter out plants that are already selected
+//   // const availablePlants = plantsData.filter(
+//   //   (plant) => !plants.some((sel) => sel.loc === plant.plant_name)
+//   // );
 
 //   return (
 //     <select
@@ -20,12 +50,19 @@
 //       onChange={onChange}
 //       required={required}
 //       className={className}
-//       //  style={{ border: "2px solid #0d6efd" }} 
+//       disabled={loading}
 //     >
-//       <option value="">Select Plant</option>
-//       {plants.map((plant, idx) => (
-//         <option key={idx} value={plant.PLANT_NAME}>
-//           {plant.PLANT_NAME}
+//       <option value="">
+//         {loading ? "Loading plants..." : "Select Plant"}
+//       </option>
+//       {error && (
+//         <option value="" disabled>
+//           Error loading plants
+//         </option>
+//       )}
+//       {plantsData?.map((plant, idx) => (
+//         <option key={idx} value={plant.plant_name || plant.PLANT_NAME}>
+//           {plant.plant_name || plant.PLANT_NAME}
 //         </option>
 //       ))}
 //     </select>
@@ -38,28 +75,59 @@
 import React, { useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { Context } from '../context/ContextData';
+import { API_BASE_URL2 } from '../config/Config';
 
-
-const PlantSelect = ({ value, onChange, required = true, className}) => {
-
-      const {plants} = useContext(Context);
-
+const PlantSelect = ({ 
+  value, 
+  onChange, 
+  selectedPlantCode, 
+  required = true, 
+  className,
+  disabled = false 
+}) => {
+  const { plants } = useContext(Context);
   const [plantsData, setPlantsData] = useState([]);
-
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    axios.get("http://192.168.8.91:8084/inactive/phpapi/plant_api.php")
-      .then(res => {
-        setPlantsData(res.data)
-       console.log(res.data,"tuytuyty");
-  })
-      .catch(err => console.error("Failed to fetch plant data", err));
-  }, []);
+    // Only fetch if plantCode is selected
+    if (!selectedPlantCode) {
+      setPlantsData([]);
+      return;
+    }
 
- const availablePlants = plantsData.filter(
-  (plant) => !plants.some((sel) => sel.loc === plant.PLANT_NAME)
-);
-  
+    const fetchPlants = async () => {
+
+      console.log(selectedPlantCode,"seeeeeeeeeeeeeee")
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // ✅ Pass plant code as query parameter
+             const res = await axios.get(`${API_BASE_URL2}/getDependPlant/${selectedPlantCode}`);
+        
+        console.log(res.data, "API Response for plant code:", selectedPlantCode);
+        
+        // Handle the response based on your API structure
+        if (res.data.plants) {
+          setPlantsData(res.data.plants);
+        } else if (Array.isArray(res.data)) {
+          setPlantsData(res.data);
+        }
+        
+      } catch (err) {
+        console.error("Failed to fetch plant data", err);
+        setError(err.message);
+        setPlantsData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlants();
+  }, [selectedPlantCode]); // Re-fetch when selectedPlantCode changes
+
   return (
     <select
       name="loc"
@@ -67,12 +135,25 @@ const PlantSelect = ({ value, onChange, required = true, className}) => {
       onChange={onChange}
       required={required}
       className={className}
-      //  style={{ border: "2px solid #0d6efd" }} 
+      disabled={disabled || loading || !selectedPlantCode}
+      style={{ width: "300px" , marginTop:"3px"}}
+
     >
-      <option value="">Select Plant</option>
-      {availablePlants?.map((plants, idx) => (
-        <option key={idx} value={plants.PLANT_NAME}>
-          {plants.PLANT_NAME}
+      <option value="">
+        {!selectedPlantCode 
+          ? "Select plant code first" 
+          : loading 
+          ? "Loading plants..." 
+          : "Select Plant"}
+      </option>
+      {error && (
+        <option value="" disabled>
+          Error loading plants
+        </option>
+      )}
+      {plantsData?.map((plant, idx) => (
+        <option className='' key={idx} value={plant.plant_name || plant.PLANT_NAME}>
+          {plant.plant_name || plant.PLANT_NAME}
         </option>
       ))}
     </select>

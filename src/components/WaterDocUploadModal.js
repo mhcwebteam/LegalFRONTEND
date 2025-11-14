@@ -17,7 +17,8 @@ const WaterDocUploadModal = ({
   linkLabel = "Choose file",
   showLandDocs = true,
   showOthDocs = true,
-  title = "Upload Documents" 
+  title = "Upload Documents"
+  
 }) => {
   if (!show) return null;
 const handleFilesAppend = (e, setter) => {

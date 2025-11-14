@@ -1,27 +1,47 @@
-import React, { useState, useEffect, useRef} from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-
 import axios from "axios";
-import { API_BASE_URL } from '../config/Config';
-import FormRow from '../components/FormRow';
-import FormGroup from '../components/FormGroup';
-import PlantSelect from '../components/PlantSelect';
-import ApplyDateInput from '../components/ApplyDateInput';
-import FileUpload from '../components/FileUpload';
-import FormSection from '../components/FormSection'; 
-import ProcessField from '../components/ProcessField';
-import './PollutionForm.css';
-import './Airport.css';
-import { FaLeaf } from 'react-icons/fa'; 
+import { API_BASE_URL, API_BASE_URLS } from '../config/Config';
+import { Context } from "../context/ContextData";
+import { getMasterByLoc } from "../api/Api";
+import { toast } from "react-toastify";
+import { ToastContainer } from "react-bootstrap";
+import {
+  Landmark,
+  ChevronLeft,
+  Home,
+  Store,
+  FileText,
+  FileCheck,
+  MessageSquareMore,
+} from "lucide-react";
+import { FaCalendarAlt, FaLeaf, FaUpload, FaWater } from 'react-icons/fa';
+
+// Import your components
 import AirportDocUploadModal from "../components/AirportDocUploadModal";
+import ProjectInfoHeader from "../components/ProjectInfoHeader";
+import ReusableDialog from "../components/ReusableDialog";
+import ApplyDateInput from '../components/ApplyDateInput';
+import ProcessField from '../components/ProcessField';
 
 const AirportForm = () => {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
-const [linkDocs, setLinkDocs] = useState([]);
-const [landDocs, setLandDocs] = useState([]);
-const [othDocs, setOthDocs] = useState([]);
+  const [linkDocs, setLinkDocs] = useState([]);
+  const [landDocs, setLandDocs] = useState([]);
+  const [othDocs, setOthDocs] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // ✅ Add ref to track if initial load is done
+  const hasLoadedInitialData = useRef(false);
+
+  const {
+    totalMasterData = [],
+    setHeaderData,
+    headerData 
+  } = useContext(Context);
 
   const [formData, setFormData] = useState({
     loc: '',
@@ -29,45 +49,130 @@ const [othDocs, setOthDocs] = useState([]);
     applyDate: '',
     document: null,
     totalPrjArea: '',
-    noOfNocs: ''
+    noOfNocs: '',
+    comments: ''
   });
+
 
   useEffect(() => {
     const fetchProcess = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/airport-process`); 
-        console.log('API Response:', res.data);
-        setFormData((prev) => ({
-          ...prev,
-          process: res.data[0].PROCESS,
-        }));
+        const res = await axios.get(`${API_BASE_URLS}/airport-process`);
+        if (res.data && res.data.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            process: res.data[0].PROCESS,
+          }));
+        }
       } catch (err) {
         console.error("Error fetching airport process name:", err);
       }
     };
     fetchProcess();
-  }, []);
+  }, []); // ✅ Empty dependency - run only once
 
-  const handleChange = (e) => {
-  const { name, value } = e.target;
-  setFormData((prev) => {
-    if (name === 'totalPrjArea') {
-      const nocs = Math.ceil(Number(value) / 5); // divide by 5 and get roof value
-      return {
+
+    const fetchDataForLoc = async (loc) => {
+        try {
+            const res = await getMasterByLoc(loc);
+            if (res) {
+                setHeaderData(res);
+            }
+        } catch (error) {
+            console.error("Error fetching initial loc data:", error);
+        }
+    };
+    
+      useEffect(() => {
+        if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+          const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+    
+    
+          if (defaultLoc) {
+            fetchDataForLoc(defaultLoc);
+          }
+        }
+      }, [totalMasterData]);
+  
+  const handleChange = async (e) => {
+    const { name, value } = e.target;
+
+    console.log(name, value, "Field changed");
+
+    // ✅ Handle Total Project Area change
+    if (name === "totalPrjArea") {
+      const nocs = value ? Math.ceil(Number(value) / 5) : "";
+      setFormData((prev) => ({
         ...prev,
         totalPrjArea: value,
-        noOfNocs: value ? nocs : ''
-      };
+        noOfNocs: nocs,
+      }));
+      return;
     }
-    return {
+
+    // ✅ Handle Location (Plant) change
+    if (name === "loc") {
+      setFormData((prev) => ({
+        ...prev,
+        loc: value,
+      }));
+
+      // If empty value, clear everything
+      if (!value || value.trim() === "") {
+        setHeaderData({});
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+          totalPrjArea: "",
+          noOfNocs: "",
+        }));
+        return;
+      }
+
+      try {
+        const res = await getMasterByLoc(value);
+        if (res && Object.keys(res).length > 0) {
+          setHeaderData(res);
+          
+          const projectArea = res.TOTAL_PROJECT_AREA || "";
+          const calculatedNocs = projectArea ? Math.ceil(Number(projectArea) / 5) : "";
+
+          setFormData((prev) => ({
+            ...prev,
+      
+          }));
+        } else {
+          console.warn('⚠️ No master data found for location:', value);
+          setHeaderData({});
+          setFormData((prev) => ({
+            ...prev,
+            applyDate: "",
+            totalPrjArea: "",
+            noOfNocs: "",
+          }));
+        }
+      } catch (err) {
+        console.error("❌ Error fetching master by loc:", err);
+        setHeaderData({});
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+          totalPrjArea: "",
+          noOfNocs: "",
+        }));
+      }
+      return;
+    }
+
+    // ✅ Handle all other fields
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
-    };
-  });
-};
+    }));
+  };
 
 
-   const handleProcessChange = (value) => {
+  const handleProcessChange = (value) => {
     setFormData((prev) => ({
       ...prev,
       process: value,
@@ -82,8 +187,30 @@ const [othDocs, setOthDocs] = useState([]);
     }));
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.loc) newErrors.loc = "Plant name is required";
+    if (!formData.applyDate) newErrors.applyDate = "Application date is required";
+    if (!formData.totalPrjArea) newErrors.totalPrjArea = "Total Project Area Required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSubmit = async (e) => {
+    e.preventDefault();
+    setConfirmOpen(false);
+    setIsSubmitting(true);
+
     const formPayload = new FormData();
     formPayload.append('loc', formData.loc);
     formPayload.append('process', formData.process);
@@ -91,144 +218,283 @@ const [othDocs, setOthDocs] = useState([]);
     formPayload.append('document', formData.document);
     formPayload.append('totalPrjArea', formData.totalPrjArea);
     formPayload.append('noOfNocs', formData.noOfNocs);
+    formPayload.append('comments', formData.comments);
 
+    linkDocs.forEach(f => formPayload.append('link_docs[]', f));
+    landDocs.forEach(f => formPayload.append('land_docs[]', f));
+    othDocs.forEach(f => formPayload.append('oth_docs[]', f));
 
-   linkDocs.forEach(f => formPayload.append('link_docs[]', f));
-  landDocs.forEach(f => formPayload.append('land_docs[]', f));
-  othDocs.forEach(f => formPayload.append('oth_docs[]', f));
-
-// ✅ Log all form data before sending
-  console.log('--- FormData being submitted ---');
-  for (let [key, value] of formPayload.entries()) {
-    console.log(`${key}:`, value);
-  }
     try {
-      const response = await axios.post(`${API_BASE_URL}/airport-submit`, formPayload, {
+      const response = await axios.post(`${API_BASE_URLS}/airport-submit`, formPayload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      alert('Airport form submitted successfully!');
+      console.log(response,"responded!!!!!!!!!!!!");
+      // toast.success('Airport form submitted successfully!');
+      
+  
+       navigate('/create');
+   
     } catch (err) {
       console.error('Submission error:', err.response?.data || err.message);
-      alert('Submission failed. Please try again.');
+      toast.error('Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-const handleBackClick = () => {
+
+  const handleBackClick = () => {
     navigate('/create');
   };
-  return (
-    <>
-      <form className="container1" onSubmit={handleSubmit}>
-        {/* <FormSection title="Airport Control Board Form"> */}
-        <FormSection 
-          title={
-              <div 
-              className="animated-title-wrapper"
-              >
-                
-                <div className="icon-heading-container">
-                  <FaLeaf className="pollution-icon" />
-                  <h2 className="animated-heading">
-                    {"Airport Control Board Form".split("").map((char, idx) => (
-                      <span
-                        key={idx}
-                        className="letter"
-                        style={{ animationDelay: `${idx * 0.05}s` }}
-                      >
-                        {char === " " ? "\u00A0" : char}
-                      </span>
-                    ))}
-                  </h2>
-                </div>
 
-
-                <button
-                  type="button"
-                  onClick={handleBackClick}
-                  className="back-button"
-                >
-                  ←
-                </button>
+return (
+    <div className="air-form-wrapper">
+      <form className="air-form-container" onSubmit={handleSubmit}>
+        {/* HEADER */}
+        <div className="form-header">
+          <div className="header-content">
+            <div className="title-section">
+              <div className="icon-wrapper">
+                <Landmark className="water-icon" size={32} />
               </div>
-            }
-
-          > {/*  reused */}
-          <FormRow>
-            <FormGroup label="Project Name">
-              <PlantSelect value={formData.loc} onChange={handleChange} className="form-control" />
-            </FormGroup>
-
-            <FormGroup label="Process">
-              <ProcessField 
-                  apiUrl={`${API_BASE_URL}/airport-process`} 
-                  value={formData.process} 
-                  onChange={handleProcessChange} 
-                  className="form-control" 
-              />
-            </FormGroup>
-          </FormRow>
-
-          <FormRow>
-            <FormGroup label="Apply Date">
-              <ApplyDateInput value={formData.applyDate} onChange={handleChange}
-                  className="form-control"  />
-            </FormGroup>
-
-            {/* <FormGroup label="Upload Document">
-              <FileUpload onChange={handleFileChange} />
-            </FormGroup> */}
-
-            <FormGroup label="Upload Documents">
-              <button type="button" className="btn form-control" onClick={() => setShowModal(true)}>
-                Upload Documents
-              </button>
-            </FormGroup>
-
-          </FormRow>
-
-          <FormRow>
-            <FormGroup label="Total Project Area (in acres)">
-              <input
-                type="number"
-                name="totalPrjArea"
-                value={formData.totalPrjArea}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Enter area"
-              />
-            </FormGroup>
-
-            <FormGroup label="Number of NOCs">
-              <input
-                type="number"
-                name="noOfNocs"
-                value={formData.noOfNocs}
-                readOnly
-                className="form-control"
-              />
-            </FormGroup>
-          </FormRow>
-
-          <div className="form-actions">
-            <button type="submit" className="btn-grad">
-              Submit
+              <h1 className="form-title">Air Board Form Application </h1>
+              <p className="form-subtitle">
+                Submit your Project Details management compliance application
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleBackClick}
+              className="back-button-modern"
+              title="Go back"
+            >
+              <ChevronLeft size={24} />
             </button>
           </div>
-        </FormSection>
+        </div>
+
+        {/* Project Info Header */}
+        <ProjectInfoHeader data={headerData} />
+
+        <div className="form-content">
+          {/* Project Information */}
+          <div className="form-section">
+            <div className="section-header">
+              <Home className="section-icon" size={20} />
+              <h3 style={{ color: '#0e7bdae7' }}>Project Information:</h3>
+            </div>
+
+            <div className="form-grid two-columns ">
+              <div className="form-field mt-2">
+                <label className="field-label">
+                  <Store className="label-icon" />
+                  Plant Name*
+                </label>
+                <div className="input-wrapper">
+                  <select
+                    name="loc"
+                    value={formData.loc}
+                    onChange={handleChange}
+                    className="modern-input"
+                    required
+                  >
+                    <option value="">Select Plant</option>
+                    {Array.isArray(totalMasterData) &&
+                      totalMasterData.map((ele, index) => (
+                        <option key={index} value={ele.LOC}>
+                          {ele.LOC}
+                        </option>
+                      ))}
+                  </select>
+                  {errors.loc && <p className="error-text">{errors.loc}</p>}
+                </div>
+              </div>
+
+              <div className="form-field mt-2">
+                <label className="field-label">
+                  <FaLeaf className="label-icon" /> Process Type
+                </label>
+                <div className="input-wrapper">
+                  <ProcessField
+                    apiUrl={`${API_BASE_URL}/airport-process`}
+                    value={formData.process}
+                    onChange={handleProcessChange}
+                    className="form-control"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Application Details */}
+          <div className="form-section">
+            <div className="section-header">
+              <FileText className="section-icon" size={20} />
+              <h3 style={{ color: '#0e7bdae7' }}>Application Details:</h3>
+            </div>
+
+            <div className="form-grid two-columns">
+              <div className="form-field mt-2">
+                <label className="field-label">
+                  <FaCalendarAlt className="label-icon" /> Application Date*
+                </label>
+                <div className="input-wrapper">
+                  <ApplyDateInput
+                    value={formData.applyDate}
+                    onChange={handleChange}
+                    className="modern-input"
+                  />
+                  {errors.applyDate && <p className="error-text">{errors.applyDate}</p>}
+                </div>
+              </div>
+
+              <div className="air-form-field mt-2">
+                <label className="air-field-label">
+                  <FaUpload className="air-label-icon" /> Upload Documents
+                </label>
+                <div className="air-upload-container mt-2">
+                  <button
+                    type="button"
+                    className="air-upload-button"
+                    onClick={() => setShowModal(true)}
+                  >
+                    <FaUpload className="air-upload-icon" /> Upload Documents
+                    <span className="air-upload-count">
+                      {(linkDocs.length + landDocs.length + othDocs.length) > 0 &&
+                        `(${linkDocs.length + landDocs.length + othDocs.length} files)`}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Project Requirement */}
+          <div className="form-section">
+            <div className="section-header">
+              <FileCheck className="section-icon" size={20} />
+              <h3 style={{ color: '#0e7bdae7' }}>Project Requirement:</h3>
+            </div>
+
+            <div className="form-grid two-columns">
+            <div className="form-field mt-2">
+  <label className="field-label">
+    <MessageSquareMore className="label-icon" /> Total Project Area (in acres)
+  </label>
+  <div className="input-wrapper">
+    <input
+      type="number"
+      name="totalPrjArea"
+      value={formData.totalPrjArea}
+      onChange={handleChange}
+      className="form-control"
+      placeholder="Enter area"
+      min="0"
+      step="any"
+    />
+    {errors.totalPrjArea && (
+      <p className="error-text">{errors.totalPrjArea}</p>
+    )}
+  </div>
+</div>
+
+
+<div className="form-field mt-2">
+  <label className="field-label">
+    <MessageSquareMore className="label-icon" /> Number of NOCs
+  </label>
+  <div className="input-wrapper">
+    <input
+      type="number"
+      name="noOfNocs"
+      className="form-control"
+      value={formData.noOfNocs}
+      readOnly
+    />
+  </div>
+</div>
+
+
+
+
+
+            </div>
+
+
+            <div style={{ display: 'flex', alignItems: 'end', height: '100%', paddingLeft: '50px', justifyContent: 'flex-end' }}>
+              <button
+                type="submit"
+                className={`submit-button ${isSubmitting ? "submitting" : ""}`}
+                disabled={isSubmitting}
+                style={{ width: 'auto', padding: '12px 30px' }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="spinner"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <FaWater className="submit-icon" /> Submit
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
+
+
+          <div className="form-field mt-2">
+            <label className="fire-field-label mt-3">
+              <MessageSquareMore className="label-icon" /> Comments
+            </label>
+            <div className="input-wrapper">
+              <textarea
+                name="comments"
+                value={formData.comments}
+                onChange={handleChange}
+                className="modern-input"
+                placeholder="Enter your comments"
+                rows="2"
+              />
+            </div>
+          </div>
+
+        </div>
       </form>
-
       <AirportDocUploadModal
-  show={showModal}
-  onClose={() => setShowModal(false)}
-  linkDocs={linkDocs}
-  setLinkDocs={setLinkDocs}
-  landDocs={landDocs}
-  setLandDocs={setLandDocs}
-  othDocs={othDocs}
-  setOthDocs={setOthDocs}
-/>
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        linkDocs={linkDocs}
+        setLinkDocs={setLinkDocs}
+        landDocs={landDocs}
+        setLandDocs={setLandDocs}
+        othDocs={othDocs}
+        setOthDocs={setOthDocs}
+      />
+      <ReusableDialog
+        open={confirmOpen}
+        title="Confirm Submission"
+        message="Are you sure you want to submit this application?"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmSubmit}
+        confirmText="Submit"
+        cancelText="Cancel"
+        isLoading={isSubmitting}
+      />
 
-    </>
-
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+    </div>
   );
 };
 

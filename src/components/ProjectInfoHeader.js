@@ -23,10 +23,10 @@ const ProjectInfoHeader = ({ data }) => {
   const infoItems = [
     { icon: <MapPin size={16} />, label: 'Location', value: headerData?.LOC || '—', color: '#3b82f6' },
     { icon: <Building2 size={16} />, label: 'Project Name', value: headerData?.PROJECT_NAME || '—', color: '#10b981' },
-    { icon: <Building2 size={16} />, label: 'Application Date', value: formatDate(headerData?.APPLICATION_DATE), color: '#10b981' },
+    { icon: <Building2 size={16} />, label: 'Creation Date', value: formatDate(headerData?.APPLICATION_DATE), color: '#10b981' },
     { icon: <Home size={16} />, label: 'No. of Towers', value: headerData?.NUMBER_OF_TOWERS || '—', color: '#f59e0b' },
     { icon: <Home size={16} />, label: 'Total Project Area', value: headerData?.TOTAL_PROJECT_AREA ? `${headerData.TOTAL_PROJECT_AREA} Acres` : '—', color: '#f59e0b' },
-    { icon: <Calculator size={16} />, label: 'Project Build Area', value: headerData?.PROJECT_BUILD_AREA ? `${headerData.PROJECT_BUILD_AREA} sq ft` : '—', color: '#ef4444' },
+    { icon: <Calculator size={16} />, label: 'Project BuildUp Area', value: headerData?.PROJECT_BUILD_AREA ? `${headerData.PROJECT_BUILD_AREA} sq ft` : '—', color: '#ef4444' },
     { icon: <House size={16} />, label: 'No. of Flats', value: headerData?.NUMBER_OF_FLATS || '—', color: '#8b5cf6' },
     { icon: <Users size={16} />, label: 'Address', value: headerData?.ADDRESS || '—', color: '#8b5cf6' },
   ];

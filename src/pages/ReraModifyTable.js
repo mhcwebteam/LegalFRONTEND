@@ -1,15 +1,11 @@
-import React, { useEffect, useState, useMemo, useContext } from "react";
-import { Nav, Form, Button, Row, Col, Badge, Modal, Card } from "react-bootstrap";
+import React, { useEffect, useState, useMemo } from "react";
+import { Nav, Form, Button, Row, Col, Badge, Modal } from "react-bootstrap";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import ReraDocUploadModal from "./ReraDocUploadModal";
 import { FaFileAlt } from "react-icons/fa";
-import EmailSelectionModal from "./EmailSelectionModal";
-import { Context } from "../context/ContextData";
-import ProjectInfoHeader from "./ProjectInfoHeader";
-import { getMasterByLoc } from "../api/Api";
 
 // Define the sub-levels as a constant
 const SUB_LEVELS = ['Level 1', 'Level 2', 'Level 3', 'Level 4'];
@@ -19,7 +15,7 @@ const ReraModifyTable = () => {
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
-  // const [storeData, setStoreData] = useState([]);
+  const [storeData, setStoreData] = useState([]);
   const [formData, setFormData] = useState({ loc: "", applyDate: "", comments: "", prjName: "", address: "",fromDate:"", toDate:""  });
   const [newDocs, setNewDocs] = useState([]);
   const [immediateNextStep, setImmediateNextStep] = useState(null);
@@ -30,45 +26,6 @@ const ReraModifyTable = () => {
   const [showDemoteModal, setShowDemoteModal] = useState(false);
   const [demoteOptions, setDemoteOptions] = useState([]);
   const [levelToSubmit, setLevelToSubmit] = useState("");
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailRecipients, setEmailRecipients] = useState([]);
-  const [selectedEmails, setSelectedEmails] = useState([]);
-
-
-     const {
-       storeData,
-       setStoreData,
-       totalMasterData,
-       setHeaderData,
-       headerData,
-       setRespModifyData,
-     } = useContext(Context);
-
-
-
-        const handleEmailSubmit = () => {
-    const newErrors = {};
-    if (!formData.loc) newErrors.loc = "Plant selection is required";
-    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
-
-    // if (Object.keys(newErrors).length > 0) {
-    //   setErrors(newErrors);
-    //   return;
-    // }
-
-    // setErrors({});
-    setShowEmailModal(true);
-  };
-
-  
-  const handleEmailSelectionSubmit = async (emails) => {
-    setSelectedEmails(emails);
-    setShowEmailModal(false);
-
-    // Proceed with form submission
-    await handleConfirmSubmit(emails);
-  };
-
 
   // All useEffect hooks for data fetching are correct and unchanged.
   useEffect(() => {
@@ -91,19 +48,16 @@ const ReraModifyTable = () => {
       axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`)
         .then(res => {
           const fetchedData = res.data;
-
-        
           setStoreData(fetchedData);
           if (fetchedData && fetchedData.length > 0) {
             const firstRecord = fetchedData[0];
             const info = { prjName: firstRecord.PROJECT_NAME || "", address: firstRecord.ADDRESS || "" };
             setProjectInfo(info);
             setFormData(prev => ({ ...prev, ...info }));
-          
           }
           const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
           const nextStep = steps.find(step => !completedProcesses.includes(step.PROCESS));
- 
+
           // --- START: CORRECTED LOGIC ---
           if (nextStep) {
             // This part is for when there IS a next step
@@ -136,10 +90,7 @@ const ReraModifyTable = () => {
   useEffect(() => {
     if (nextStepDetails && typeof nextStepDetails === 'object' && Object.keys(nextStepDetails).length > 0) {
       const details = nextStepDetails;
-
-
-      setFormData((prev) => ({ ...prev, 
-        applyDate: details.APPLY_DT, 
+      setFormData((prev) => ({ ...prev, applyDate: details.APPLY_DT, 
         fromDate: details.FRM_DT || "", // Added this line
         toDate: details.TO_DT || "",     // Added this line,
         comments: details.COMMENTS || "" }));
@@ -177,44 +128,13 @@ const ReraModifyTable = () => {
     }
   }, [activeSubLevelIndex, immediateNextStepIndex]);
 
-
-  const handleChange = async (e) => {
+  // All event handlers (handleChange, handleDemoteConfirm, handleSubmit) are correct and unchanged.
+  const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'loc') {
       setSelectedPlant(value);
-
-       try {
-           const res = await getMasterByLoc(value);
-           if (res) {
-             setHeaderData(res);
-            //  setFormData((prev) => ({
-            //    ...prev,
-            //    applyDate: res.APPLICATION_DATE || '',
-            //    noOfTowers: res.NUMBER_OF_TOWERS || '',
-            //    TotalProjectArea: res.TOTAL_PROJECT_AREA || '',
-            //    ProjectBuildArea: res.PROJECT_BUILD_AREA || '',
-            //    ProjectName: res.PROJECT_NAME || '',
-            //  }));
-           } else {
-             setHeaderData(null);
-             setFormData((prev) => ({
-               ...prev,
-    
-             }));
-           }
-         } catch (err) {
-           console.error("Error fetching master by loc:", err);
-           setHeaderData(null);
-           setFormData((prev) => ({
-             ...prev,
-       
-           }));
-         }
-
-     
+      return;
     }
-
-
     if (name === 'subLevelStatus' && value === 'No') {
       if (activeSubLevelIndex === 1) {
         Swal.fire({
@@ -270,7 +190,7 @@ const ReraModifyTable = () => {
     setShowDemoteModal(false);
   };
 
-  const handleConfirmSubmit = async (emails) => {
+  const handleSubmit = async () => {
     // --- VALIDATION (No changes needed here, it's correct for the UI) ---
     if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
       Swal.fire("Validation Error", "Please provide both a 'From Date' and a 'To Date' for this step.", "error");
@@ -289,10 +209,6 @@ const ReraModifyTable = () => {
     payload.append("loc", formData.loc);
     payload.append("process", immediateNextStep.PROCESS);
     payload.append("comments", formData.comments || "");
-
-  emails.forEach((email, i) => {
-      payload.append(`emails[${i}]`, email);
-    });
 
     if (immediateNextStepIndex === 0) {
       payload.append("prjName", formData.prjName || "");
@@ -353,77 +269,25 @@ const ReraModifyTable = () => {
     }
   };
   
-  // const renderDocumentHistory = () => {
-  //   if (!nextStepDetails || typeof nextStepDetails !== 'object' || !nextStepDetails.UPLOAD_DOC) { return <p className="text-muted mb-0">No previous documents for this step.</p>; }
-  //   let documents = [];
-  //   try {
-  //       const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-  //       documents = parsedDocs.map(doc => ({ name: doc.file_name, url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, '/')}` }));
-  //   } catch (error) { console.error("Failed to parse UPLOAD_DOC JSON:", error); return <p className="text-danger mb-0">Error displaying documents.</p>; }
-  //   return documents.length > 0 ? ( <div className="mb-3"> <h6 className="text-primary">Uploaded Documents</h6> <ul className="list-unstyled"> {documents.map((doc, idx) => ( <li key={idx} className="mb-1"> <a href={doc.url} target="_blank" rel="noreferrer" className="text-decoration-none"> <FaFileAlt className="me-2" />{doc.name}</a></li>))}</ul></div>) : (<p className="text-muted mb-0">No documents were uploaded for this step.</p>);
-  // };
-
-
   const renderDocumentHistory = () => {
-  if (
-    !nextStepDetails ||
-    typeof nextStepDetails !== "object" ||
-    !nextStepDetails.UPLOAD_DOC
-  ) {
-    return <p className="text-muted mb-0">No previous documents for this step.</p>;
-  }
-
-  let documents = [];
-  try {
-    const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-    documents = parsedDocs.map((doc) => ({
-      name: doc.file_name,
-      url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-    }));
-  } catch (error) {
-    console.error("Failed to parse UPLOAD_DOC JSON:", error);
-    return <p className="text-danger mb-0">Error displaying documents.</p>;
-  }
-
-  return documents.length > 0 ? (
-    <div
-      className="mb-6"
-      style={{
-        overflowY: "auto",
-        overflowX: "hidden",
-        paddingRight: "5px",
-      }}
-    >
-      <h6 className="text-primary">Uploaded Documents</h6>
-      <ul className="list-unstyled mb-0">
-        {documents.map((doc, idx) => (
-          <li key={idx} className="mb-1">
-            <a
-              href={doc.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-decoration-none text-dark"
-              style={{ display: "flex", alignItems: "center" }}
-            >
-              <FaFileAlt className="me-2 text-secondary" />
-              <span className="text-truncate" style={{ maxWidth: "200px" }}>
-                {doc.name}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  ) : (
-    <p className="text-muted mb-0">No documents were uploaded for this step.</p>
-  );
-
-};
+    if (!nextStepDetails || typeof nextStepDetails !== 'object' || !nextStepDetails.UPLOAD_DOC) { return <p className="text-muted mb-0">No previous documents for this step.</p>; }
+    let documents = [];
+    try {
+        const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
+        documents = parsedDocs.map(doc => ({ name: doc.file_name, url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, '/')}` }));
+    } catch (error) { console.error("Failed to parse UPLOAD_DOC JSON:", error); return <p className="text-danger mb-0">Error displaying documents.</p>; }
+    return documents.length > 0 ? ( <div className="mb-3"> <h6 className="text-primary">Uploaded Documents</h6> <ul className="list-unstyled"> {documents.map((doc, idx) => ( <li key={idx} className="mb-1"> <a href={doc.url} target="_blank" rel="noreferrer" className="text-decoration-none"> <FaFileAlt className="me-2" />{doc.name}</a></li>))}</ul></div>) : (<p className="text-muted mb-0">No documents were uploaded for this step.</p>);
+  };
 
 
   return (
     <>
-        <ProjectInfoHeader data={headerData} />
+      <FormHeader 
+        headerData={{
+          projectName: projectInfo.prjName,
+          address: projectInfo.address,
+        }}
+      />
       <Row className="align-items-stretch">
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-light flex-fill">
@@ -585,55 +449,18 @@ const ReraModifyTable = () => {
               </Col>
             </Row>
             <div className="d-grid mt-3">
-              <Button variant="primary" size="lg" onClick={handleEmailSubmit}>Submit</Button>
+              <Button variant="primary" size="lg" onClick={handleSubmit}>Submit</Button>
             </div>
           </Form>
         </Col>
- <Col md={3}>
-  <Card
-    className="border rounded bg-white p-3 d-flex flex-column"
-    style={{
-      height: "100%", // full height of the parent
-      minHeight: "400px", // optional: maintain decent size
-    }}
-  >
-    {/* 📂 Document History (70%) */}
-    <div
-      style={{
-        flexBasis: "70%",
-        overflowY: "auto",
-        overflowX: "hidden",
-        borderBottom: "1px solid #ddd",
-        paddingBottom: "8px",
-        marginBottom: "8px",
-      }}
-    >
-      <h5 className="mb-3 text-dark">Document History</h5>
-      {renderDocumentHistory()}
-    </div>
-
-    {/* 💬 Comments (30%) */}
-    <div
-      style={{
-        flexBasis: "30%",
-        overflowY: "auto",
-        overflowX: "hidden",
-      }}
-    >
-      <h6 className="mb-2">Comments</h6>
-      <div
-        style={{
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        }}
-      >
-        {formData.comments || "No comments available"}
-      </div>
-    </div>
-  </Card>
-</Col>
-
-
+        <Col md={3} className="d-flex">
+          <div className="border rounded p-3 bg-white flex-fill d-flex flex-column">
+            <h5 className="mb-3 text-dark border-bottom pb-2">Document History</h5>
+            <div className="flex-grow-1 overflow-auto">
+              {renderDocumentHistory()}
+            </div>
+          </div>
+        </Col>
       </Row>
 
         <Modal show={showDemoteModal} onHide={() => setShowDemoteModal(false)} centered>
@@ -662,16 +489,6 @@ const ReraModifyTable = () => {
             </Modal.Footer>
         </Modal>
 
-  <EmailSelectionModal
-        show={showEmailModal}
-        onHide={() => setShowEmailModal(false)}
-        onSubmit={handleEmailSelectionSubmit}
-        processName={immediateNextStep?.PROCESS}
-        plantName={formData.loc}
-        applyDate={formData.applyDate}
-        comments={formData.comments}
-      />
-      
       <ReraDocUploadModal
         show={showUploadModal}
         onClose={() => setShowUploadModal(false)}

@@ -1,17 +1,35 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Nav, Form, Button, Row, Col, Badge, Modal } from "react-bootstrap";
+import React, { useEffect, useState, useMemo, useContext } from "react";
+import { Nav, Form, Button, Row, Col, Badge, Modal, Card } from "react-bootstrap";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import ReraDocUploadModal from "./ReraDocUploadModal";
 import { FaFileAlt } from "react-icons/fa";
+import EmailSelectionModal from "./EmailSelectionModal";
+import ProjectInfoHeader from "./ProjectInfoHeader";
+import { Context } from "../context/ContextData";
+import { getMasterByLoc } from "../api/Api";
 
 const FireModifyTable = () => {
+  
+
+    const { 
+      storeData, 
+      setStoreData, 
+      respModifyData, 
+      setRespModifyData, 
+      setHeaderData, 
+      headerData 
+    } = useContext(Context);
+
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
-  const [storeData, setStoreData] = useState([]);
+  // const [storeData, setStoreData] = useState([]);
+   const [showEmailModal, setShowEmailModal] = useState(false);
+    const [emailRecipients, setEmailRecipients] = useState([]);
+    const [selectedEmails, setSelectedEmails] = useState([]);
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
@@ -23,6 +41,9 @@ const FireModifyTable = () => {
     feeAmount: "",
     acknowledgeName: "",
   });
+
+
+
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
   const [nextStepDetails, setNextStepDetails] = useState(null);
@@ -100,6 +121,9 @@ const FireModifyTable = () => {
     );
     console.log("OC_PROCESS_STEP_RANGE:", OC_PROCESS_STEP_RANGE); // Keep this for clarity in renderProcessColumn
     console.log("Steps array:", steps);
+
+
+
 
     if (selectedPlant && steps.length > 0) {
       axios
@@ -301,17 +325,112 @@ const FireModifyTable = () => {
     }
   }, [nextStepDetails]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "loc") {
-      setSelectedPlant(value);
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   if (name === "loc") {
+  //     setSelectedPlant(value);
+  //     return;
+  //   }
+
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
+  // };
+const handleChange = async (e) => {
+  const { name, value } = e.target;
+
+  console.log(name, value, "Field changed");
+
+  // 🏗️ When location changes
+  if (name === "loc") {
+    setSelectedPlant(value);
+    setFormData((prev) => ({
+      ...prev,
+      loc: value,
+    }));
+
+    // 🧹 If location is empty, clear dependent fields
+    if (!value || value.trim() === "") {
+      setHeaderData({});
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "",
+        totalPrjArea: "",
+        noOfNocs: "",
+      }));
       return;
     }
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    try {
+      // 🌐 Fetch master data for selected location
+      const res = await getMasterByLoc(value);
+
+      if (res && Object.keys(res).length > 0) {
+        console.log("✅ Master data fetched:", res);
+
+        // 🧩 Update header data (used by ProjectInfoHeader)
+        setHeaderData(res);
+
+        // (Optional) update form fields based on res if needed
+        setFormData((prev) => ({
+          ...prev,
+          // Example if you want to fill auto fields:
+          // totalPrjArea: res.totalArea || "",
+          // noOfNocs: res.nocCount || "",
+        }));
+      } else {
+        console.warn("⚠️ No master data found for location:", value);
+        setHeaderData({});
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+          totalPrjArea: "",
+          noOfNocs: "",
+        }));
+      }
+    } catch (err) {
+      console.error("❌ Error fetching master by loc:", err);
+      setHeaderData({});
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "",
+        totalPrjArea: "",
+        noOfNocs: "",
+      }));
+    }
+
+    return;
+  }
+
+  // 🧾 Handle other input fields normally
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+
+       const handleEmailSubmit = () => {
+    const newErrors = {};
+    if (!formData.loc) newErrors.loc = "Plant selection is required";
+    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+
+    // if (Object.keys(newErrors).length > 0) {
+    //   setErrors(newErrors);
+    //   return;
+    // }
+
+    // setErrors({});
+    setShowEmailModal(true);
   };
 
-  const handleSubmit = async () => {
+  
+  const handleEmailSelectionSubmit = async (emails) => {
+    setSelectedEmails(emails);
+    setShowEmailModal(false);
+
+    // Proceed with form submission
+    await handleConfirmSubmit(emails);
+  };
+  const handleConfirmSubmit = async (emails) => {
     const newErrors = {};
     setErrors({}); // Clear previous errors
 
@@ -363,7 +482,9 @@ const FireModifyTable = () => {
     payload.append("process", immediateNextStep.PROCESS);
     payload.append("comments", formData.comments || "");
     payload.append("applyDate", formData.applyDate || ""); // Always append if present
-
+    emails.forEach((email, i) => {
+      payload.append(`emails[${i}]`, email);
+    });
     // Project Name and Address fields are only editable for the very first step (index PROVISIONAL_NOC_STEP_INDICES[0])
     if (immediateNextStepIndex === PROVISIONAL_NOC_STEP_INDICES[0]) {
       payload.append("prjName", formData.prjName || "");
@@ -497,19 +618,20 @@ const FireModifyTable = () => {
     );
 
     return (
-      <div className="mb-3">
-        <h6 className="text-primary">General Uploaded Documents</h6>
+      <div className="d-flex flex-column" style={{ height: '100%' }}>
+        <Card style={{padding:'1px', height: '80%', overflow: 'auto' }}>
+   <h6 className="text-primary p-2">General Uploaded Documents</h6>
         {generalDocuments.length > 0 ? (
           <ul className="list-unstyled">
             {generalDocuments.map((doc, idx) => (
-              <li key={`gen-doc-${idx}`} className="mb-1">
+              <li key={`gen-doc-${idx}`} className="mb-1 p-1">
                 <a
                   href={doc.url}
                   target="_blank"
                   rel="noreferrer"
                   className="text-decoration-none"
                 >
-                  <FaFileAlt className="me-2" />
+                  {/* <FaFileAlt className="me-2" /> */}
                   {doc.name}
                 </a>
               </li>
@@ -548,6 +670,21 @@ const FireModifyTable = () => {
             )}
           </>
         )}
+        </Card>
+ <Card className="m-2 p-2" style={{ height: '25%', overflow: 'hidden' }}>
+  <h6 className="mb-2">Comments</h6>
+  <div
+    style={{
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    }}
+  >
+    {formData.comments || 'No comments available'}
+  </div>
+</Card>
+
+
       </div>
     );
   };
@@ -638,12 +775,7 @@ const FireModifyTable = () => {
 
   return (
     <>
-      <FormHeader
-        headerData={{
-          projectName: projectInfo.prjName,
-          address: projectInfo.address,
-        }}
-      />
+      <ProjectInfoHeader data={headerData} />
       <Row className="align-items-stretch">
         {/* Adjusted to md={4} for more width */}
         <Col md={4} className="d-flex">
@@ -850,16 +982,16 @@ const FireModifyTable = () => {
               </Col>
             </Row>
             <div className="d-grid mt-3">
-              <Button variant="primary" size="lg" onClick={handleSubmit}>
+              <Button variant="primary" size="lg" onClick={handleEmailSubmit}>
                 Submit
               </Button>
             </div>
           </Form>
         </Col>
         {/* md={3} remains the same, as 4 + 5 + 3 = 12 */}
-        <Col md={3} className="d-flex">
-          <div className="border rounded p-3 bg-white flex-fill d-flex flex-column">
-            <h5 className="mb-3 text-dark border-bottom pb-2">
+        <Col md={3} className="d-flex w-25">
+          <div className="border rounded p-3 bg-white flex-fill d-flex flex-columnc">
+            <h5 className="mb-3 text-dark">
               Document History
             </h5>
             <div className="flex-grow-1 overflow-auto">
@@ -869,6 +1001,15 @@ const FireModifyTable = () => {
         </Col>
       </Row>
 
+  <EmailSelectionModal
+        show={showEmailModal}
+        onHide={() => setShowEmailModal(false)}
+        onSubmit={handleEmailSelectionSubmit}
+        processName={immediateNextStep?.PROCESS}
+        plantName={formData?.loc}
+        applyDate={formData?.applyDate}
+        comments={formData?.comments}
+      />
       <ReraDocUploadModal
         show={showUploadModal}
         onClose={() => setShowUploadModal(false)}
@@ -880,8 +1021,3 @@ const FireModifyTable = () => {
 };
 
 export default FireModifyTable;
-
-
-
-
-

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -20,7 +21,17 @@ import { MenuItem, Select } from "@mui/material";
 
 const WaterForm = () => {
   const navigate = useNavigate();
-  const { waterData, setWaterData, masterGetData, totalMasterData, setHeaderData, headerData } = useContext(Context);
+  const { 
+    waterData, 
+    setWaterData, 
+    masterGetData, 
+    masterData = [],
+    totalMasterData = [], 
+    setHeaderData, 
+    headerData 
+  } = useContext(Context);
+
+  console.log("master data", masterData);
   const [showModal, setShowModal] = useState(false);
   const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
   const [amountPaidDocModal, setAmountPaidDocModal] = useState(false);
@@ -39,7 +50,7 @@ const WaterForm = () => {
     applyDate: '',
     document: null,
     noOfFlats: '',
-    Comments: '',
+    comments: '',
     KLD: '',
     amountPaid: '',
     feasibilityDoc: null,
@@ -48,43 +59,55 @@ const WaterForm = () => {
     ProjectBuildArea: '',
     TotalProjectArea: '',
     ProjectName: '',
-
+    STATUS: '',
+    REASON: '',
+    GHMC: '',
+    OldAmount: '',
+    TotalAmount: '',
+    Size_Of_Connection: '',
   });
 
 
-  useEffect(() => {
-    if (headerData && headerData.LOC) {
-      setFormData(prev => ({
-        ...prev,
-        loc: headerData?.LOC || '',
-        applyDate: headerData?.APPLICATION_DATE || '',
-        noOfTowers: headerData?.NUMBER_OF_TOWERS || '',
-        TotalProjectArea: headerData?.TOTAL_PROJECT_AREA || '',
-        ProjectBuildArea: headerData?.PROJECT_BUILD_AREA || '',
-        ProjectName: headerData?.PROJECT_NAME || '',
-        noOfFlats: headerData?.NUMBER_OF_FLATS || ''
-      }));
-    }
-  }, [headerData]);
+  // useEffect(() => {
+  //   if (headerData && headerData.LOC) {
 
-
-  useEffect(() => {
-    if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
-      const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
-      console.log(defaultLoc,"degfffffffffffff");
       
+  //     setFormData(prev => ({
+  //       ...prev,
+  //       loc: headerData?.LOC || '',
+  //       applyDate: headerData?.APPLICATION_DATE || '',
+  //       noOfTowers: headerData?.NUMBER_OF_TOWERS || '',
+  //       TotalProjectArea: headerData?.TOTAL_PROJECT_AREA || '',
+  //       ProjectBuildArea: headerData?.PROJECT_BUILD_AREA || '',
+  //       ProjectName: headerData?.PROJECT_NAME || '',
+  //       noOfFlats: headerData?.NUMBER_OF_FLATS || '',
+  //         KLD:
+  //   headerData?.NUMBER_OF_FLATS && !isNaN(headerData?.NUMBER_OF_FLATS)
+  //     ? Number(headerData.NUMBER_OF_FLATS) / 2
+  //     : ''
+  //     }));
+  //   }
+  // }, [headerData]);
 
-      fetchDataForLoc(defaultLoc);
-    }
-  }, [totalMasterData]);
+
+  // useEffect(() => {
+  //   if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+  //     const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+  
+      
+  //     if (defaultLoc) {
+  //       fetchDataForLoc(defaultLoc);
+  //     }
+  //   }
+  // }, [totalMasterData]);
 
 
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchProcess = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/water-plants`);
-      return res.data
+        return res.data
       } catch (err) {
         console.error("Error fetching water process name:", err);
       }
@@ -95,8 +118,6 @@ const WaterForm = () => {
 
 
   const fetchDataForLoc = async (loc) => {
-    
-    
     try {
       const res = await getMasterByLoc(loc);
 
@@ -138,11 +159,11 @@ const WaterForm = () => {
           setHeaderData(res);
           setFormData(prev => ({
             ...prev,
-            applyDate: res.APPLICATION_DATE || '',
-            noOfTowers: res.NUMBER_OF_TOWERS || '',
-            TotalProjectArea: res.TOTAL_PROJECT_AREA || '',
-            ProjectBuildArea: res.PROJECT_BUILD_AREA || '',
-            ProjectName: res.PROJECT_NAME || '',
+            applyDate: '',
+            noOfTowers:  '',
+            TotalProjectArea:'',
+            ProjectBuildArea:  '',
+            ProjectName:  '',
           }));
         } else {
           setHeaderData(null);
@@ -201,13 +222,13 @@ const WaterForm = () => {
     if (!formData.loc) newErrors.loc = "Project location is required.";
     if (!formData.process) newErrors.process = "Process type is required.";
 
-    if (planDocs.length + titleDocs.length + othDocs.length === 0) {
-      newErrors.documents = "Please upload at least one document.";
-    }
+    // if (planDocs.length + titleDocs.length + othDocs.length === 0) {
+    //   newErrors.documents = "Please upload at least one document.";
+    // }
 
     if (!formData.noOfFlats) newErrors.noOfFlats = "Number of flats is required.";
     if (!formData.amountPaid) newErrors.amountPaid = "Amount paid is required.";
-    if (!formData.KLD) newErrors.KLD = "kLD  is required.";
+    // if (!formData.KLD) newErrors.KLD = "kLD  is required.";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -230,8 +251,12 @@ const WaterForm = () => {
     formPayload.append('noOfTowers', formData.noOfTowers);
     formPayload.append('projectBuildArea', formData.ProjectBuildArea);
     formPayload.append('totalProjectArea', formData.TotalProjectArea);
-
-    formPayload.append('comments', formData.Comments);
+    formPayload.append("STATUS", formData.STATUS || "");
+    formPayload.append("REASON", formData.REASON || "");
+    formPayload.append("OldAmount", formData.OldAmount || "");
+    formPayload.append("TotalAmount", formData.TotalAmount || "");
+    formPayload.append("Size_Of_Connection", formData.Size_Of_Connection || "");
+    formPayload.append('comments', formData.comments);
     formPayload.append('amountPaid', formData.amountPaid);
     formPayload.append('KLD', formData.KLD);
     formPayload.append('FeasibilityDoc', formData.feasibilityDoc);
@@ -240,12 +265,12 @@ const WaterForm = () => {
     planDocs.forEach(f => formPayload.append('planDocs[]', f));
     titleDocs.forEach(f => formPayload.append('titleDocs[]', f));
     othDocs.forEach(f => formPayload.append('othDocs[]', f));
-   feasibilityDocs.forEach(f => formPayload.append('feasibilityDocs[]', f));
-  AmountPaidDocs.forEach(f => formPayload.append('amountPaidDocs[]', f));
+    feasibilityDocs.forEach(f => formPayload.append('feasibilityDocs[]', f));
+    AmountPaidDocs.forEach(f => formPayload.append('amountPaidDocs[]', f));
+    
     try {
       const data = await submitWaterForm(formPayload);
-     
-
+      
       setWaterData(data)
 
       toast.success(data.message);
@@ -255,7 +280,7 @@ const WaterForm = () => {
         applyDate: '',
         document: null,
         noOfFlats: '',
-        Comments: '',
+        comments: '',
         KLD: '',
         amountPaid: '',
         feasibilityDoc: null,
@@ -319,53 +344,19 @@ const WaterForm = () => {
                   <FaBuilding className="label-icon" /> Project Name*
                 </label>
                 <div className="input-wrapper">
-                <Select
-                labelId="loc-select-label"
-                name="loc"
-            
-                value={formData.loc}
-                onChange={handleChange}
-                label="Select Plant"
-                sx={{
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#3498db',
-                    borderWidth: '2px'
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#bdc3c7'
-                  }
-                }}
-                MenuProps={{
-                  PaperProps: {
-                    sx: {
-                      maxHeight: '300px',
-                       width: '280px',
-                      '&::-webkit-scrollbar': {
-                        width: '5px'
-                      },
-                      '&::-webkit-scrollbar-track': {
-                        background: '#f1f1f1',
-                        borderRadius: '5px'
-                      },
-                      '&::-webkit-scrollbar-thumb': {
-                        background: '#c4c4c4',
-                        borderRadius: '5px'
-                      },
-                      '&::-webkit-scrollbar-thumb:hover': {
-                        background: '#a8a8a8'
-                      }
-                    }
-                  }
-                }}
-              >
-                {totalMasterData.map((ele, index) => (
-                  <MenuItem key={index} value={ele.LOC}>
-                    {ele.LOC}
-                  </MenuItem>
-                ))}
-              </Select>
-
-
+                  <select
+                    name="loc"
+                    value={formData.loc}
+                    onChange={handleChange}
+                    className="modern-input appearance-none cursor-pointer focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Select Plant</option>
+                    {Array.isArray(totalMasterData) && totalMasterData.map((ele, index) => (
+                      <option key={index} value={ele.LOC}>
+                        {ele.LOC}
+                      </option>
+                    ))}
+                  </select>
 
                   <div className="error-container">
                     {errors.loc && <p className="error-text">{errors.loc}</p>}
@@ -430,7 +421,6 @@ const WaterForm = () => {
                     onChange={handleChange}
                     className="modern-input"
                     placeholder="Enter the Name"
-
                   />
                 </div>
               </div>
@@ -474,9 +464,7 @@ const WaterForm = () => {
                   <input
                     type="number"
                     name="TotalProjectArea"
-
                     value={formData.TotalProjectArea}
-
                     onChange={handleChange}
                     className="modern-input"
                     placeholder="Enter th TotalProjectArea"
@@ -498,7 +486,6 @@ const WaterForm = () => {
                     type="number"
                     name="noOfTowers"
                     value={formData.noOfTowers}
-
                     onChange={handleChange}
                     className="modern-input"
                     placeholder="Enter the Number of Towers"
@@ -625,7 +612,6 @@ const WaterForm = () => {
                     type="text"
                     name="ProjectBuildArea"
                     value={formData.ProjectBuildArea}
-
                     onChange={handleChange}
                     className="modern-input"
                     placeholder="Enter the ProjectBuildArea"
@@ -639,8 +625,8 @@ const WaterForm = () => {
                 </label>
                 <div className="input-wrapper">
                   <textarea
-                    name="Comments"
-                    value={formData.Comments}
+                    name="comments"
+                    value={formData.comments}
                     onChange={handleChange}
                     className="modern-input"
                     placeholder="Enter your comments"
