@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo, useContext } from "react";
-import { Nav, Form, Button, Row, Col, Badge, Modal, Card } from "react-bootstrap";
+import { Nav, Form, Button, Row, Col, Badge, Modal, Card, Alert } from "react-bootstrap";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import ReraDocUploadModal from "./ReraDocUploadModal";
-import { FaFileAlt } from "react-icons/fa";
+import { FaCheckCircle, FaFileAlt } from "react-icons/fa";
 import EmailSelectionModal from "./EmailSelectionModal";
 import { Context } from "../context/ContextData";
 import ProjectInfoHeader from "./ProjectInfoHeader";
@@ -33,7 +33,7 @@ const ReraModifyTable = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
-
+  const [allStepsCompleted, setAllStepsCompleted] = useState(false);
 
      const {
        storeData,
@@ -43,6 +43,50 @@ const ReraModifyTable = () => {
        headerData,
        setRespModifyData,
      } = useContext(Context);
+
+
+
+     
+     
+         useEffect(() => {
+           if (steps.length > 0 && storeData.length > 0) {
+             const completedProcesses = storeData
+               .filter((item) => item.UPDATED === "YES")
+               .map((item) => item.PROCESS?.trim());
+       
+             const allCompleted = steps.every(step => 
+               completedProcesses.includes(step.PROCESS?.trim())
+             );
+
+             console.log("aaaaaaaaaaaaaaaaa",storeData)
+       
+             setAllStepsCompleted(allCompleted);
+           } else {
+             setAllStepsCompleted(false);
+           }
+         }, [steps, storeData]);
+     
+         
+           const renderCompletionMessage = () => {
+             return (
+               <div className="text-center py-5">
+                 <FaCheckCircle size={64} className="text-success mb-3" />
+                 <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+                 <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+                 <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
+                   <Alert.Heading>Project Completion Status</Alert.Heading>
+                   <p>
+                     All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
+                     You can review the completed project details.
+                   </p>
+                   <hr />
+                   <p className="mb-0">
+                     The project is now ready for the next phase or final approval.
+                   </p>
+                 </Alert>
+               </div>
+             );
+           };
 
 
 
@@ -87,6 +131,7 @@ const ReraModifyTable = () => {
     setProjectInfo({ prjName: "", address: "" });
     setFormData({ loc: selectedPlant, applyDate: "", comments: "", prjName: "", address: "", fromDate: "", toDate: "" });
 
+
     if (selectedPlant && steps.length > 0) {
       axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`)
         .then(res => {
@@ -98,7 +143,7 @@ const ReraModifyTable = () => {
             const firstRecord = fetchedData[0];
             const info = { prjName: firstRecord.PROJECT_NAME || "", address: firstRecord.ADDRESS || "" };
             setProjectInfo(info);
-            setFormData(prev => ({ ...prev, ...info }));
+            setFormData(prev => ({   loc: selectedPlant, ...prev, ...info }));
           
           }
           const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
@@ -431,7 +476,13 @@ const ReraModifyTable = () => {
             <Nav variant="pills" className="flex-column">
               {steps.map((step, idx) => {
                 let variant = "secondary", clickable = false, statusIcon = "⏸️";
-                if (idx < immediateNextStepIndex) {
+
+                        const isCompleted = storeData.some(
+                  (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
+                    item.UPDATED === "YES"
+                );
+                if (isCompleted) {
+                  console.log("iosssssssssssssssss",isCompleted)
                   variant = "success"; clickable = true; statusIcon = "✅";
                 } else if (idx === immediateNextStepIndex) {
                   variant = "warning"; clickable = true; statusIcon = "⚠️";
@@ -473,7 +524,11 @@ const ReraModifyTable = () => {
         
         {/* The rest of the JSX is correct and unchanged */}
         <Col md={6} className="d-flex flex-column">
+        {allStepsCompleted  ? (
+            renderCompletionMessage()
+          ) : (
           <Form className="p-3 border rounded bg-light">
+
             {immediateNextStep && <h4 className="mb-3 text-primary fw-bold">{immediateNextStep.PROCESS}</h4>}
             <Row className="mb-3">
               <Col md={6}>
@@ -588,6 +643,7 @@ const ReraModifyTable = () => {
               <Button variant="primary" size="lg" onClick={handleEmailSubmit}>Submit</Button>
             </div>
           </Form>
+          )}
         </Col>
  <Col md={3}>
   <Card

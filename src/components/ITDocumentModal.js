@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Button, Table } from 'react-bootstrap';
 import { API_BASE_URL, API_DOC_URL, API_DOC_URL1 } from '../config/Config';
 
-const DocumentModal = ({ show, onClose, title, docs }) => {
+const ITDocumentModal = ({ show, onClose, title, docs }) => {
   return (
     <Modal show={show} onHide={onClose} centered size="lg">
       <Modal.Header closeButton>
@@ -19,7 +19,7 @@ const DocumentModal = ({ show, onClose, title, docs }) => {
               </tr>
             </thead>
             <tbody>
-              {docs?.flatMap((doc, docIndex) => {
+              {docs.flatMap((doc, docIndex) => {
                 const names = doc.DOC_NAME.split(',');
                 const paths = doc.DOC_PATH.split(',');
                 return names.map((name, i) => {
@@ -32,8 +32,7 @@ const DocumentModal = ({ show, onClose, title, docs }) => {
                         <td>{cleanedName}</td>
                         <td>
                             <a
-                        
-                            href={`${API_DOC_URL}/storage/${cleanedPath}`}
+                            href={`${API_DOC_URL}${cleanedPath}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             >
@@ -57,4 +56,4 @@ const DocumentModal = ({ show, onClose, title, docs }) => {
   );
 };
 
-export default DocumentModal;
+export default ITDocumentModal;

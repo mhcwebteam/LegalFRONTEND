@@ -2,6 +2,10 @@ export const API_BASE_URL = "http://172.20.0.9/laravel/legal/api";
 export const API_DOC_URL = "http://172.20.0.9/laravel/legal/public";
 
 
+
+
+
+
 export const API_BASE_URLS = 'http://127.0.0.1:8000/api';
 
 export const API_BASE_PDFS = 'http://127.0.0.1:8000';
@@ -16,8 +20,12 @@ export const GET_URL = "http://172.20.0.9/laravel/legal/api/it-returns-getData";
 
 
 
+
+
 //-------------
 // export const GET_PLANTS = "http://172.20.0.9/laravel/legal/api/tax-returns-selectedplant/filter?PLANT=2111%20-%20My%20Home%20Nishada%20Maintenance&APPROVAL_AUTHORITY=Airport%20Authority"
 
 export const BASE_URL = "http://172.20.0.9/laravel/legal/api/tax-returns-selectedplant/filter";
+
+// export const unique = "http://172.20.0.9/laravel/legal/api/unique-plant-gen";
 

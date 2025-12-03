@@ -1,62 +1,259 @@
+// import React, { useState, useEffect } from 'react';
+// import { Modal, Button, Form } from 'react-bootstrap';
+// import { Mail, Send } from 'lucide-react';
+// import { Box, Checkbox, Chip, FormControlLabel, Typography } from '@mui/material';
+// import Swal from 'sweetalert2';
+
+// const EmailSelectionModal = ({
+//   show,
+//   onClose,
+//   emailRecipients,
+//   selectedEmails,
+//   setSelectedEmails,
+//   onSendEmail,
+//   modalData // Pass modalData to access process, plant, etc.
+// }) => {
+  
+//   // Handler for Email Checkbox Toggle
+//   const handleEmailToggle = (email) => {
+//     setSelectedEmails(prev =>
+//       prev.includes(email)
+//         ? prev.filter(e => e !== email)
+//         : [...prev, email]
+//     );
+//   };
+
+//   // Remove Selected Email
+//   const handleRemoveEmail = (email) => {
+//     setSelectedEmails(prev => prev.filter(e => e !== email));
+//   };
+
+//   const handleSubmit = async () => {
+//     if (selectedEmails.length === 0) {
+//       Swal.fire({
+//         icon: 'warning',
+//         text: 'Please select at least one email recipient.',
+//       });
+//       return;
+//     }
+//  onClose();
+//    onSendEmail(selectedEmails);
+     
+//   };
+
+//   return (
+//     <Modal show={show} onHide={onClose} centered size="xl"  dialogClassName="modal-dialog-scrollable">
+//       <Modal.Header closeButton>
+//         <Modal.Title className="d-flex align-items-center gap-2">
+//           <Mail size={24} className="text-primary" />
+//           Select Email Recipients
+//         </Modal.Title>
+//       </Modal.Header>
+//       <Modal.Body>
+//         {/* <Box>
+//           <Typography variant="h6" className="fw-semibold">
+//             Available Recipients:
+//           </Typography>
+//           <Box className="mb-4 p-3 border rounded" style={{ maxHeight: '70vh', overflowY: 'auto', backgroundColor: '#f8f9fa' }}>
+            
+//             <div className="row"
+//                 style={{
+//                     // maxHeight: '2000px',
+//                     overflowY: 'auto',
+//                 }}>
+//               {emailRecipients.map((recipient) => (
+//                 <div key={recipient.id} className="col-md-6 mb-2">
+//                   <FormControlLabel
+//                     control={
+//                       <Checkbox
+//                         checked={selectedEmails.includes(recipient.EMAIL)}
+//                         onChange={() => handleEmailToggle(recipient.EMAIL)}
+//                         sx={{
+//                           color: '#007bff',
+//                           '&.Mui-checked': {
+//                             color: '#007bff',
+//                           },
+//                         }}
+//                       />
+//                     }
+//                     label={
+//                       <span className="d-flex flex-column">
+//                         <strong style={{ fontSize: '14px' }}>{recipient.EMAIL}</strong>
+//                       </span>
+//                     }
+//                     sx={{
+//                       width: '100%',
+//                       margin: 0,
+//                       '&:hover': {
+//                         backgroundColor: '#e3f2fd',
+//                         borderColor: '#007bff',
+//                       },
+//                     }}
+//                   />
+//                 </div>
+//               ))}
+//             </div>
+//           </Box>
+
+//           {selectedEmails.length > 0 && (
+//             <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#e7f3ff' }}>
+//               <Typography variant="subtitle2" className="mb-2 fw-semibold text-primary">
+//                 Selected Recipients ({selectedEmails.length}):
+//               </Typography>
+//               <Box className="d-flex flex-wrap gap-2">
+//                 {selectedEmails.map((email, index) => (
+//                   <Chip
+//                     key={index}
+//                     label={email}
+//                     onDelete={() => handleRemoveEmail(email)}
+//                     size="small"
+//                     sx={{
+//                       backgroundColor: '#007bff',
+//                       color: 'white',
+//                       '& .MuiChip-deleteIcon': {
+//                         color: 'white',
+//                         '&:hover': {
+//                           color: '#ff6b6b',
+//                         },
+//                       },
+//                     }}
+//                   />
+//                 ))}
+//               </Box>
+//             </Box>
+//           )}
+
+//           <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#f0f0f0' }}>
+//             <Typography variant="subtitle2" className="mb-2 fw-semibold">
+//               Email Content Details:
+//             </Typography>
+//             <Typography variant="body2">
+//               <strong className="text-muted">Process:</strong> {modalData.process || 'N/A'} <br />
+//               <strong className="text-muted">Plant:</strong> {modalData.plant || 'N/A'} <br />
+//               <strong className="text-muted">Apply Date:</strong> {modalData.applyDate || 'N/A'} <br />
+//               <strong className="text-muted">Comments:</strong> {modalData.comments || 'No additional comments.'}
+//             </Typography>
+//           </Box>
+
+//         </Box> */}
+
+//                   <Box>
+//             {/* Static Email Recipients with Checkboxes */}
+//             <Typography variant="h6" className="fw-semibold">
+//               Available Recipients:
+//             </Typography>
+//             <Box className="mb-4 p-3 border rounded" style={{ maxHeight: '1000px', overflowY: 'auto', backgroundColor: '#f8f9fa' }}>
+//               <div className="row">
+//                 {emailRecipients?.map((recipient) => (
+//                   <div key={recipient.id} className="row-md-6 mb-2">
+//                     <FormControlLabel
+//                       control={
+//                         <Checkbox
+//                           checked={selectedEmails.includes(recipient.EMAIL)}
+//                           onChange={() => handleEmailToggle(recipient.EMAIL)}
+//                           sx={{
+//                             color: '#007bff',
+//                             '&.Mui-checked': {
+//                               color: '#007bff',
+//                             },
+//                           }}
+//                         />
+//                       }
+//                       label={
+//                         <span className="d-flex flex-column">
+//                           <strong style={{ fontSize: '14px' }}>{recipient.EMAIL}</strong>
+                    
+//                         </span>
+//                       }
+//                       sx={{
+//                         width: '100%',
+//                         margin: 0,
+                
+                 
+//                         '&:hover': {
+//                           backgroundColor: '#e3f2fd',
+//                           borderColor: '#007bff',
+//                         },
+//                       }}
+//                     />
+//                   </div>
+//                 ))}
+//               </div>
+//             </Box>
+
+//             {/* Selected Emails Display */}
+//             {selectedEmails?.length > 0 && (
+//               <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#e7f3ff' }}>
+//                 <Typography variant="subtitle2" className="mb-2 fw-semibold text-primary">
+//                   Selected Recipients ({selectedEmails.length}):
+//                 </Typography>
+//                 <Box className="d-flex flex-wrap gap-2">
+//                   {selectedEmails?.map((email, index) => (
+//                     <Chip
+//                       key={index}
+//                       label={email}
+//                       onDelete={() => handleRemoveEmail(email)}
+//                       size="small"
+//                       sx={{
+//                         backgroundColor: '#007bff',
+//                         color: 'white',
+//                         '& .MuiChip-deleteIcon': {
+//                           color: 'white',
+//                           '&:hover': {
+//                             color: '#ff6b6b',
+//                           },
+//                         },
+//                       }}
+//                     />
+//                   ))}
+//                 </Box>
+//               </Box>
+//             )}
+
+      
+//           </Box>
+
+//       </Modal.Body>
+//       <Modal.Footer>
+//         <Button variant="secondary" onClick={onClose}>
+//           Cancel
+//         </Button>
+//         <Button
+//           variant="primary"
+//           onClick={handleSubmit}
+//           disabled={selectedEmails?.length === 0}
+//         >
+//           <Send size={16} className="me-1" />
+//           Submit ({selectedEmails?.length})
+//         </Button>
+//       </Modal.Footer>
+//     </Modal>
+
+    
+//   );
+// };
+
+// export default EmailSelectionModal;
+
+
 import React, { useState, useEffect } from 'react';
-import { Modal, Button } from 'react-bootstrap';
+import { Modal, Button, Form } from 'react-bootstrap';
 import { Mail, Send } from 'lucide-react';
-import {
-  Checkbox,
-  FormControlLabel,
-  Chip,
-  Box,
-  Typography
-} from '@mui/material';
-import axios from 'axios';
-import { API_BASE_URLS } from '../config/Config';
+import { Box, Checkbox, Chip, FormControlLabel, Typography, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import Swal from 'sweetalert2';
 
-const EmailSelectionModal = ({ 
-  show, 
-  onHide, 
-  onSubmit, 
-  processName = '',
-  plantName = '',
-  applyDate = '',
-  comments = ''
+const EmailSelectionModal = ({
+  show,
+  onClose,
+  emailRecipients,
+  selectedEmails,
+  setSelectedEmails,
+  onSendEmail,
+  modalData
 }) => {
-  const [emailRecipients, setEmailRecipients] = useState([]);
-  const [selectedEmails, setSelectedEmails] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Fetch email recipients when modal opens
-
-
-  const formatDate = (dateStr) => {
-  if (!dateStr) return "-";
-
-  // Expecting format: "YYYY-MM-DD"
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr; // Return as-is if not in expected format
-
-  const [year, month, day] = parts;
-  return `${day}-${month}-${year}`; // ✅ dd-mm-yyyy
-};
-
-  useEffect(() => {
-    if (show) {
-      fetchEmailRecipients();
-    }
-  }, [show]);
-
-  const fetchEmailRecipients = async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get(`${API_BASE_URLS}/pcb-emails`);
-      setEmailRecipients(response.data);
-    } catch (error) {
-      console.error('❌ Failed to fetch email recipients:', error);
-      setEmailRecipients([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Handler for Email Checkbox Toggle
   const handleEmailToggle = (email) => {
     setSelectedEmails(prev =>
       prev.includes(email)
@@ -65,146 +262,215 @@ const EmailSelectionModal = ({
     );
   };
 
+  // Remove Selected Email
   const handleRemoveEmail = (email) => {
     setSelectedEmails(prev => prev.filter(e => e !== email));
   };
 
-  const handleSubmit = () => {
-    if (selectedEmails.length > 0) {
-      onSubmit(selectedEmails);
-   
-      setSelectedEmails([]);
+  // When Submit button is clicked
+  const handleSubmitClick = () => {
+    if (selectedEmails.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        text: 'Please select at least one email recipient.',
+      });
+      return;
     }
+    
+    // Show confirmation dialog
+    setConfirmOpen(true);
   };
 
-  const handleClose = () => {
+  // When user confirms in the dialog
+  const handleConfirmSubmit = () => {
+    // Close both modals
+    setConfirmOpen(false);
+    onClose();
+    
+    // Send the emails
+    onSendEmail(selectedEmails);
+    
+    // Clear selected emails
     setSelectedEmails([]);
-    onHide();
+  };
+
+  const handleCancelConfirm = () => {
+    setConfirmOpen(false);
   };
 
   return (
     <>
-
- 
-<Modal show={show} onHide={handleClose} centered size="lg">
-
-          <Box className=" p-3 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
-            <Typography variant="subtitle2" className="fw-semibold mb-2">
-              Process Information:
-            </Typography>
-            <div className="small">
-              <div><strong>Process:</strong> {processName}</div>
-              {plantName && <div><strong>Plant:</strong> {plantName}</div>}
-              {applyDate && <div><strong>Apply Date:</strong> {formatDate(applyDate)}</div>}
-              {comments && <div><strong>Comments:</strong> {comments}</div>}
-            </div>
-          </Box>
-      <Modal.Header closeButton>
-
-
-        <Modal.Title className="d-flex align-items-center gap-2">
-          <Mail size={24} className="text-primary" />
-          Select Email Recipients
-        </Modal.Title>
-      </Modal.Header>
-      
+      <Modal show={show} onHide={onClose} centered size="xl" dialogClassName="modal-dialog-scrollable">
+        <Modal.Header closeButton>
+          <Modal.Title className="d-flex align-items-center gap-2">
+            <Mail size={24} className="text-primary" />
+            Select Email Recipients
+          </Modal.Title>
+        </Modal.Header>
         <Modal.Body>
-            <Box>
-              {/* Static Email Recipients with Checkboxes */}
-              <Typography variant="h6" className="fw-semibold ">
-                Available Recipients:
-              </Typography>
-              <Box className=" border rounded" style={{ maxHeight: '1000px', overflowY: 'auto', backgroundColor: '#f8f9fa' }}>
-                <div className="row">
-                  {emailRecipients.map((recipient) => (
-                    <div key={recipient.id} className="row-md-6 mb-2">
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={selectedEmails.includes(recipient.EMAIL)}
-                            onChange={() => handleEmailToggle(recipient.EMAIL)}
-                            sx={{
-                              color: '#007bff',
-                              '&.Mui-checked': {
-                                color: '#007bff',
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <span className="d-flex flex-column">
-                            <strong style={{ fontSize: '14px' }}>{recipient.EMAIL}</strong>
-                      
-                          </span>
-                        }
-                        sx={{
-                          width: '100%',
-                          margin: 0,
-                  
-                   
-                          '&:hover': {
-                            backgroundColor: '#e3f2fd',
-                            borderColor: '#007bff',
-                          },
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Box>
-  
-  
-              {/* Selected Emails Display */}
-              {selectedEmails.length > 0 && (
-                <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#e7f3ff' }}>
-                  <Typography variant="subtitle2" className=" fw-semibold text-primary">
-                    Selected Recipients ({selectedEmails.length}):
-                  </Typography>
-                  <Box className="d-flex flex-wrap gap-2 mb-3">
-                    {selectedEmails.map((email, index) => (
-                      <Chip
-                        key={index}
-                        label={email}
-                        onDelete={() => handleRemoveEmail(email)}
-                        size="small"
-                        sx={{
-                          backgroundColor: '#007bff',
-                          color: 'white',
-                          '& .MuiChip-deleteIcon': {
-                            color: 'white',
-                            '&:hover': {
-                              color: '#ff6b6b',
-                            },
-                          },
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-  
-        
-            </Box>
-          </Modal.Body>
-      
-      <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          onClick={handleSubmit}
-          disabled={selectedEmails.length === 0}
-        >
-          <Send size={16} className="me-1" />
-          Submit ({selectedEmails.length})
-        </Button>
-      </Modal.Footer>
-    </Modal>
+          <Box>
+            <Typography variant="h6" className="fw-semibold">
+              Available Recipients:
+            </Typography>
+               <Box className="mb-4 p-3 border rounded" style={{ maxHeight: '1000px', overflowY: 'auto', backgroundColor: '#f8f9fa' }}>
+                       <div className="row">
+                         {emailRecipients?.map((recipient) => (
+                           <div key={recipient.id} className="row-md-6 mb-2">
+                             <FormControlLabel
+                               control={
+                                 <Checkbox
+                                   checked={selectedEmails.includes(recipient.EMAIL)}
+                                   onChange={() => handleEmailToggle(recipient.EMAIL)}
+                                   sx={{
+                                     color: '#007bff',
+                                     '&.Mui-checked': {
+                                       color: '#007bff',
+                                     },
+                                   }}
+                                 />
+                               }
+                               label={
+                                 <span className="d-flex flex-column">
+                                   <strong style={{ fontSize: '14px' }}>{recipient.EMAIL}</strong>
+                             
+                                 </span>
+                               }
+                               sx={{
+                                 width: '100%',
+                                 margin: 0,
+                         
+                          
+                                 '&:hover': {
+                                   backgroundColor: '#e3f2fd',
+                                   borderColor: '#007bff',
+                                 },
+                               }}
+                             />
+                           </div>
+                         ))}
+                       </div>
+                     </Box>
 
- 
+            {selectedEmails?.length > 0 && (
+              <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#e7f3ff' }}>
+                <Typography variant="subtitle2" className="mb-2 fw-semibold text-primary">
+                  Selected Recipients ({selectedEmails.length}):
+                </Typography>
+                <Box className="d-flex flex-wrap gap-2">
+                  {selectedEmails?.map((email, index) => (
+                    <Chip
+                      key={index}
+                      label={email}
+                      onDelete={() => handleRemoveEmail(email)}
+                      size="small"
+                      sx={{
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        '& .MuiChip-deleteIcon': {
+                          color: 'white',
+                          '&:hover': {
+                            color: '#ff6b6b',
+                          },
+                        },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Optional: Show update details if modalData is provided */}
+            {modalData && (
+              <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#f0f0f0' }}>
+                <Typography variant="subtitle2" className="mb-2 fw-semibold">
+                  Update Details:
+                </Typography>
+                <Typography variant="body2">
+                  {modalData.updateType && (
+                    <>
+                      <strong className="text-muted">Update Type:</strong> {modalData.updateType || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.PROCESS && (
+                    <>
+                      <strong className="text-muted">Process:</strong> {modalData.PROCESS || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.APPLY_DT && (
+                    <>
+                      <strong className="text-muted">Apply Date:</strong> {modalData.APPLY_DT || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.process && (
+                    <>
+                      <strong className="text-muted">Process:</strong> {modalData.process || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.category && (
+                    <>
+                      <strong className="text-muted">Amendment Type:</strong> {modalData.category || 'N/A'} <br />
+                    </>
+                  )}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSubmitClick} 
+            disabled={selectedEmails?.length === 0}
+          >
+            <Send size={16} className="me-1" />
+            Submit ({selectedEmails?.length})
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmOpen}
+        onClose={handleCancelConfirm}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+          Confirm Submission
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to send emails to {selectedEmails.length} recipient(s)?
+            <br />
+            <br />
+            <strong>Selected recipients:</strong>
+            <Box sx={{ mt: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+              {selectedEmails.map((email, index) => (
+                <Typography key={index} variant="body2" sx={{ fontFamily: 'monospace' }}>
+                  • {email}
+                </Typography>
+              ))}
+            </Box>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelConfirm} variant="secondary">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmSubmit} 
+            variant="primary"
+            autoFocus
+            startIcon={<Send size={16} />}
+          >
+            Confirm & Send
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
- 
   );
 };
 

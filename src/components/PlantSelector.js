@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PlantSelector = ({ plants, selectedPlant, onChange, customMarginTop }) => {
-
+console.log(plants,"plaaaaaaaaaaaaaaaaaaaaaaaa")
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null); // ✅ Add ref to root container

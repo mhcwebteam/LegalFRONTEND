@@ -893,8 +893,6 @@ const GhmcUpdate = () => {
         .get(`${API_BASE_URLS}/GHMC-data?plant=${selectedPlant}`)
         .then((res) => {
           setSteps(res.data.processes);
-
-          console.log(res?.data?.plantData, "plamttttttttttt");
           setStoreData(res.data.plantData);
 
           const plantRecord = res.data.plantData.find(

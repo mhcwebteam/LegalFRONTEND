@@ -38,11 +38,10 @@ const AirportDocUploadModal = ({
   if (!show) return null;
 
 
-  console.log(comments,"commentssssssssssssssssssss")
   const handleFilesAppend = (e, setter) => {
     const incoming = Array.from(e.target.files);
     setter(prev => [...prev, ...incoming]);
-    e.target.value = null; // allow re-selecting same file if needed
+    e.target.value = null;
   };
 
   const removeAtIndex = (setter, idx) => {
@@ -59,6 +58,7 @@ const AirportDocUploadModal = ({
           <div className="d-flex gap-2 mb-1">
             <input
               type="file"
+               accept="application/pdf"
               multiple
               onChange={(e) => handleFilesAppend(e, setLinkDocs)}
               id="link-doc-input"
@@ -73,6 +73,7 @@ const AirportDocUploadModal = ({
           <div className="d-flex gap-2 mb-1">
             <input
               type="file"
+               accept="application/pdf"
               multiple
               onChange={(e) => handleFilesAppend(e, setLandDocs)}
               id="land-doc-input"
@@ -87,6 +88,7 @@ const AirportDocUploadModal = ({
           <div className="d-flex gap-2 mb-1">
             <input
               type="file"
+               accept="application/pdf"
               multiple
               onChange={(e) => handleFilesAppend(e, setOthDocs)}
               id="oth-doc-input"

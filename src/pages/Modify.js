@@ -11,8 +11,8 @@ import ReraModifyTable from '../components/ReraModifyTable';
 const tabList = [
   'Pollution Control Board',
   'Airport Authority',
+   'Fire',
   'HMDA',
-  'Fire',
   'Water',
    'Rera',
   'Miscellaneous',
@@ -26,8 +26,8 @@ const Modify = () => {
       <PcbTabs keyState={key} setKey={setKey} tabList={tabList}>
         {key === 'Pollution Control Board' && <PollutionTable />}
         {key === 'Airport Authority' && <AirportModifyTable />}
-        {key === 'HMDA' && <GhmcModify/>}
         {key === 'Fire' &&  <FireModifyTable />}
+           {key === 'HMDA' && <GhmcModify/>}
         {key === 'Water' && <WaterModifyTable/>}
         {key === 'Rera' &&  <ReraModifyTable/>}
         {key === 'Miscellaneous' && <p>This is the miscellaneous tab.</p>}

@@ -33,7 +33,7 @@ const [headerData, setHeaderData] = useState(null);
 
 
 const { data: masterData, isLoading, error ,  refetch: refetchGhmcData} = useMasterData();
- const { data: totalGhmcData, loading} =  useGhmcAll();
+//  const { data: totalGhmcData, loading} =  useGhmcAll();
 
 
 useEffect(() => {
@@ -82,7 +82,8 @@ useEffect(() => {
     <Context.Provider value={{ waterData, setWaterData,
      setFormReraData,formReraData, 
      storeData, setStoreData,
-     plants,setRespModifyData,selectedPlant, setSelectedPlant,masterData,totalGhmcData,totalMasterCode, setTotalMasterCode,
+     plants,setRespModifyData,selectedPlant, setSelectedPlant,masterData,
+      totalMasterCode, setTotalMasterCode,
      respModifyData,masterPostData, setMasterData,masterGetData, setMasterGetData,totalMasterData,setHeaderData,headerData}}>
       {children}
     </Context.Provider>

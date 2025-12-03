@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 
 const ProcessField = ({ value, className}) => {
 
-  console.log(value, "valueeeeeeeeee", className)
  
   return (
     <input

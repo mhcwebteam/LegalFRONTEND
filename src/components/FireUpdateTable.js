@@ -5,15 +5,17 @@ import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import { FaFileAlt } from "react-icons/fa";
-import EmailSelectionModal from "./EmailSelectionModal";
 import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
 import ProjectInfoHeader from "./ProjectInfoHeader";
+import EmailSelectionModal from "./EmailModal";
 
 const FireUpdateTable = () => {
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
+   const [showLogsModal, setShowLogsModal] = useState(false);
+    const [selectedLogs, setSelectedLogs] = useState([]);
   // const [storeData, setStoreData] = useState([]);
      const [showEmailModal, setShowEmailModal] = useState(false);
       const [emailRecipients, setEmailRecipients] = useState([]);
@@ -43,13 +45,11 @@ const FireUpdateTable = () => {
   const [viewedStepConceptualIndex, setViewedStepConceptualIndex] = useState(-1);
   const [viewedStepDetails, setViewedStepDetails] = useState(null); // Details for the currently viewed step
 
-
   const [projectInfo, setProjectInfo] = useState({ prjName: "", address: "" });
 
   // Removed acknowledgeDocs state
 
   const [provisionalNOCCompleted, setProvisionalNOCCompleted] = useState(false);
-
 
        const handleEmailSubmit = () => {
     const newErrors = {};
@@ -63,6 +63,28 @@ const FireUpdateTable = () => {
 
     // setErrors({});
     setShowEmailModal(true);
+  };
+
+     const getCurrentStepLogs = () => {
+    if (!immediateNextStep || !storeData || storeData.length === 0) {
+      return [];
+    }
+    
+    // Find the current step record
+    const currentStepRecord = storeData.find(
+      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim()
+    );
+    
+    if (!currentStepRecord?.LOG) {
+      return [];
+    }
+    
+    try {
+      return JSON.parse(currentStepRecord.LOG);
+    } catch (error) {
+      console.error("Failed to parse logs:", error);
+      return [];
+    }
   };
 
   
@@ -89,7 +111,6 @@ const FireUpdateTable = () => {
     }
   }, []);
 
-
   const fetchPlantData = useCallback(async (plantId) => {
     if (!plantId || steps.length === 0) {
       setStoreData([]);
@@ -113,6 +134,8 @@ const FireUpdateTable = () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/fire-data?plant=${plantId}`);
       const fetchedData = res.data;
+
+      console.log(fetchedData,"fffffffffff11111111");
       setStoreData(fetchedData);
 
       let currentProjectName = "";
@@ -224,7 +247,6 @@ console.log('veiwedStepdetials:', viewedStepDetails);
     fetchPlantData(selectedPlant);
   }, [selectedPlant, steps, fetchPlantData]);
 
-
   // const handleChange = (e) => {
   //   const { name, value } = e.target;
   //   if (name === "loc") {
@@ -235,7 +257,6 @@ console.log('veiwedStepdetials:', viewedStepDetails);
   // };
 
   // Removed handleAcknowledgeFileChange and removeAcknowledgeFile
-
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
@@ -305,7 +326,6 @@ console.log('veiwedStepdetials:', viewedStepDetails);
     }));
   };
 
-
   const handleConfirmSubmit = async (emails) => {
     // Crucially, submission always relates to the `immediateNextStep`
     if (!formData.loc || !immediateNextStep) {
@@ -344,7 +364,6 @@ console.log('veiwedStepdetials:', viewedStepDetails);
     }
   };
 
-
   const handleStepClick = useCallback(async (processName, stepType, conceptualIndex) => {
     if (!selectedPlant) {
       Swal.fire("Error", "Please select a plant first", "error");
@@ -365,7 +384,6 @@ console.log('veiwedStepdetials:', viewedStepDetails);
       // Removed feePaid, feeAmount, acknowledgeName
     }));
   }, [selectedPlant, fetchStepDetails]);
-
 
   const renderDocumentHistory = () => {
     const details = viewedStepDetails; 
@@ -400,7 +418,7 @@ console.log('veiwedStepdetials:', viewedStepDetails);
         console.error("Failed to parse ACK_DOC JSON:", error);
       }
     }
-
+   const currentStepLogs = getCurrentStepLogs();
     return (
     <div className="d-flex flex-column" style={{ height: '100%' }}>
       <Card style={{padding:'1px', height: '80%', overflow: 'auto' }}>
@@ -437,21 +455,30 @@ console.log('veiwedStepdetials:', viewedStepDetails);
           <p className="text-muted mb-0 p-1">No acknowledgement receipts available for this step.</p>
         )}
         </Card>
-      <Card className="m-2 p-2" style={{ height: '25%', overflow: 'hidden' }}>
-       <h6 className="mb-2">Comments</h6>
-       <div
-         style={{
-           whiteSpace: 'nowrap',
-           overflow: 'hidden',
-           textOverflow: 'ellipsis',
-         }}
-       >
-         {formData.comments || 'No comments available'}
-       </div>
-     </Card>
+   
+
+
+           <div className="p-2 border-top bg-light text-center">
+                       <Button
+                         variant="info"
+                         size="sm"
+                         onClick={() => {
+                           const logs = getCurrentStepLogs();
+                           setSelectedLogs(logs);
+                           setShowLogsModal(true);
+                         }}
+                         disabled={currentStepLogs.length === 0}
+                       >
+                         {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
+                       </Button>
+                     </div>
       </div>
     );
   };
+
+
+
+
 
   const renderProcessColumn = (columnTitle, isOCPhase) => {
     return (
@@ -554,7 +581,6 @@ console.log('veiwedStepdetials:', viewedStepDetails);
                  <h4 className="mb-3 text-success fw-bold">All Process Steps Completed! 🎉</h4>
             )}
 
-
             <Row className="mb-3">
               <Col md={6}>
                 <Form.Group>
@@ -650,8 +676,33 @@ console.log('veiwedStepdetials:', viewedStepDetails);
                   </div>
                 </Col>
 
+                 
+
  
       </Row>
+
+       <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
+                        <Modal.Header closeButton>
+                          <Modal.Title>Logs for {immediateNextStep?.PROCESS}</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
+                          {selectedLogs.length === 0 ? (
+                            <p>No logs available</p>
+                          ) : (
+                            selectedLogs.map((log, i) => (
+                              <div key={i} className="mb-2">
+                                <strong>{log?.date || "Unknown Date"}:</strong> {log?.comment || "No comment"}
+                                <hr />
+                              </div>
+                            ))
+                          )}
+                        </Modal.Body>
+                        <Modal.Footer>
+                          <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+                            Close
+                          </Button>
+                        </Modal.Footer>
+                      </Modal>
 
         <EmailSelectionModal
         show={showEmailModal}

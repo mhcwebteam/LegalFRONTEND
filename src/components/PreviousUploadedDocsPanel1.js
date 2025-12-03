@@ -23,27 +23,8 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
 
   if (!filteredDocs || filteredDocs.length === 0) return null;
 
-  const handleDeleteClick = (doc) => {
-    setDocToDelete(doc);
-    setDeleteConfirmOpen(true);
-  };
 
-  const confirmDelete = async () => {
-    if (docToDelete) {
-      try {
-        await onDelete(docType, docToDelete.name);
-        setDeleteConfirmOpen(false);
-        setDocToDelete(null);
-      } catch (error) {
-        console.error("Deletion failed:", error);
-      }
-    }
-  };
 
-  const cancelDelete = () => {
-    setDeleteConfirmOpen(false);
-    setDocToDelete(null);
-  };
 
   return (
     <>
@@ -66,42 +47,19 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
               </a>
             </div>
 
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => handleDeleteClick(doc)}
-            >
-              <FaTrashAlt />
-            </Button>
+
           </ListGroup.Item>
         ))}
       </ListGroup>
 
       {/* Delete Confirmation Dialog */}
-      {deleteConfirmOpen && (
-        <Modal show={deleteConfirmOpen} onHide={cancelDelete} centered>
-          <Modal.Header closeButton>
-            <Modal.Title>Confirm Deletion</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            Are you sure you want to delete <strong>{docToDelete?.name}</strong>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={cancelDelete}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      )}
+     
     </>
   );
 };
 
 // ------------------ Main Panel ------------------
-const PreviousUploadedDocsPanel = ({ firstStep, onDocumentsChange }) => {
+const PreviousUploadedDocsPanel1 = ({ firstStep, onDocumentsChange }) => {
   const [deletedDocuments, setDeletedDocuments] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -318,5 +276,5 @@ try {
   );
 };
 
-export default PreviousUploadedDocsPanel;
+export default PreviousUploadedDocsPanel1;
 

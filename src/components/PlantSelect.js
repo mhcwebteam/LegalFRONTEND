@@ -75,7 +75,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { Context } from '../context/ContextData';
-import { API_BASE_URL2 } from '../config/Config';
+import { API_BASE_URL } from '../config/Config';
 
 const PlantSelect = ({ 
   value, 
@@ -99,13 +99,13 @@ const PlantSelect = ({
 
     const fetchPlants = async () => {
 
-      console.log(selectedPlantCode,"seeeeeeeeeeeeeee")
+
       try {
         setLoading(true);
         setError(null);
         
         // ✅ Pass plant code as query parameter
-             const res = await axios.get(`${API_BASE_URL2}/getDependPlant/${selectedPlantCode}`);
+             const res = await axios.get(`${API_BASE_URL}/getDependPlant/${selectedPlantCode}`);
         
         console.log(res.data, "API Response for plant code:", selectedPlantCode);
         

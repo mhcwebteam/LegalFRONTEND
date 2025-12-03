@@ -169,14 +169,16 @@ const PcbForm = ({ mode, showStatus, editableAll }) => {
         <Tab eventKey="Airport Authority" title="Airport Authority">
           <p>Airport Authority tab content goes here.</p>
         </Tab>
+        
+   <Tab eventKey="Fire" title="Fire">
+          <p>Fire tab content goes here.</p>
+        </Tab>
 
         <Tab eventKey="HMDA" title="HMDA">
           <p>HMDA tab content goes here.</p>
         </Tab>
 
-        <Tab eventKey="Fire" title="Fire">
-          <p>Fire tab content goes here.</p>
-        </Tab>
+     
       </Tabs>
     </Container>
   );

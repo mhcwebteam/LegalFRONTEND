@@ -1,11 +1,10 @@
 
 
 
-
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL, API_BASE_URLS } from '../config/Config';
+import { API_BASE_URL } from '../config/Config';
 import FormGroup from '../components/FormGroup';
 import ProcessField from '../components/ProcessField';
 import ApplyDateInput from '../components/ApplyDateInput';
@@ -18,35 +17,38 @@ import ProjectInfoHeader from "../components/ProjectInfoHeader";
 import { getMasterByLoc } from "../api/Api";
 
 import './PollutionForm.css';
-import { 
-  Landmark, 
-  ChevronLeft, 
-  Home, 
-  Store, 
-  FileText, 
-  FileCheck, 
-  MessageSquareMore,
-  FolderUp 
+import {
+    Landmark,
+    ChevronLeft,
+    Home,
+    Store,
+    FileText,
+    FileCheck,
+    MessageSquareMore,
+    FolderUp
 } from "lucide-react";
 import { FaLeaf, FaCalendarAlt, FaWater, FaUpload } from "react-icons/fa";
 import ReusableDialog from "../components/ReusableDialog";
 import PollutionDocUploadModal from "../components/PollutionDocUploadModal";
 
+// ✅ PDF ONLY VALIDATION
+const ALLOWED_FILE_TYPES = {
+    'application/pdf': ['.pdf']
+};
 
+// const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const PollutionForm = () => {
     const navigate = useNavigate();
-    const { 
+    const {
         totalMasterData = [],
-        setHeaderData, 
-        headerData 
+        setHeaderData,
+        headerData
     } = useContext(Context);
 
-
-
     const fileInputRef = useRef(null);
-     const [newDocs, setNewDocs] = useState([]);
-      const [showUploadModal, setShowUploadModal] = useState(false);
+    const [newDocs, setNewDocs] = useState([]);
+    const [showUploadModal, setShowUploadModal] = useState(false);
     const [formData, setFormData] = useState({
         loc: '',
         process: '',
@@ -58,34 +60,49 @@ const PollutionForm = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [linkDocs, setLinkDocs] = useState([]);
-  const [landDocs, setLandDocs] = useState([]);
-  const [othDocs, setOthDocs] = useState([]);
+    const [showModal, setShowModal] = useState(false);
+    const [linkDocs, setLinkDocs] = useState([]);
+    const [landDocs, setLandDocs] = useState([]);
+    const [othDocs, setOthDocs] = useState([]);
 
-    
-    
-      useEffect(() => {
-        if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
-          const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
-    
-    
-          if (defaultLoc) {
-            fetchDataForLoc(defaultLoc);
-          }
+    // ✅ PDF VALIDATION FUNCTION
+    const validateFileType = (file) => {
+        const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        const isValidType = fileExtension === '.pdf';
+        
+        if (!isValidType) {
+            return false;
         }
-      }, [totalMasterData]);
 
-  
+        // if (file.size > MAX_FILE_SIZE) {
+        //     toast.error(`${file.name} is too large. Max size is 10MB`);
+        //     return false;
+        // }
+
+        // Double-check MIME type
+        if (file.type && file.type !== 'application/pdf') {
+            toast.error(`${file.name} is not a valid PDF file.`);
+            return false;
+        }
+
+        return true;
+    };
+
+    // useEffect(() => {
+    //     if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+    //         const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+
+    //         if (defaultLoc) {
+    //             fetchDataForLoc(defaultLoc);
+    //         }
+    //     }
+    // }, [totalMasterData]);
+
     useEffect(() => {
         if (formData.loc !== '') {
             checkIfPlantExists(formData.loc);
         }
     }, [formData.loc]);
-
-
-
-
 
     const fetchDataForLoc = async (loc) => {
         try {
@@ -128,64 +145,42 @@ const PollutionForm = () => {
         fetchProcess();
     }, []);
 
-    // const handleChange = (e) => {
-    //     const { name, value } = e.target;
-    //     setFormData((prev) => ({
-    //         ...prev,
-    //         [name]: value,
-    //     }));
-    //     // Clear error when user starts typing
-    //     if (errors[name]) {
-    //         setErrors(prev => ({
-    //             ...prev,
-    //             [name]: ''
-    //         }));
-    //     }
-    // };
-
-
-
-
-      const handleChange = async (e) => {
+    const handleChange = async (e) => {
         const { name, value } = e.target;
-    
-        if (name === "loc") {
-          setFormData(prev => ({ ...prev, loc: value }));
-    
-          try {
-            const res = await getMasterByLoc(value);
-            if (res) {
-              setHeaderData(res);
-              setFormData(prev => ({
-                ...prev,
-              }));
-            } else {
-              setHeaderData(null);
-              setFormData(prev => ({
-                ...prev,
-                applyDate: '',
-    
-              }));
-            }
-          } catch (err) {
-            console.error("Error fetching master by loc:", err);
-            setHeaderData(null);
-            setFormData(prev => ({
-              ...prev,
-              applyDate: '',
 
-            }));
-          }
-          return;
+        if (name === "loc") {
+            setFormData(prev => ({ ...prev, loc: value }));
+
+            try {
+                const res = await getMasterByLoc(value);
+                if (res) {
+                    setHeaderData(res);
+                    setFormData(prev => ({
+                        ...prev,
+                    }));
+                } else {
+                    setHeaderData(null);
+                    setFormData(prev => ({
+                        ...prev,
+                        applyDate: '',
+                    }));
+                }
+            } catch (err) {
+                console.error("Error fetching master by loc:", err);
+                setHeaderData(null);
+                setFormData(prev => ({
+                    ...prev,
+                    applyDate: '',
+                }));
+            }
+            return;
         }
-    
-    
-    
+
         setFormData(prev => ({
-          ...prev,
-          [name]: value
+            ...prev,
+            [name]: value
         }));
-      };
+    };
 
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
@@ -202,26 +197,47 @@ const PollutionForm = () => {
 
     const validateForm = () => {
         const newErrors = {};
+
         if (!formData.loc) newErrors.loc = "Plant name is required";
         if (!formData.applyDate) newErrors.applyDate = "Application date is required";
+        if (!formData.comments) newErrors.comments = "Please enter comments";
+        
+        // Document validation with PDF check
+        if (newDocs.length === 0) {
+            newErrors.document = "At least one PDF document is required";
+        } else {
+            // Validate all files are PDFs
+            const invalidFiles = newDocs.filter(file => !validateFileType(file));
+            if (invalidFiles.length > 0) {
+                newErrors.document = "Only PDF files are allowed";
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
-            toast.error('Please fill all required fields');
             return;
         }
-        
+
         setConfirmOpen(true);
     };
 
-
     const handleConfirmSubmit = async () => {
         setIsSubmitting(true);
+
+        // ✅ Final validation before submission
+        const invalidFiles = newDocs.filter(file => !validateFileType(file));
+        if (invalidFiles.length > 0) {
+            toast.error('Please remove non-PDF files before submitting');
+            setIsSubmitting(false);
+            setConfirmOpen(false);
+            return;
+        }
 
         const formPayload = new FormData();
         formPayload.append('loc', formData.loc);
@@ -229,44 +245,49 @@ const PollutionForm = () => {
         formPayload.append('applyDate', formData.applyDate);
         formPayload.append('comments', formData.comments);
 
- newDocs.forEach((file, index) => {
-  formPayload.append(`document[${index}]`, file);
-  formPayload.append(`doc_name[${index}]`, file.name);
-});
-
-
-        for (let [key, value] of formPayload.entries()) {
-      if (value instanceof File) {
-        console.log(
-          `${key}: File (name: ${value.name}, type: ${value.type}, size: ${value.size} bytes)`
-        );
-      } else {
-        console.log(`${key}: ${value}`);
-      }
-    }
+        // ✅ Append only validated PDF files
+        newDocs.forEach((file, index) => {
+            if (validateFileType(file)) {
+                formPayload.append(`document[${index}]`, file, file.name);
+                formPayload.append(`doc_name[${index}]`, file.name);
+               
+            }
+        });
 
         try {
-      const res =    await axios.post(`${API_BASE_URLS}/pollution-submit`, formPayload, {
+            const response = await axios.post(`${API_BASE_URL}/pollution-submit`, formPayload, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
+                // onUploadProgress: (progressEvent) => {
+                //     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                //     console.log(`Upload Progress: ${percentCompleted}%`);
+                // }
             });
 
-            setFormData({
-                    loc: '',
-                    process: formData.process,
-                    applyDate: '',
-                    comments: '',
-                    document: [],
+            if (response.data.message) {
+                Swal.fire({
+                    icon: "success",
+                    title: response.data.message,
+                    showConfirmButton: false,
+                    timer: 2000,
+                }).then(() => {
+                    navigate('/create');
                 });
-      setNewDocs([]);
-  navigate('/create');
-        } catch (err) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Something went wrong while submitting.',
+            }
+
+            setFormData({
+                loc: '',
+                process: formData.process,
+                applyDate: '',
+                comments: '',
+                document: [],
             });
+            setNewDocs([]);
+        } catch (err) {
+            console.error('Submission error:', err.response?.data || err.message);
+            
+        
         } finally {
             setIsSubmitting(false);
             setConfirmOpen(false);
@@ -302,10 +323,10 @@ const PollutionForm = () => {
                         </button>
                     </div>
                 </div>
-                
+
                 {/* Project Info Header */}
                 <ProjectInfoHeader data={headerData} />
-                
+
                 <div className="form-content">
                     {/* Project Information */}
                     <div className="form-section">
@@ -378,92 +399,90 @@ const PollutionForm = () => {
                                 </div>
                             </div>
 
-                                      <div className="form-field">
-                                               <label className="field-label">
-                                                 <FaUpload className="label-icon" /> Upload Documents*
-                                               </label>
-                                               <div className="upload-container">
-                                                 <button
-                                                   type="button"
-                                                   className="upload-button"
-                                                   onClick={() => setShowUploadModal(true)}
-                                                 >
-                                                   <FaUpload className="upload-icon" /> Upload Files
-                                                   {newDocs.length > 0 && (
-                                                     <span className="upload-count">
-                                                       ({newDocs.length} files)
-                                                     </span>
-                                                   )}
-                                                 </button>
-                                                 {errors.documents && (
-                                                   <p className="error-text">{errors.documents}</p>
-                                                 )}
-                                               </div>
-                                             </div>
-                            
-    
+                            <div className="form-field">
+                                <label className="field-label">
+                                    <FaUpload className="label-icon" /> Upload Documents*
+                                </label>
+                                <div className="upload-container">
+                                    <button
+                                        type="button"
+                                        className="upload-button"
+                                        onClick={() => setShowUploadModal(true)}
+                                    >
+                                        <FaUpload className="upload-icon" /> Upload PDF Files
+                                        {newDocs.length > 0 && (
+                                            <span className="upload-count">
+                                                ({newDocs.length} PDF{newDocs.length !== 1 ? 's' : ''})
+                                            </span>
+                                        )}
+                                    </button>
+                                    {errors.document && <p className="error-text">{errors.document}</p>}
+                                    <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                                        Only PDF files are accepted (Max 10MB per file)
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     {/* Project Requirement */}
-<div className="form-section">
-    <div className="section-header">
-        <FileCheck className="section-icon" size={20} />
-        <h3 style={{ color: '#0e7bdae7' }}>Project Requirement:</h3>
-    </div>
+                    <div className="form-section">
+                        <div className="section-header">
+                            <FileCheck className="section-icon" size={20} />
+                            <h3 style={{ color: '#0e7bdae7' }}>Project Requirement:</h3>
+                        </div>
 
-    <div className="form-grid" style={{ gridTemplateColumns: '3fr 1fr', gap: '20px', alignItems: 'start' }}>
-        <div className="form-field mt-2">
-            <label className="field-label">
-                <MessageSquareMore className="label-icon" /> Comments
-            </label>
-            <div className="input-wrapper">
-                <textarea
-                    name="comments"
-                    value={formData.comments}
-                    onChange={handleChange}
-                    className="modern-input"
-                    placeholder="Enter your comments"
-                    rows="3"
-                    style={{ width: '100%' }}
-                />
-            </div>
-        </div>
+                        <div className="form-grid" style={{ gridTemplateColumns: '3fr 1fr', gap: '20px', alignItems: 'start' }}>
+                            <div className="form-field mt-2">
+                                <label className="field-label">
+                                    <MessageSquareMore className="label-icon" /> Comments*
+                                </label>
+                                <div className="input-wrapper">
+                                    <textarea
+                                        name="comments"
+                                        value={formData.comments}
+                                        onChange={handleChange}
+                                        className="modern-input"
+                                        placeholder="Enter your comments"
+                                        rows="2"
+                                        style={{ width: '100%' }}
+                                    />
+                                </div>
+                                {errors.comments && <p className="error-text">{errors.comments}</p>}
+                            </div>
 
-        <div  style={{ display: 'flex', alignItems: 'end', height: '100%',  paddingLeft:'50px', justifyContent: 'flex-end' }}>
-            <button
-                type="submit"
-                className={`submit-button ${isSubmitting ? "submitting" : ""}`}
-                disabled={isSubmitting}
-                style={{ width: 'auto', padding: '12px 30px' }}
-            >
-                {isSubmitting ? (
-                    <>
-                        <div className="spinner"></div>
-                        Submitting...
-                    </>
-                ) : (
-                    <>
-                        <FaWater className="submit-icon" /> Submit
-                    </>
-                )}
-            </button>
-        </div>
-    </div>
-</div>
-      
+                            <div style={{ display: 'flex', alignItems: 'end', height: '100%', paddingLeft: '50px', justifyContent: 'flex-end' }}>
+                                <button
+                                    type="submit"
+                                    className={`submit-button ${isSubmitting ? "submitting" : ""}`}
+                                    disabled={isSubmitting}
+                                    style={{ width: 'auto', padding: '12px 30px' }}
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="spinner"></div>
+                                            Submitting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaWater className="submit-icon" /> Submit
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </form>
 
-                 <PollutionDocUploadModal
-        show={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        files={newDocs}
-        setFiles={setNewDocs}
-        title="Upload Application Documents"
-      />
-
-      
+            <PollutionDocUploadModal
+                show={showUploadModal}
+                onClose={() => setShowUploadModal(false)}
+                files={newDocs}
+                setFiles={setNewDocs}
+                title="Upload PDF Documents Only"
+                validateFileType={validateFileType}
+            />
 
             <ReusableDialog
                 open={confirmOpen}

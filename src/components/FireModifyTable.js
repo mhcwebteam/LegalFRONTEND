@@ -1,35 +1,42 @@
 import React, { useEffect, useState, useMemo, useContext } from "react";
-import { Nav, Form, Button, Row, Col, Badge, Modal, Card } from "react-bootstrap";
+import {
+  Nav,
+  Form,
+  Button,
+  Row,
+  Col,
+  Badge,
+  Modal,
+  Card,
+} from "react-bootstrap";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import ReraDocUploadModal from "./ReraDocUploadModal";
 import { FaFileAlt } from "react-icons/fa";
-import EmailSelectionModal from "./EmailSelectionModal";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
+import EmailSelectionModal from "./EmailModal";
 
 const FireModifyTable = () => {
-  
-
-    const { 
-      storeData, 
-      setStoreData, 
-      respModifyData, 
-      setRespModifyData, 
-      setHeaderData, 
-      headerData 
-    } = useContext(Context);
+  const {
+    storeData,
+    setStoreData,
+    respModifyData,
+    setRespModifyData,
+    setHeaderData,
+    headerData,
+  } = useContext(Context);
 
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
   // const [storeData, setStoreData] = useState([]);
-   const [showEmailModal, setShowEmailModal] = useState(false);
-    const [emailRecipients, setEmailRecipients] = useState([]);
-    const [selectedEmails, setSelectedEmails] = useState([]);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState([]);
+  const [selectedEmails, setSelectedEmails] = useState([]);
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
@@ -41,8 +48,8 @@ const FireModifyTable = () => {
     feeAmount: "",
     acknowledgeName: "",
   });
-
-
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [selectedLogs, setSelectedLogs] = useState([]);
 
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
@@ -115,15 +122,9 @@ const FireModifyTable = () => {
     setErrors({});
     setProvisionalNOCCompleted(false);
 
-    console.log(
-      "PROVISIONAL_NOC_STEP_INDICES:",
-      PROVISIONAL_NOC_STEP_INDICES
-    );
+    console.log("PROVISIONAL_NOC_STEP_INDICES:", PROVISIONAL_NOC_STEP_INDICES);
     console.log("OC_PROCESS_STEP_RANGE:", OC_PROCESS_STEP_RANGE); // Keep this for clarity in renderProcessColumn
     console.log("Steps array:", steps);
-
-
-
 
     if (selectedPlant && steps.length > 0) {
       axios
@@ -274,6 +275,7 @@ const FireModifyTable = () => {
               ...prev,
               applyDate: details.APPLY_DT || "",
               comments: details.COMMENTS || "",
+              logs: details.LOG || "",
               feePaid: details.FEE_PAID || "", // Load existing fee data
               feeAmount: details.FEE_AMOUNT || "",
               acknowledgeName: details.ACKNOWLEDGE_NAME || "",
@@ -296,6 +298,7 @@ const FireModifyTable = () => {
               ...prev,
               applyDate: "",
               comments: "",
+              logs: "",
               feePaid: "",
               feeAmount: "",
               acknowledgeName: "",
@@ -333,51 +336,87 @@ const FireModifyTable = () => {
   //   }
 
   //   setFormData((prev) => ({ ...prev, [name]: value }));
+
+
+
   // };
-const handleChange = async (e) => {
-  const { name, value } = e.target;
 
-  console.log(name, value, "Field changed");
 
-  // 🏗️ When location changes
-  if (name === "loc") {
-    setSelectedPlant(value);
-    setFormData((prev) => ({
-      ...prev,
-      loc: value,
-    }));
+    const getCurrentStepLogs = () => {
+    if (!immediateNextStep || !storeData || storeData.length === 0) {
+      return [];
+    }
+    
+    // Find the current step record
+    const currentStepRecord = storeData.find(
+      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim()
+    );
+    
+    if (!currentStepRecord?.LOG) {
+      return [];
+    }
+    
+    try {
+      return JSON.parse(currentStepRecord.LOG);
+    } catch (error) {
+      console.error("Failed to parse logs:", error);
+      return [];
+    }
+  };
+  const handleChange = async (e) => {
+    const { name, value } = e.target;
 
-    // 🧹 If location is empty, clear dependent fields
-    if (!value || value.trim() === "") {
-      setHeaderData({});
+    console.log(name, value, "Field changed");
+
+    // 🏗️ When location changes
+    if (name === "loc") {
+      setSelectedPlant(value);
       setFormData((prev) => ({
         ...prev,
-        applyDate: "",
-        totalPrjArea: "",
-        noOfNocs: "",
+        loc: value,
       }));
-      return;
-    }
 
-    try {
-      // 🌐 Fetch master data for selected location
-      const res = await getMasterByLoc(value);
-
-      if (res && Object.keys(res).length > 0) {
-        console.log("✅ Master data fetched:", res);
-
-        // 🧩 Update header data (used by ProjectInfoHeader)
-        setHeaderData(res);
-
-        // (Optional) update form fields based on res if needed
+      // 🧹 If location is empty, clear dependent fields
+      if (!value || value.trim() === "") {
+        setHeaderData({});
         setFormData((prev) => ({
           ...prev,
-          // Example if you want to fill auto fields:
-          // totalPrjArea: res.totalArea || "",
-          // noOfNocs: res.nocCount || "",
+          applyDate: "",
+          totalPrjArea: "",
+          noOfNocs: "",
         }));
-      } else {
-        console.warn("⚠️ No master data found for location:", value);
+        return;
+      }
+
+      try {
+        // 🌐 Fetch master data for selected location
+        const res = await getMasterByLoc(value);
+
+        if (res && Object.keys(res).length > 0) {
+          console.log("✅ Master data fetched:", res);
+
+          // 🧩 Update header data (used by ProjectInfoHeader)
+          setHeaderData(res);
+
+          // (Optional) update form fields based on res if needed
+          setFormData((prev) => ({
+            ...prev,
+            // Example if you want to fill auto fields:
+            // totalPrjArea: res.totalArea || "",
+            // noOfNocs: res.nocCount || "",
+          }));
+        } else {
+          console.warn("⚠️ No master data found for location:", value);
+          setHeaderData({});
+          setFormData((prev) => ({
+            ...prev,
+            applyDate: "",
+            totalPrjArea: "",
+            noOfNocs: "",
+          }));
+        }
+      } catch (err) {
+        console.error("❌ Error fetching master by loc:", err);
         setHeaderData({});
         setFormData((prev) => ({
           ...prev,
@@ -386,29 +425,18 @@ const handleChange = async (e) => {
           noOfNocs: "",
         }));
       }
-    } catch (err) {
-      console.error("❌ Error fetching master by loc:", err);
-      setHeaderData({});
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "",
-        totalPrjArea: "",
-        noOfNocs: "",
-      }));
+
+      return;
     }
 
-    return;
-  }
+    // 🧾 Handle other input fields normally
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-  // 🧾 Handle other input fields normally
-  setFormData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
-
-
-       const handleEmailSubmit = () => {
+  const handleEmailSubmit = () => {
     const newErrors = {};
     if (!formData.loc) newErrors.loc = "Plant selection is required";
     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
@@ -422,7 +450,6 @@ const handleChange = async (e) => {
     setShowEmailModal(true);
   };
 
-  
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
@@ -451,15 +478,16 @@ const handleChange = async (e) => {
       immediateNextStepIndex
     );
 
-    if (isProvisionalNOCStep) {
-      if (!formData.applyDate) {
-        newErrors.applyDate =
-          "Please provide an Apply/Inspection Date for this step.";
-      }
-    }
+    // if (isProvisionalNOCStep) {
+    //   if (!formData.applyDate) {
+    //     newErrors.applyDate =
+    //       "Please provide an Apply/Inspection Date for this step.";
+    //   }
+    // }
 
     if (isOCProcessStep) {
-      if (!formData.feePaid) newErrors.feePaid = "Please specify if fee is paid.";
+      if (!formData.feePaid)
+        newErrors.feePaid = "Please specify if fee is paid.";
       if (formData.feePaid === "YES" && !formData.feeAmount)
         newErrors.feeAmount = "Fee amount is required when fee is paid.";
       if (!formData.acknowledgeName)
@@ -526,6 +554,7 @@ const handleChange = async (e) => {
     const currentStepRecord = storeData.find(
       (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim()
     );
+console.log("➡️ currentStepRecord:", currentStepRecord);
 
     if (isProvisionalNOCStep) {
       existingRecordStatusField = currentStepRecord?.UPDATED;
@@ -533,11 +562,17 @@ const handleChange = async (e) => {
       existingRecordStatusField = currentStepRecord?.OC_UPDATED; // *** Use OC_UPDATED here ***
     }
 
-    const apiUrl =
-      existingRecordStatusField === "YES"
-        ? `${API_BASE_URL}/fire-modify`
-        : `${API_BASE_URL}/fire-submit`;
+    console.log("➡️ ExistingRecord :", existingRecordStatusField);
+    // const apiUrl =
+    //   existingRecordStatusField === "YES"
+    //   //  ? `${API_BASE_URL}/fire-modify`
+    //     : `${API_BASE_URL}/fire-submit`;
+   
+    const apiUrl = currentStepRecord
+  ? `${API_BASE_URL}/fire-modify`
+  : `${API_BASE_URL}/fire-submit`;
 
+        console.log("➡️ Triggering API:", apiUrl);
     try {
       await axios.post(apiUrl, payload);
       await Swal.fire({
@@ -601,9 +636,7 @@ const handleChange = async (e) => {
     // Parse acknowledgement receipts (from ACK_DOC)
     if (nextStepDetails.ACK_DOC) {
       try {
-        const parsedAcknowledgeDocs = JSON.parse(
-          nextStepDetails.ACK_DOC
-        );
+        const parsedAcknowledgeDocs = JSON.parse(nextStepDetails.ACK_DOC);
         acknowledgementReceipts = parsedAcknowledgeDocs.map((doc) => ({
           name: doc.file_name,
           url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
@@ -617,74 +650,80 @@ const handleChange = async (e) => {
       immediateNextStepIndex
     );
 
+    
+   const currentStepLogs = getCurrentStepLogs();
+
     return (
-      <div className="d-flex flex-column" style={{ height: '100%' }}>
-        <Card style={{padding:'1px', height: '80%', overflow: 'auto' }}>
-   <h6 className="text-primary p-2">General Uploaded Documents</h6>
-        {generalDocuments.length > 0 ? (
-          <ul className="list-unstyled">
-            {generalDocuments.map((doc, idx) => (
-              <li key={`gen-doc-${idx}`} className="mb-1 p-1">
-                <a
-                  href={doc.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-decoration-none"
-                >
-                  {/* <FaFileAlt className="me-2" /> */}
-                  {doc.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted mb-0">
-            No general documents were uploaded for this step.
-          </p>
-        )}
+      <div className="d-flex flex-column" style={{ height: "100%" }}>
+        <Card style={{ padding: "1px", height: "80%", overflow: "auto" }}>
+          <h6 className="text-primary p-2">General Uploaded Documents</h6>
+          {generalDocuments.length > 0 ? (
+            <ul className="list-unstyled">
+              {generalDocuments.map((doc, idx) => (
+                <li key={`gen-doc-${idx}`} className="mb-1 p-1">
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-decoration-none"
+                  >
+                    {/* <FaFileAlt className="me-2" /> */}
+                    {doc.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted mb-0">
+              No general documents were uploaded for this step.
+            </p>
+          )}
 
-        {/* Only show acknowledgement receipts if the current step is an OC Process step */}
-        {isOCProcessStep && ( // *** Conditional rendering here ***
-          <>
-            <h6 className="text-primary mt-3">Acknowledgement Receipts</h6>
-            {acknowledgementReceipts.length > 0 ? (
-              <ul className="list-unstyled">
-                {acknowledgementReceipts.map((doc, idx) => (
-                  <li key={`ack-doc-${idx}`} className="mb-1">
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-decoration-none"
-                    >
-                      <FaFileAlt className="me-2" />
-                      {doc.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted mb-0">
-                No acknowledgement receipts available for this step.
-              </p>
-            )}
-          </>
-        )}
+          {/* Only show acknowledgement receipts if the current step is an OC Process step */}
+          {isOCProcessStep && ( // *** Conditional rendering here ***
+            <>
+              <h6 className="text-primary mt-3">Acknowledgement Receipts</h6>
+              {acknowledgementReceipts.length > 0 ? (
+                <ul className="list-unstyled">
+                  {acknowledgementReceipts.map((doc, idx) => (
+                    <li key={`ack-doc-${idx}`} className="mb-1">
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-decoration-none"
+                      >
+                        <FaFileAlt className="me-2" />
+                        {doc.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted mb-0">
+                  No acknowledgement receipts available for this step.
+                </p>
+              )}
+            </>
+          )}
         </Card>
- <Card className="m-2 p-2" style={{ height: '25%', overflow: 'hidden' }}>
-  <h6 className="mb-2">Comments</h6>
-  <div
-    style={{
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    }}
-  >
-    {formData.comments || 'No comments available'}
-  </div>
-</Card>
 
+           <div className="p-2 border-top bg-light text-center">
+                  <Button
+                    variant="info"
+                    size="sm"
+                    onClick={() => {
+                      const logs = getCurrentStepLogs();
+                      setSelectedLogs(logs);
+                      setShowLogsModal(true);
+                    }}
+                    disabled={currentStepLogs.length === 0}
+                  >
+                    {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
+                  </Button>
+                </div>
 
+      
       </div>
     );
   };
@@ -990,10 +1029,8 @@ const handleChange = async (e) => {
         </Col>
         {/* md={3} remains the same, as 4 + 5 + 3 = 12 */}
         <Col md={3} className="d-flex w-25">
-          <div className="border rounded p-3 bg-white flex-fill d-flex flex-columnc">
-            <h5 className="mb-3 text-dark">
-              Document History
-            </h5>
+          <div className="border rounded p-3 bg-white flex-fill d-flex flex-column">
+            <h5 className="mb-3 text-dark">Document History</h5>
             <div className="flex-grow-1 overflow-auto">
               {renderDocumentHistory()}
             </div>
@@ -1001,7 +1038,31 @@ const handleChange = async (e) => {
         </Col>
       </Row>
 
-  <EmailSelectionModal
+
+       <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Logs for {immediateNextStep?.PROCESS}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
+          {selectedLogs.length === 0 ? (
+            <p>No logs available</p>
+          ) : (
+            selectedLogs.map((log, i) => (
+              <div key={i} className="mb-2">
+                <strong>{log?.date || "Unknown Date"}:</strong> {log?.comment || "No comment"}
+                <hr />
+              </div>
+            ))
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <EmailSelectionModal
         show={showEmailModal}
         onHide={() => setShowEmailModal(false)}
         onSubmit={handleEmailSelectionSubmit}
