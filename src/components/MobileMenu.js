@@ -12,6 +12,9 @@ const MobileMenu = ({ closeMenu }) => {
         <NavLink to="/create" onClick={closeMenu} activeClassName="active">
           Create
         </NavLink>
+          <NavLink to="/Edit" onClick={closeMenu} activeClassName="active">
+          Edit
+        </NavLink>
         <NavLink to="/update" onClick={closeMenu} activeClassName="active">
           Update
         </NavLink>

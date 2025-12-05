@@ -144,6 +144,7 @@ import Fireform from './pages/Fireform';
 import Ghmc from './pages/Ghmc';
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import EditMasterDetails from './pages/EditMasterDetails';
 
 function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -214,6 +215,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Login />} />
               <Route path="/create" element={<Create />} />
+              <Route path="/Edit" element= {<EditMasterDetails />} />
               <Route path="/update" element={<Update />} />
               <Route path="/modify" element={<Modify />} />
               <Route path="/amendment" element={<Amendment />} />

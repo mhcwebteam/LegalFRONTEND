@@ -164,9 +164,9 @@ export const submitFireForm = async (formPayload) => {
 
 export const getMastercode = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL1}`);
+    const response = await axios.get(`${API_BASE_URL}/company-codes`);
 
-    console.log(response?.data?.companyCodes,"hi iam");
+    console.log(response?.data?.companyCodes,"hi iam111111111111111111");
     return response.data;
   } catch (error) {
     console.error("Error fetching master data:", error);

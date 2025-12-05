@@ -18,6 +18,7 @@ import { API_BASE_URL, API_BASE_URLS } from "../config/Config";
 import ProcessField from "../components/ProcessField";
 import ProjectInfoHeader from "../components/ProjectInfoHeader";
 import WaterDocUploadModal from "../components/WaterDocUploadModal";
+import Swal from "sweetalert2";
 
 const Ghmc = () => {
     const navigate = useNavigate();
@@ -162,6 +163,7 @@ const Ghmc = () => {
         if (!formData.applyDate) newErrors.applyDate = "Application date is required.";
         if (!formData.Organization) newErrors.Organization = "Organization is required.";
         if (!formData.noOfTowers) newErrors.noOfTowers = "Number Of Towers is required.";
+        if(!formData.Comments) newErrors.Comments = "Please enter comments.";
 
         // ✅ Feasibility Docs validation (MANDATORY)
         if (feasibilityDocs.length === 0) {
@@ -216,72 +218,186 @@ const Ghmc = () => {
         }));
     };
 
-    // ✅ Final validation before submit
     const handleConfirmSubmit = async () => {
-        const allInvalidFiles = [
-            ...feasibilityDocs.filter(file => !validateFileType(file)),
-            ...AmountPaidDocs.filter(file => !validateFileType(file)),
-            ...towerDocuments.flatMap(tower => 
-                tower.documents.filter(file => !validateFileType(file))
-            )
-        ];
+    const allInvalidFiles = [
+        ...feasibilityDocs.filter(file => !validateFileType(file)),
+        ...AmountPaidDocs.filter(file => !validateFileType(file)),
+        ...towerDocuments.flatMap(tower => 
+            tower.documents.filter(file => !validateFileType(file))
+        )
+    ];
 
-        if (allInvalidFiles.length > 0) {
-            toast.error('Please remove non-PDF files before submitting');
-            setIsSubmitting(false);
-            setConfirmOpen(false);
-            return;
-        }
-
+    if (allInvalidFiles.length > 0) {
+        toast.error('Please remove non-PDF files before submitting');
+        setIsSubmitting(false);
         setConfirmOpen(false);
-        setIsSubmitting(true);
+        return;
+    }
 
-        const formPayload = new FormData();
-        formPayload.append('loc', formData.loc);
-        formPayload.append('process', formData.process);
-        formPayload.append('applyDate', formData.applyDate);
-        formPayload.append('Organization', formData.Organization);
-        formPayload.append('noOfTowers', formData.noOfTowers);
-        formPayload.append('Comments', formData.Comments || "");
+    setConfirmOpen(false);
+    setIsSubmitting(true);
 
-        // Append documents
-        feasibilityDocs.forEach(file => formPayload.append('feas_doc_name[]', file));
-        AmountPaidDocs.forEach(file => formPayload.append('amount_doc_name[]', file));
+    const formPayload = new FormData();
+    formPayload.append('loc', formData.loc);
+    formPayload.append('process', formData.process);
+    formPayload.append('applyDate', formData.applyDate);
+    formPayload.append('Organization', formData.Organization);
+    formPayload.append('noOfTowers', formData.noOfTowers);
+    formPayload.append('Comments', formData.Comments || "");
 
-        towerDocuments.forEach(tower => {
-            tower.documents.forEach(file => {
-                formPayload.append('tower_doc_name[]', file);
-            });
+    // Append documents
+    feasibilityDocs.forEach(file => formPayload.append('feas_doc_name[]', file));
+    AmountPaidDocs.forEach(file => formPayload.append('amount_doc_name[]', file));
+
+    towerDocuments.forEach(tower => {
+        tower.documents.forEach(file => {
+            formPayload.append('tower_doc_name[]', file);
         });
+    });
 
-        try {
-            const res = await axios.post(`${API_BASE_URL}/GHMC-submit`, formPayload, {
-                headers: { "Content-Type": "multipart/form-data" },
+    try {
+        const res = await axios.post(`${API_BASE_URL}/GHMC-submit`, formPayload, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        
+        if (res.data.message) {
+            Swal.fire({
+                icon: "success",
+                title: res.data.message,
+                showConfirmButton: false,
+                timer: 3000, // Changed to 3 seconds for better UX
+            }).then(() => {
+                // Reset form
+                setFormData({
+                    loc: "",
+                    process: "",
+                    Organization: "",
+                    applyDate: "",
+                    noOfTowers: "",
+                    Comments: "",
+                });
+                setFeasibilityDocs([]);
+                setAmountPaidDocs([]);
+                setTowerDocuments([]);
+                setErrors({});
+                
+                // Navigate after the alert is closed
+                navigate('/create');
             });
-
-            toast.success(res.data.message || "Form submitted successfully");
-            console.log(res, "result Data");
-
-            // Reset form
-            setFormData({
-                loc: "",
-                process: "",
-                Organization: "",
-                applyDate: "",
-                noOfTowers: "",
-                Comments: "",
+        } else {
+            // Handle case where there's no message but still success
+            Swal.fire({
+                icon: "success",
+                title: "Application submitted successfully!",
+                showConfirmButton: false,
+                timer: 2000,
+            }).then(() => {
+                // Reset form
+                setFormData({
+                    loc: "",
+                    process: "",
+                    Organization: "",
+                    applyDate: "",
+                    noOfTowers: "",
+                    Comments: "",
+                });
+                setFeasibilityDocs([]);
+                setAmountPaidDocs([]);
+                setTowerDocuments([]);
+                setErrors({});
+                
+                // Navigate after the alert is closed
+                navigate('/create');
             });
-            setFeasibilityDocs([]);
-            setAmountPaidDocs([]);
-            setTowerDocuments([]);
-            setErrors({});
-            navigate('/create');
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Submission failed");
-        } finally {
-            setIsSubmitting(false);
         }
-    };
+    } catch (err) {
+        // Show error alert instead of toast for consistency
+        Swal.fire({
+            icon: "error",
+            title: "Submission Failed",
+            text: err.response?.data?.message || "Something went wrong. Please try again.",
+            confirmButtonText: "OK"
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+};
+
+    // ✅ Final validation before submit
+    // const handleConfirmSubmit = async () => {
+    //     const allInvalidFiles = [
+    //         ...feasibilityDocs.filter(file => !validateFileType(file)),
+    //         ...AmountPaidDocs.filter(file => !validateFileType(file)),
+    //         ...towerDocuments.flatMap(tower => 
+    //             tower.documents.filter(file => !validateFileType(file))
+    //         )
+    //     ];
+
+    //     if (allInvalidFiles.length > 0) {
+    //         toast.error('Please remove non-PDF files before submitting');
+    //         setIsSubmitting(false);
+    //         setConfirmOpen(false);
+    //         return;
+    //     }
+
+    //     setConfirmOpen(false);
+    //     setIsSubmitting(true);
+
+    //     const formPayload = new FormData();
+    //     formPayload.append('loc', formData.loc);
+    //     formPayload.append('process', formData.process);
+    //     formPayload.append('applyDate', formData.applyDate);
+    //     formPayload.append('Organization', formData.Organization);
+    //     formPayload.append('noOfTowers', formData.noOfTowers);
+    //     formPayload.append('Comments', formData.Comments || "");
+
+    //     // Append documents
+    //     feasibilityDocs.forEach(file => formPayload.append('feas_doc_name[]', file));
+    //     AmountPaidDocs.forEach(file => formPayload.append('amount_doc_name[]', file));
+
+    //     towerDocuments.forEach(tower => {
+    //         tower.documents.forEach(file => {
+    //             formPayload.append('tower_doc_name[]', file);
+    //         });
+    //     });
+
+    //     try {
+    //         const res = await axios.post(`${API_BASE_URL}/GHMC-submit`, formPayload, {
+    //             headers: { "Content-Type": "multipart/form-data" },
+    //         });
+            
+    //              if (res.data.message) {
+    //           Swal.fire({
+    //             icon: "success",
+    //             title: res.data.message,
+    //             showConfirmButton: false,
+    //             timer: 5000,
+    //           }).then(() => {
+    //             navigate('/create');
+    //           });
+    //         }
+
+
+    //         // Reset form
+    //         setFormData({
+    //             loc: "",
+    //             process: "",
+    //             Organization: "",
+    //             applyDate: "",
+    //             noOfTowers: "",
+    //             Comments: "",
+    //         });
+    //         setFeasibilityDocs([]);
+    //         setAmountPaidDocs([]);
+    //         setTowerDocuments([]);
+    //         setErrors({});
+    //         navigate('/create');
+    //     } catch (err) {
+    //         toast.error(err.response?.data?.message || "Submission failed");
+    //     } finally {
+    //         setIsSubmitting(false);
+    //     }
+    // };
 
     const handleBackClick = () => {
         navigate('/create');
@@ -582,6 +698,9 @@ const Ghmc = () => {
                                         rows="2"
                                     />
                                 </div>
+                                   <div className="error-container">
+                                        {errors.Comments && <p className="error-text">{errors.Comments}</p>}
+                                    </div>
                             </div>
                         </div>
                     </div>

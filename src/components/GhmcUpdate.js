@@ -1516,6 +1516,9 @@ const GhmcUpdate = () => {
     }
   };
 
+
+const NumberOfTowers = storeData?.[0]?.noOfTowers;
+
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -1589,7 +1592,8 @@ const GhmcUpdate = () => {
               <h4 className="mb-3 text-warning fw-bold">
                 {currentProcess ||
                   immediateNextStep?.PROCESS ||
-                  "Select a Process"}
+                  "Select a Process"}  ||   {NumberOfTowers && <> | Towers Count : <span className="text-dark">{NumberOfTowers}</span></>}
+             
               </h4>
 
               <Row className="mb-2">

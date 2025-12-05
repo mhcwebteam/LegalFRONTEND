@@ -5,6 +5,7 @@ import './Sidebar.css';
 
 const menuItems = [
   { label: 'Create', icon: '🆕', path: '/create' },
+    { label: 'Edit', icon: '🆕', path: '/Edit' },
   { label: 'Modify', icon: '🔧', path: '/modify' },
   { label: 'Update', icon: '✏️', path: '/update' },
   { label: 'Amendment', icon: '📝', path: '/amendment' },

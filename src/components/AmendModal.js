@@ -115,11 +115,18 @@ const AmendModal = ({
   };
 
 
-  const formatDate = (date) => {
-    if (!date) return "";
-    const [y, m, d] = date.split("-");
-    return `${d}/${m}/${y}`;
-  };
+const formatDate = (date) => {
+  if (!date) return "";
+
+  // Split date & time safely
+  const [fullDate, time] = date.split(" ");
+
+  const [y, m, d] = fullDate.split("-");
+
+  // If no time → return only date
+  return time ? `${d}-${m}-${y} ${time}` : `${d}-${m}-${y}`;
+};
+
 
   return (
     <>
@@ -148,13 +155,18 @@ const AmendModal = ({
 
             {/* PROCESS */}
             <Form.Group className="mb-3">
+
               <Form.Label>Process</Form.Label>
+              
               <Form.Control type="text" value={amendData.process} readOnly />
             </Form.Group>
 
             {/* APPLY DATE */}
             <Form.Group className="mb-3">
-              <Form.Label>Apply Date</Form.Label>
+                    <Form.Label>
+            {amendData.process === "Received TOR" ? "Received Date" : "Apply Date"}
+            <span style={{ color: "red" }}>*</span>
+          </Form.Label>
               <Form.Control type="text" value={formatDate(amendData?.applyDate)} readOnly />
             </Form.Group>
 
@@ -408,7 +420,7 @@ const AmendModal = ({
 
                       return logEntries.map((entry, index) => (
                         <div key={index} className="mb-2">
-                          <strong>Date:</strong> {entry.date} <br />
+                          <strong>Date:</strong> {formatDate(entry.date)} <br />
                           <strong>Comment:</strong> {entry.comment}
                           {index < logEntries.length - 1 && <hr />}
                         </div>

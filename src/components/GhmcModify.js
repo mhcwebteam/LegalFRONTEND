@@ -84,7 +84,7 @@
 //     setShowEmailModal(true);
 //   };
 
-  
+
 //   const handleEmailSelectionSubmit = async (emails) => {
 //     setSelectedEmails(emails);
 //     setShowEmailModal(false);
@@ -569,12 +569,12 @@
 //                          let variant = "secondary";
 //                          let clickable = false;
 //                          let statusIcon = "⏸️";
-         
+
 //                          const isCompleted = storeData.some(
 //                            (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
 //                              item.UPDATED === "YES"
 //                          );
-         
+
 //                          if (isCompleted) {
 //                            variant = "success";
 //                            clickable = true;
@@ -584,7 +584,7 @@
 //                            clickable = true;
 //                            statusIcon = "⚠️";
 //                          }
-         
+
 //                          return (
 //                            <Nav.Item key={idx} className="mb-2">
 //                              <Nav.Link
@@ -622,7 +622,7 @@
 //                     <h4 className="mb-3 text-warning fw-bold">
 //                       {currentProcess || immediateNextStep?.PROCESS || "Select a Process"}
 //                     </h4>
-      
+
 //                     <Row className="mb-2">
 //                       <Col md={6}>
 //                         <Form.Group>
@@ -645,7 +645,7 @@
 //                           </Form.Control.Feedback>
 //                         </Form.Group>
 //                       </Col>
-      
+
 //                       <Col md={6}>
 //                         <Form.Group>
 //                           <Form.Label>Apply Date</Form.Label>
@@ -664,7 +664,7 @@
 //                         </Form.Group>
 //                       </Col>
 //                     </Row>
-      
+
 //                     <Row className="mb-2">
 //                       <Col md={12}>
 //                         <Form.Group controlId="formComments">
@@ -683,7 +683,7 @@
 //                         </Form.Group>
 //                       </Col>
 //                     </Row>
-      
+
 //                     <Row className="mb-3">
 //                       <Col md={6}>
 //                         <Form.Label>Upload Document</Form.Label>
@@ -708,7 +708,7 @@
 //                         </p>
 //                       </Col>
 //                     </Row>
-      
+
 //                     <div className="d-grid">
 //                       {areAllStepsCompleted() && isViewingSpecificStep && (
 //                         <Button
@@ -720,7 +720,7 @@
 //                           ← Back to Completion Message
 //                         </Button>
 //                       )}
-      
+
 //                       {viewedStep?.PROCESS === immediateNextStep?.PROCESS && (
 //                         <Button
 //                           variant={submitted ? "success" : "primary"}
@@ -855,12 +855,12 @@ const GhmcModify = () => {
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
   const [organizationType, setOrganizationType] = useState("");
-  
+
   const [isViewingSpecificStep, setIsViewingSpecificStep] = useState(false);
   const [viewedStep, setViewedStep] = useState(null);
   const [viewedStepDetails, setViewedStepDetails] = useState(null);
   const [currentProcess, setCurrentProcess] = useState("");
-  
+
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
@@ -908,11 +908,11 @@ const GhmcModify = () => {
   // Check if all steps completed
   const areAllStepsCompleted = () => {
     if (!steps.length || !storeData.length) return false;
-    
+
     const completedSteps = storeData
       .filter((item) => item.UPDATED === "YES")
       .map((item) => item.PROCESS);
-    
+
     return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
 
@@ -921,10 +921,10 @@ const GhmcModify = () => {
     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     const validExtensions = ['.pdf'];
     const validMimeTypes = ['application/pdf'];
-    
+
     const isValidExtension = validExtensions.includes(fileExtension);
     const isValidMimeType = !file.type || validMimeTypes.includes(file.type);
-    
+
     return isValidExtension && isValidMimeType;
   };
 
@@ -932,7 +932,7 @@ const GhmcModify = () => {
   const validateDocuments = () => {
     let isValid = true;
     const newErrors = {};
-    
+
     if (feasibilityDocs.length > 0) {
       const invalidFiles = feasibilityDocs.filter(file => !validateFileType(file));
       if (invalidFiles.length > 0) {
@@ -940,7 +940,7 @@ const GhmcModify = () => {
         isValid = false;
       }
     }
-    
+
     setErrors(newErrors);
     return isValid;
   };
@@ -951,11 +951,11 @@ const GhmcModify = () => {
 
     if (!formData.applyDate) newErrors.applyDate = "Date is required";
     if (!formData.Comments) newErrors.Comments = "Please enter comments";
-    
+
     if (!validateDocuments()) {
       return false;
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -983,7 +983,7 @@ const GhmcModify = () => {
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       if (errors.feasibilityDocs) {
         toast.error('Please upload only PDF files');
@@ -992,17 +992,17 @@ const GhmcModify = () => {
       }
       return;
     }
-    
+
     setShowEmailModal(true);
   };
 
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
-    
+
     // Reset submission status before new submission
     setSubmitted(false);
-    
+
     await handleConfirmSubmit(emails);
   };
 
@@ -1014,7 +1014,7 @@ const GhmcModify = () => {
       setViewedStep(null);
       setViewedStepDetails(null);
       setCurrentProcess("");
-      
+
       // Clear form data except plant
       setFormData(prev => ({
         ...prev,
@@ -1027,7 +1027,7 @@ const GhmcModify = () => {
         Size: "",
         Ghmc: "",
       }));
-      
+
       // Clear documents
       setFeasibilityDocs([]);
       setAmountPaidDocs([]);
@@ -1252,7 +1252,7 @@ const GhmcModify = () => {
   useEffect(() => {
     if (nextStepDetails) {
       console.log("🧩 Next Step Details Fetched:", nextStepDetails);
-      
+
       // Only update form data if we're not in submission mode
       // and if the current step is the immediate next step
       if (!submitted || (immediateNextStep && nextStepDetails.PROCESS === immediateNextStep.PROCESS)) {
@@ -1274,135 +1274,50 @@ const GhmcModify = () => {
     }
   }, [nextStepDetails, submitted, immediateNextStep]);
 
-  // Handle form changes
-  // const handleChange = async (e) => {
-  //   const { name, value } = e.target;
-
-  //   if (name === "noOfFlats") {
-  //     const nocs = Math.ceil(Number(value) / 2);
-  //     setLinkDocs([]);
-  //     setLandDocs([]);
-  //     setOthDocs([]);
-  //     setFeasibilityDocs([]);
-  //     setAmountPaidDocs([]);
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       noOfFlats: value,
-  //       KLD: value ? nocs : "",
-  //     }));
-  //   } else if (name === "OldAmount") {
-  //     const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
-  //     const total = amountPaid + Number(value);
-  //     console.log(total, "total", amountPaid, value);
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       OldAmount: value,
-  //       TotalAmount: value ? total : "",
-  //     }));
-  //   } else if (name === "loc") {
-  //     setFormData((prev) => ({ ...prev, loc: value }));
-  //     setSelectedPlant(value);
-  //     setSubmitted(false);
-  //     setIsViewingSpecificStep(false);
-
-  //     try {
-  //       const res = await getMasterByLoc(value);
-  //       if (res) {
-  //         setHeaderData(res);
-  //         setFormData((prev) => ({
-  //           ...prev,
-  //           applyDate: res.APPLICATION_DATE || "",
-  //           noOfTowers: res.NUMBER_OF_TOWERS || "",
-  //           TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
-  //           ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
-  //           ProjectName: res.PROJECT_NAME || "",
-  //         }));
-  //       } else {
-  //         setHeaderData(null);
-  //         setFormData((prev) => ({
-  //           ...prev,
-  //           applyDate: "",
-  //           noOfTowers: "",
-  //           TotalProjectArea: "",
-  //           ProjectBuildArea: "",
-  //           ProjectName: "",
-  //         }));
-  //       }
-  //     } catch (err) {
-  //       console.error("Error fetching master by loc:", err);
-  //       setHeaderData(null);
-  //       setFormData((prev) => ({
-  //         ...prev,
-  //         applyDate: "",
-  //         noOfTowers: "",
-  //         TotalProjectArea: "",
-  //         ProjectBuildArea: "",
-  //         ProjectName: "",
-  //       }));
-  //     }
-  //   } else {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       [name]: value,
-  //     }));
-  //   }
-  // };
 
 
-   const handleChange = async (e) => {
-      const { name, value } = e.target;
-  
-      if (name === "noOfFlats") {
-        const nocs = Math.ceil(Number(value) / 2);
-        setLinkDocs([]);
-        setLandDocs([]);
-        setOthDocs([]);
-        setFeasibilityDocs([]);
-        setAmountPaidDocs([]);
-        setFormData((prev) => ({
-          ...prev,
-          noOfFlats: value,
-          KLD: value ? nocs : "",
-        }));
-      } else if (name === "OldAmount") {
-        const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
-        const total = amountPaid + Number(value);
-        console.log(total, "total", amountPaid, value);
-        setFormData((prev) => ({
-          ...prev,
-          OldAmount: value,
-          TotalAmount: value ? total : "",
-        }));
-      } else if (name === "loc") {
-        setFormData((prev) => ({ ...prev, loc: value }));
-        setSelectedPlant(value);
-        setSubmitted(false);
-  
-        try {
-          const res = await getMasterByLoc(value);
-          if (res) {
-            setHeaderData(res);
-            setFormData((prev) => ({
-              ...prev,
-              applyDate: res.APPLICATION_DATE || "",
-              noOfTowers: res.NUMBER_OF_TOWERS || "",
-              TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
-              ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
-              ProjectName: res.PROJECT_NAME || "",
-            }));
-          } else {
-            setHeaderData(null);
-            setFormData((prev) => ({
-              ...prev,
-              applyDate: "",
-              noOfTowers: "",
-              TotalProjectArea: "",
-              ProjectBuildArea: "",
-              ProjectName: "",
-            }));
-          }
-        } catch (err) {
-          console.error("Error fetching master by loc:", err);
+  const handleChange = async (e) => {
+    const { name, value } = e.target;
+
+    if (name === "noOfFlats") {
+      const nocs = Math.ceil(Number(value) / 2);
+      setLinkDocs([]);
+      setLandDocs([]);
+      setOthDocs([]);
+      setFeasibilityDocs([]);
+      setAmountPaidDocs([]);
+      setFormData((prev) => ({
+        ...prev,
+        noOfFlats: value,
+        KLD: value ? nocs : "",
+      }));
+    } else if (name === "OldAmount") {
+      const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
+      const total = amountPaid + Number(value);
+      console.log(total, "total", amountPaid, value);
+      setFormData((prev) => ({
+        ...prev,
+        OldAmount: value,
+        TotalAmount: value ? total : "",
+      }));
+    } else if (name === "loc") {
+      setFormData((prev) => ({ ...prev, loc: value }));
+      setSelectedPlant(value);
+      setSubmitted(false);
+
+      try {
+        const res = await getMasterByLoc(value);
+        if (res) {
+          setHeaderData(res);
+          setFormData((prev) => ({
+            ...prev,
+            applyDate: res.APPLICATION_DATE || "",
+            noOfTowers: res.NUMBER_OF_TOWERS || "",
+            TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
+            ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
+            ProjectName: res.PROJECT_NAME || "",
+          }));
+        } else {
           setHeaderData(null);
           setFormData((prev) => ({
             ...prev,
@@ -1413,16 +1328,28 @@ const GhmcModify = () => {
             ProjectName: "",
           }));
         }
-      } else {
+      } catch (err) {
+        console.error("Error fetching master by loc:", err);
+        setHeaderData(null);
         setFormData((prev) => ({
           ...prev,
-          [name]: value,
+          applyDate: "",
+          noOfTowers: "",
+          TotalProjectArea: "",
+          ProjectBuildArea: "",
+          ProjectName: "",
         }));
       }
-    };
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
 
   // Handle form submission
-   const handleConfirmSubmit = async (emails) => {
+  const handleConfirmSubmit = async (emails) => {
     setIsSubmitting(true);
 
     const payload = new FormData();
@@ -1447,7 +1374,7 @@ const GhmcModify = () => {
     payload.append("noOfTowers", formData.noOfTowers || "");
     payload.append("TotalAmount", formData.TotalAmount || "");
 
-  emails.forEach((email, i) => {
+    emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
 
@@ -1469,7 +1396,7 @@ const GhmcModify = () => {
       const existingRecord = storeData?.find(
         (item) =>
           item.PROCESS?.trim().toLowerCase() ===
-            immediateNextStep?.PROCESS?.trim().toLowerCase() &&
+          immediateNextStep?.PROCESS?.trim().toLowerCase() &&
           item.loc?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
       );
 
@@ -1608,6 +1535,10 @@ const GhmcModify = () => {
     }
   };
 
+
+
+     const NumberOfTowers = storeData?.[0]?.noOfTowers;
+ 
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -1674,7 +1605,7 @@ const GhmcModify = () => {
           ) : (
             <Form className="p-3 border rounded bg-light">
               <h4 className="mb-3 text-warning fw-bold">
-                {currentProcess || immediateNextStep?.PROCESS || "Select a Process"}
+                {currentProcess || immediateNextStep?.PROCESS || "Select a Process"} ||  {NumberOfTowers && <> | Towers Count : <span className="text-dark">{NumberOfTowers}</span></>}
               </h4>
 
               <Row className="mb-2">
@@ -1761,6 +1692,19 @@ const GhmcModify = () => {
                     Only PDF files are accepted. No files required for submission.
                   </p>
                 </Col>
+
+
+                {isFirstProcess &&
+
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label> Number of Towers </Form.Label>
+                      <Form.Control as="textarea" rows={1} name="noOfTowers" value={formData.noOfTowers || ""} onChange={handleChange} disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)} />
+                    </Form.Group>
+                  </Col>
+
+
+                }
               </Row>
 
               <div className="d-grid">
@@ -1786,16 +1730,16 @@ const GhmcModify = () => {
                     {isSubmitting
                       ? "Submitting..."
                       : submitted
-                      ? "Submitted"
-                      : "Submit"}
+                        ? "Submitted"
+                        : "Submit"}
                   </Button>
                 )}
-                {viewedStep?.PROCESS !== immediateNextStep?.PROCESS && 
-                 isProcessCompleted(viewedStep?.PROCESS) && (
-                  <Button variant="success" size="md" className="w-100 fw-semibold" disabled>
-                    Updated (View Only)
-                  </Button>
-                )}
+                {viewedStep?.PROCESS !== immediateNextStep?.PROCESS &&
+                  isProcessCompleted(viewedStep?.PROCESS) && (
+                    <Button variant="success" size="md" className="w-100 fw-semibold" disabled>
+                      Updated (View Only)
+                    </Button>
+                  )}
               </div>
             </Form>
           )}

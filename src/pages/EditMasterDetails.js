@@ -30,14 +30,16 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const ProjectDetails = () => {
+const EditMasterDetails = () => {
   const navigate = useNavigate();
-  const { setMasterData, setMasterGetData, masterPostData, totalMasterCode } = useContext(Context);
+  const { setMasterData, setMasterGetData, masterPostData, totalMasterCode, totalMasterData = [] } = useContext(Context);
 
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [filteredPlants, setFilteredPlants] = useState([]);
+  const [isEditing, setIsEditing] = useState(false); // Track if editing existing record
 
   // Enhanced Address dialog state and validation
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
@@ -47,14 +49,6 @@ const ProjectDetails = () => {
     district: '',
     pincode: '',
     city: ''
-  });
-
-  // New dialog for company code and plant name
-  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
-  const [companyFields, setCompanyFields] = useState({
-    companyCode: '',
-    plantName: '',
-    plantdes: ''
   });
 
   const [formData, setFormData] = useState({
@@ -74,43 +68,165 @@ const ProjectDetails = () => {
     pincode: ''
   });
 
+  // Fetch plants when component mounts
+  useEffect(() => {
+    if (totalMasterData && totalMasterData.length > 0) {
+      setFilteredPlants(totalMasterData);
+    }
+  }, [totalMasterData]);
 
-
-    const checkIfPlantExists = async (plant) => {
-        try {
-            const res = await axios.post(`${API_BASE_URL}/masterPlntexists`, { loc: plant });
-         
-            if (res.data.exists) {
-                toast.error('This plant already has entries.');
-                setFormData((prev) => ({ ...prev, loc: '' }));
-            
-            }
-        } catch (error) {
-            console.error('Failed to check plant:', error);
-        }
-    };
+  // Filter plants when company code changes
+  useEffect(() => {
+    if (formData.plantcode && totalMasterData && totalMasterData.length > 0) {
+      const filtered = totalMasterData.filter(plant => 
+        plant.PLANT_CODE === formData.plantcode
+      );
+      setFilteredPlants(filtered);
+      
+      // Reset form when company code changes (except plantcode)
+      setFormData(prev => ({
+        ...prev,
+        loc: '',
+        applyDate: '',
+        noOfTowers: '',
+        BuildArea: '',
+        TotalProjectArea: '',
+        ProjectName: '',
+        Address: '',
+        noOfFlats: '',
+        streetName: '',
+        district: '',
+        city: '',
+        mandal: '',
+        pincode: ''
+      }));
+      setIsEditing(false); // Reset editing state
+    } else {
+      setFilteredPlants(totalMasterData || []);
+    }
+  }, [formData.plantcode, totalMasterData]);
 
   const handleChange = async (e) => {
-
     const { name, value } = e.target;
+    console.log(name, "name", value);
 
+    // If plant is being selected, fetch its data
+    if (name === "loc" && value) {
+      await fetchDataForLoc(value);
+    }
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-
-
-   const plantExists = await checkIfPlantExists(value);
-      
-            if (plantExists) {
-                return; 
-            }
-
   };
 
+  const fetchDataForLoc = async (loc) => {
+    try {
+      console.log("Fetching data for location:", loc);
+      
+      // Use the getMasterByLoc function from your API
+      const res = await getMasterByLoc(loc);
+      
+      console.log("API Response:", res);
+      
+      if (res && Object.keys(res).length > 0) {
+        // Parse the address string if it exists
+        const address = res.ADDRESS || '';
+        let streetName = '';
+        let mandal = '';
+        let district = '';
+        let city = '';
+        let pincode = '';
+        
+        if (address) {
+          const parts = address.split(',');
+          if (parts.length >= 5) {
+            streetName = parts[0]?.trim() || '';
+            mandal = parts[1]?.trim() || '';
+            district = parts[2]?.trim() || '';
+            city = parts[3]?.trim() || '';
+            pincode = parts[4]?.trim() || '';
+          } else {
+            // If address is not in the expected format, use individual fields
+            streetName = res.STREET_NAME || '';
+            mandal = res.MANDAL || '';
+            district = res.DISTRICT || '';
+            city = res.CITY || '';
+            pincode = res.PIN_CODE || '';
+          }
+        }
+        
+        // Also populate address fields for dialog
+        setAddressFields({
+          street: streetName,
+          mandal: mandal,
+          district: district,
+          city: city,
+          pincode: pincode
+        });
 
- 
- 
+        // Set form data with fetched values - use the actual response field names
+        setFormData(prev => ({
+          ...prev,
+          plantcode: res.PLANT_CODE || '',
+          loc: res.LOC || '',
+          applyDate: res.APPLICATION_DATE || '',
+          noOfTowers: res.NUMBER_OF_TOWERS || '',
+          BuildArea: res.PROJECT_BUILD_AREA || '',
+          TotalProjectArea: res.TOTAL_PROJECT_AREA || '',
+          ProjectName: res.PROJECT_NAME || '',
+          Address: res.ADDRESS || '',
+          noOfFlats: res.NUMBER_OF_FLATS || '',
+          streetName: streetName,
+          district: district,
+          city: city,
+          mandal: mandal,
+          pincode: pincode
+        }));
+        
+        setIsEditing(true); // We're editing an existing record
+        
+        toast.success(`Loaded data for ${res.PROJECT_NAME || loc}`);
+      } else {
+        // If no data found, reset form for this location
+        resetFormForLocation();
+        setIsEditing(false);
+        toast.info(`No existing data found for ${loc}. You can create new record.`);
+      }
+    } catch (error) {
+      console.error("Error fetching plant data:", error);
+      toast.error("Failed to fetch plant details");
+      resetFormForLocation();
+      setIsEditing(false);
+    }
+  };
+
+  const resetFormForLocation = () => {
+    setFormData(prev => ({
+      ...prev,
+      applyDate: '',
+      noOfTowers: '',
+      BuildArea: '',
+      TotalProjectArea: '',
+      ProjectName: '',
+      Address: '',
+      noOfFlats: '',
+      streetName: '',
+      district: '',
+      city: '',
+      mandal: '',
+      pincode: ''
+    }));
+    setAddressFields({
+      street: '',
+      mandal: '',
+      district: '',
+      city: '',
+      pincode: ''
+    });
+  };
+
   const handlePlantCodeChange = (e) => {
     const { value } = e.target;
     setFormData((prev) => ({
@@ -118,123 +234,7 @@ const ProjectDetails = () => {
       plantcode: value,
       loc: '' // Reset plant selection when code changes
     }));
-  };
-
-  // Handler for company dialog dropdown
-  const handleCompanyCodeChange = async (e) => {
-    const selectedCompanyCode = e.target.value;
-
-    setCompanyFields(prev => ({
-      ...prev,
-      companyCode: selectedCompanyCode,
-      plantName: '' // Clear plant name when company code changes
-    }));
-
-    // Auto-generate plant name when company code is selected
-    if (selectedCompanyCode) {
-      await generatePlantName(selectedCompanyCode);
-    }
-  };
-
-  // Function to generate plant name
-  const generatePlantName = async (companyCode) => {
-
-    if (!companyCode || companyCode.trim() === "") {
-      toast.error("Company code cannot be empty!");
-      return; // stop function here
-    }
-
-    const formPayload = {
-      "company_code": companyCode
-    }
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/unique-plant-gen`, formPayload, {
-        headers: { "Content-Type": "application/json" },
-
-      });
-
-      const generatedPlantName = response?.data?.data;
-
-
-
-      setCompanyFields(prev => ({
-        ...prev,
-        plantName: generatedPlantName
-      }));
-
-      toast.success('Plant name generated successfully!');
-
-    } catch (err) {
-      console.error('Submission error:', err.response?.data || err.message);
-      toast.error('Failed to generate plant name. Please try again.');
-    }
-  };
-
-
-  const handleCancel = async () => {
-  // If companyCode or plantName is empty, just close the dialog
-  if (!companyFields?.companyCode || !companyFields?.plantName) {
-    setCompanyDialogOpen(false); // close dialog
-    return; // exit the function, no API call
-  }
-
-  // Only call API if both fields exist
-  const payload = {
-    company_code: companyFields.companyCode,
-    plant_code: companyFields.plantName,
-  };
-
-  try {
-    const response = await axios.post(`${API_BASE_URL}/newGenPlntDel`, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
-    console.log("Deleted new plant generation", payload);
-  } catch (err) {
-    console.error("Error deleting plant:", err.response?.data || err.message);
-  }
-
-  setCompanyDialogOpen(false); // close dialog after API call
-  
-};
-
-  // Close company dialog and reset fields
-  const handleCloseCompanyDialog = async () => {
-    setCompanyDialogOpen(false);
-    if (!companyFields?.companyCode || companyFields?.plantName.trim() === "") {
-
-      return;
-    }
-
-
-
-    const formPayload = {
-      "company_code": companyFields?.companyCode,
-      "plant_code": companyFields?.plantName,
-      "plant_desc": companyFields?.plantdes
-    }
-
-    const response = await axios.post(`${API_BASE_URL}/new-plant-store`, formPayload, {
-      headers: { "Content-Type": "application/json" },
-    });
-    if (response.data.message) {
-      Swal.fire({
-        icon: "success",
-        title: response.data.message,
-        showConfirmButton: false,
-        timer: 2000,
-      }).then(() => {
-
-        setCompanyDialogOpen(false);
-      });
-    }
-
-
-    setCompanyFields({
-      companyCode: '',
-      plantName: '',
-      plantdes: ''
-    });
+    setIsEditing(false); // Reset editing state
   };
 
   const handleSubmit = async (e) => {
@@ -280,43 +280,30 @@ const ProjectDetails = () => {
     formPayload.append('pincode', formData.pincode);
 
     try {
-      const data = await createMaster(formPayload);
+      let data;
+      
+      // Use update endpoint if editing, create endpoint if new
+      if (isEditing) {
+        data = await axios.post(`${API_BASE_URL}/update-master`, formPayload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        data = await createMaster(formPayload);
+      }
 
       setMasterData(data?.data);
 
-
-      const get = await getMasterByLoc(data?.data.loc);
+      const get = await getMasterByLoc(data?.data?.loc);
       setMasterGetData(get);
 
-      if (data.message) {
-        Swal.fire({
-          icon: "success",
-          title: "Form Submitted Successfully!",
-          showConfirmButton: false,
-          timer: 2000,
-        }).then(() => {
-          navigate('/create');
-        });
-      }
-
-      setFormData({
-        plantcode: '',
-        loc: '',
-        applyDate: '',
-        noOfTowers: '',
-        BuildArea: '',
-        TotalProjectArea: '',
-        ProjectName: '',
-        Address: '',
-        noOfFlats: '',
-        streetName: '',
-        district: '',
-        city: '',
-        mandal: '',
-        pincode: ''
+      Swal.fire({
+        icon: "success",
+        title: isEditing ? "Record Updated Successfully!" : "Record Created Successfully!",
+        showConfirmButton: false,
+        timer: 2000,
+      }).then(() => {
+        navigate('/create');
       });
-
-
     } catch (err) {
       toast.error(err.response?.data?.message || 'Submission failed. Please try again.');
     } finally {
@@ -324,13 +311,14 @@ const ProjectDetails = () => {
     }
   };
 
-  const handleBackClick =  async () => {
- 
+  const handleBackClick = async () => {
     navigate('/create');
   };
 
-
-  
+  // Function to open address dialog with current data
+  const openAddressDialog = () => {
+    setAddressDialogOpen(true);
+  };
 
   return (
     <div className="water-form-wrapper">
@@ -342,10 +330,24 @@ const ProjectDetails = () => {
               <div className="icon-wrapper">
                 <BrickWallFire className="water-icon" size={32} />
               </div>
-              <h1 className="form-title">Master Control Board Application</h1>
+              <h1 className="form-title">Edit Master Control Board Application</h1>
               <p className="form-subtitle">
-                Submit your Project Details management compliance application
+                {isEditing ? "Edit existing plant details" : "Create new plant details"}
               </p>
+              {isEditing && (
+                <div className="edit-mode-indicator">
+                  <span style={{
+                    backgroundColor: '#e6f4ff',
+                    color: '#1890ff',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    Editing Existing Record
+                  </span>
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -358,57 +360,6 @@ const ProjectDetails = () => {
           </div>
         </div>
 
-        {/* CREATE BUTTON */}
-        {/* <div className="create-button-section">
-          <button
-            type="button"
-            onClick={() => setCompanyDialogOpen(true)}
-            className="create-company-button"
-          >
-            <FaPlus className="create-icon" />
-            Create Company
-          </button>
-        </div> */}
-        <div
-          className="create-button-section"
-          style={{ display: "flex", justifyContent: "flex-end", marginBottom: "-10px", marginRight: "10px" }}
-        >
-          <button
-            type="button"
-            onClick={() => setCompanyDialogOpen(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "linear-gradient(90deg, #6366F1, #8B5CF6)", // Default gradient
-              color: "white",
-              border: "none",
-              padding: "10px 20px",
-              borderRadius: "10px",
-              fontSize: "16px",
-              fontWeight: "600",
-              cursor: "pointer",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
-              transition: "all 0.3s ease",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = "translateY(-3px)";
-              e.currentTarget.style.boxShadow = "0 6px 14px rgba(0,0,0,0.2)";
-              e.currentTarget.style.background =
-                "linear-gradient(90deg, #4F46E5, #7C3AED)"; // Hover gradient
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = "translateY(0px)";
-              e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.15)";
-              e.currentTarget.style.background =
-                "linear-gradient(90deg, #6366F1, #8B5CF6)";
-            }}
-          >
-            <FaPlus style={{ fontSize: "18px" }} />
-            Create Project
-          </button>
-        </div>
-
         <div className="form-content">
           {/* Project Information */}
           <div className="form-section">
@@ -418,7 +369,7 @@ const ProjectDetails = () => {
             </div>
 
             <div className="form-grid two-columns">
-              {/* ✅ Plant Code Select - First Field */}
+              {/* Company Code Select */}
               <div className="form-field">
                 <label className="field-label">
                   <FaBuilding className="label-icon" /> Company Code*
@@ -437,16 +388,10 @@ const ProjectDetails = () => {
                       </option>
                     ))}
                   </select>
-                  {/* <div className="error-container">
-                    {errors.plantcode && <p className="error-text">{errors.plantcode}</p>}
-                  </div> */}
                 </div>
-
               </div>
 
-
-
-              {/* ✅ Plant Select - Pass selectedPlantCode */}
+              {/* Plant Select - Filtered by Company Code */}
               <div className="form-field">
                 <label className="field-label">
                   <FaBuilding className="label-icon" /> Plant Code/Name*
@@ -514,7 +459,7 @@ const ProjectDetails = () => {
             </div>
           </div>
 
-          {/* Documents */}
+          {/* Project Details */}
           <div className="form-section">
             <div className="section-header">
               <FaUpload className="section-icon" size={20} />
@@ -533,7 +478,6 @@ const ProjectDetails = () => {
                     onChange={handleChange}
                     className="modern-input"
                     placeholder="Enter Project Name"
-                    min="1"
                   />
                   <div className="error-container">
                     {errors.ProjectName && <p className="error-text">{errors.ProjectName}</p>}
@@ -615,10 +559,10 @@ const ProjectDetails = () => {
                 <div className="input-wrapper" style={{ display: 'flex', paddingTop: '5px' }}>
                   <Button
                     variant="outlined"
-                    onClick={() => setAddressDialogOpen(true)}
+                    onClick={openAddressDialog}
                     style={{ whiteSpace: 'nowrap' }}
                   >
-                    Add Address
+                    {formData.Address ? 'Edit Address' : 'Add Address'}
                   </Button>
                 </div>
                 <div className="error-container">
@@ -641,11 +585,11 @@ const ProjectDetails = () => {
               {isSubmitting ? (
                 <>
                   <div className="spinner"></div>
-                  Submitting...
+                  {isEditing ? "Updating..." : "Submitting..."}
                 </>
               ) : (
                 <>
-                  <FaWater className="submit-icon" /> Submit
+                  <FaWater className="submit-icon" /> {isEditing ? "Update" : "Create"}
                 </>
               )}
             </button>
@@ -653,125 +597,7 @@ const ProjectDetails = () => {
         </div>
       </form>
 
-      {/* Company & Plant Dialog */}
-      <Dialog
-        open={companyDialogOpen}
-        onClose={handleCloseCompanyDialog}
-        maxWidth="sm"
-        fullWidth
-        TransitionComponent={Transition}
-        keepMounted
-        PaperProps={{ sx: { borderRadius: 3, padding: 2 } }}
-      >
-        <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-          Create Project
-        </DialogTitle>
-        <DialogContent dividers>
-          {/* Company Code Dropdown */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontWeight: '500',
-              color: '#333'
-            }}>
-              <FaBuilding style={{ marginRight: '8px', color: '#1976d2' }} />
-              Company Code*
-            </label>
-            <select
-              value={companyFields.companyCode}
-              onChange={handleCompanyCodeChange}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-                outline: 'none',
-                transition: 'border-color 0.3s ease'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#1976d2';
-                e.target.style.boxShadow = '0 0 0 2px rgba(25, 118, 210, 0.2)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#ddd';
-                e.target.style.boxShadow = 'none';
-              }}
-            >
-              <option value="">Select Company Code</option>
-              {Array.isArray(totalMasterCode?.companyCodes) && totalMasterCode?.companyCodes.map((ele, index) => (
-                <option key={index} value={ele}>
-                  {ele}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Generated Plant Name */}
-
-
-
-          <div style={{ display: 'flex', gap: '16px', marginTop: 8 }}>
-
-            <TextField
-              label="Generated Plant Code"
-              name="plantName"
-              value={companyFields?.plantName}
-
-              placeholder="Plant name will be generated automatically"
-              fullWidth
-              margin="normal"
-              required
-              InputProps={{
-                readOnly: true,
-                startAdornment: (<InputAdornment position="start"><Store color="primary" /></InputAdornment>)
-              }}
-            />
-
-            <TextField
-              label="Generated Plant Name"
-              name="plantdes"
-              value={companyFields?.plantdes || ""}
-              placeholder="Please enter plant name"
-              fullWidth
-              margin="normal"
-              onChange={(e) =>
-                setCompanyFields(prev => ({
-                  ...prev,
-                  plantdes: e.target.value
-                }))
-              }
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Store color="primary" />
-                  </InputAdornment>
-                )
-              }}
-            />
-
-
-          </div>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleCancel} color="inherit">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCloseCompanyDialog}
-            variant="contained"
-            disabled={!companyFields.plantName.trim()}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Enhanced Address Dialog */}
+      {/* Enhanced Address Dialog - Pre-filled with existing data */}
       <Dialog
         open={addressDialogOpen}
         onClose={() => setAddressDialogOpen(false)}
@@ -781,7 +607,9 @@ const ProjectDetails = () => {
         keepMounted
         PaperProps={{ sx: { borderRadius: 3, padding: 2 } }}
       >
-        <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>Enter Address</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+          {formData.Address ? "Edit Address" : "Add Address"}
+        </DialogTitle>
         <DialogContent dividers>
           <TextField
             label="Street Name"
@@ -887,11 +715,13 @@ const ProjectDetails = () => {
 
       <ReusableDialog
         open={confirmOpen}
-        title="Confirm Submission"
-        message="Are you sure you want to submit this application? You will be redirected to the create page after successful submission."
+        title={isEditing ? "Confirm Update" : "Confirm Creation"}
+        message={isEditing ? 
+          "Are you sure you want to update this master record?" : 
+          "Are you sure you want to create a new master record?"}
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleConfirmSubmit}
-        confirmText="Submit"
+        confirmText={isEditing ? "Update" : "Create"}
         cancelText="Cancel"
         isLoading={isSubmitting}
       />
@@ -911,4 +741,4 @@ const ProjectDetails = () => {
   );
 };
 
-export default ProjectDetails;
+export default EditMasterDetails;

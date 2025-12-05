@@ -1136,37 +1136,64 @@ const AirportUpdateTable = () => {
       .catch((err) => console.error("Error fetching plants", err));
   }, []);
 
-  useEffect(() => {
-    if (immediateNextStep && immediateNextStep.PROCESS) {
-      const processName = immediateNextStep.PROCESS;
-      console.log(`[EFFECT] Process changed to: ${processName}. Determining fee.`);
 
-      switch (processName) {
-        case "Submit Application":
-          setProcessingdt('Application');
-          break;
-        case "Inspection by Consultant":
-        case "Inspection by Authority":
-          setProcessingdt('Inspection');
-          break;
-        case "NOC Received or Not":
-          setProcessingdt('NOC Received');
-          break;
-        case "Appeal Filled":
-          setProcessingdt('Appeal');
-          break;
-        case "NOC for Appeal Status":
-          setProcessingdt('NOC for Appeal');
-          break;
-        default:
-          setProcessingdt();
-          break;
-      }
-    } else {
-      console.log("[EFFECT] No next step. Resetting fee.");
-      setProcessingdt();
+   const getDateLabel = (processName) => {
+    if (!processName) return "Date";
+    
+    if (processName === "Received TOR") {
+      return "Received Date";
     }
-  }, [immediateNextStep]);
+    
+    switch (processName) {
+      case "Submit Application": return "Application Date";
+      case "Inspection by Consultant":
+      case "Inspection by Authority": return "Inspection Date";
+      case "NOC Received or Not": return "NOC Received Date";
+      case "Appeal Filled": return "Appeal Date";
+      case "NOC for Appeal Status": return "NOC for Appeal Date";
+      default: return "Date";
+    }
+  };
+   useEffect(() => {
+      // Set the correct date label based on the next step
+      if (immediateNextStep && immediateNextStep.PROCESS) {
+        setProcessingdt(getDateLabel(immediateNextStep.PROCESS));
+      } else {
+        setProcessingdt("Application Date");
+      }
+    }, [immediateNextStep]);
+
+  // useEffect(() => {
+  //   if (immediateNextStep && immediateNextStep.PROCESS) {
+  //     const processName = immediateNextStep.PROCESS;
+  //     console.log(`[EFFECT] Process changed to: ${processName}. Determining fee.`);
+
+  //     switch (processName) {
+  //       case "Submit Application":
+  //         setProcessingdt('Application');
+  //         break;
+  //       case "Inspection by Consultant":
+  //       case "Inspection by Authority":
+  //         setProcessingdt('Inspection');
+  //         break;
+  //       case "NOC Received or Not":
+  //         setProcessingdt('NOC Received');
+  //         break;
+  //       case "Appeal Filled":
+  //         setProcessingdt('Appeal');
+  //         break;
+  //       case "NOC for Appeal Status":
+  //         setProcessingdt('NOC for Appeal');
+  //         break;
+  //       default:
+  //         setProcessingdt();
+  //         break;
+  //     }
+  //   } else {
+  //     console.log("[EFFECT] No next step. Resetting fee.");
+  //     setProcessingdt();
+  //   }
+  // }, [immediateNextStep]);
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -1444,6 +1471,7 @@ const AirportUpdateTable = () => {
     const fields = [];
 
     fields.push(
+      
       <Row key="basic" className="mb-2">
         <Col md={6}>
           <Form.Group>
@@ -1464,7 +1492,7 @@ const AirportUpdateTable = () => {
         </Col>
         <Col md={6}>
           <Form.Group>
-            <Form.Label>Apply Date</Form.Label>
+            <Form.Label>  {processingDt}</Form.Label>
             <Form.Control
               type="date"
               name="applyDate"
@@ -1534,8 +1562,8 @@ const AirportUpdateTable = () => {
                   />
                 </Form.Group>
               </Col>
-              <Col md={12}>
-                <Form.Group>
+              {/* <Col md={12}> */}
+                {/* <Form.Group>
                   <Form.Label>Comments</Form.Label>
                   <Form.Control
                     readOnly
@@ -1545,8 +1573,8 @@ const AirportUpdateTable = () => {
                     value={formData.comments || ""}
                     onChange={handleChange}
                   />
-                </Form.Group>
-              </Col>
+                </Form.Group> */}
+              {/* </Col> */}
             </Row>
           </>
         )}
@@ -1789,6 +1817,7 @@ const AirportUpdateTable = () => {
           className="d-flex flex-column"
           style={{ height: '400px', overflowY: 'auto' }}
         >
+          
           <Form className="p-3 border rounded bg-light">
             {/* Form header showing current view */}
             {selectedProcessDetails ? (

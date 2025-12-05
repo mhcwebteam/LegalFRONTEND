@@ -15,7 +15,7 @@ import {
   FileCheck,
   MessageSquareMore,
 } from "lucide-react";
-import { FaCalendarAlt, FaLeaf, FaUpload, FaWater } from 'react-icons/fa';
+import { FaCalendarAlt, FaFileAlt, FaLeaf, FaUpload, FaWater } from 'react-icons/fa';
 
 // Import your components
 import AirportDocUploadModal from "../components/AirportDocUploadModal";
@@ -24,6 +24,7 @@ import ReusableDialog from "../components/ReusableDialog";
 import ApplyDateInput from '../components/ApplyDateInput';
 import ProcessField from '../components/ProcessField';
 import Swal from "sweetalert2";
+import WaterDocUploadModal from "../components/WaterDocUploadModal";
 
 const AirportForm = () => {
   const navigate = useNavigate();
@@ -34,6 +35,8 @@ const AirportForm = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
+   const [feasibilityDocs, setFeasibilityDocs] = useState([]);
 
   // ✅ Add ref to track if initial load is done
   const hasLoadedInitialData = useRef(false);
@@ -197,7 +200,27 @@ const handleChange = async (e) => {
       process: value,
     }));
   };
+   const validateFileType = (file) => {
+        const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        const isValidType = fileExtension === '.pdf';
+        
+        if (!isValidType) {
+            return false;
+        }
 
+        // if (file.size > MAX_FILE_SIZE) {
+        //     toast.error(`${file.name} is too large. Max size is 10MB`);
+        //     return false;
+        // }
+
+        // Double-check MIME type
+        if (file.type && file.type !== 'application/pdf') {
+            toast.error(`${file.name} is not a valid PDF file.`);
+            return false;
+        }
+
+        return true;
+    };
 
 
 const validateForm = () => {
@@ -206,11 +229,18 @@ const validateForm = () => {
   if (!formData.loc) newErrors.loc = "Plant name is required";
   if (!formData.applyDate) newErrors.applyDate = "Application date is required";
   if (!formData.totalPrjArea) newErrors.totalPrjArea = "Total Project Area required";
-  if (!formData.noOfNocs) newErrors.noOfNocs = "number of nocs required";
-  // 🔥 Check if at least one document is uploaded
-  const totalDocs = linkDocs.length + landDocs.length + othDocs.length;
-  if (totalDocs === 0) newErrors.document = "Please upload at least one document";
-  if(!formData.comments) newErrors.comments = "Please enter comments";
+  if (!formData.noOfNocs) newErrors.noOfNocs = "Number of nocs required";
+   if (!formData.comments) newErrors.comments = "Please enter comments";
+  if (linkDocs.length === 0) {
+            newErrors.document = "At least one PDF document is required";
+        } else {
+            // Validate all files are PDFs
+            const invalidFiles = linkDocs.filter(file => !validateFileType(file));
+            if (invalidFiles.length > 0) {
+                newErrors.document = "Only PDF files are allowed";
+            }
+        }
+ 
 
   setErrors(newErrors);
   return Object.keys(newErrors).length === 0;
@@ -240,9 +270,9 @@ const validateForm = () => {
     formPayload.append('noOfNocs', formData.noOfNocs);
     formPayload.append('comments', formData.comments);
 
-    linkDocs.forEach(f => formPayload.append('link_docs[]', f));
-    landDocs.forEach(f => formPayload.append('land_docs[]', f));
-    othDocs.forEach(f => formPayload.append('oth_docs[]', f));
+   linkDocs.forEach(f => {
+  formPayload.append("documents[]", f);
+});
 
     try {
       const response = await axios.post(`${API_BASE_URL}/airport-submit`, formPayload, {
@@ -377,7 +407,7 @@ return (
                 </div>
               </div>
 
-              <div className="air-form-field mt-2">
+              {/* <div className="air-form-field mt-2">
                 <label className="air-field-label">
                   <FaUpload className="air-label-icon" /> Upload Documents*
                 </label>
@@ -396,7 +426,30 @@ return (
                   {errors.document && <p className="error-text">{errors.document}</p>}
 
                 </div>
-              </div>
+              </div> */}
+
+
+             <div className="air-form-field mt-2">
+  <label className="air-field-label">
+    <FaFileAlt className="label-icon" /> Upload Documents*
+  </label>
+  <div className="air-upload-container mt-2">
+    <button
+      type="button"
+      className="upload-button"
+      onClick={() => setShowFeasibilityModal(true)}
+    >
+      <FaUpload className="air-label-icon" /> Upload PDF Documents 
+      <span className="upload-count">
+        {linkDocs.length > 0 &&
+          `(${linkDocs.length} files)`}
+      </span>
+    </button>
+     {errors.document && <p className="error-text">{errors.document}</p>}
+  
+  </div>
+</div>
+
 
             </div>
           </div>
@@ -498,16 +551,21 @@ return (
 
         </div>
       </form>
-      <AirportDocUploadModal
-        show={showModal}
-        onClose={() => setShowModal(false)}
-        linkDocs={linkDocs}
-        setLinkDocs={setLinkDocs}
-        landDocs={landDocs}
-        setLandDocs={setLandDocs}
-        othDocs={othDocs}
-        setOthDocs={setOthDocs}
-      />
+
+
+<WaterDocUploadModal
+  show={showFeasibilityModal}
+  onClose={() => setShowFeasibilityModal(false)}
+  linkDocs={linkDocs}  // Changed from feasibilityDocs to linkDocs
+  setLinkDocs={setLinkDocs}
+  title="Upload Documents"
+  showLandDocs={false}
+  showOthDocs={false}
+/>
+
+
+
+
       <ReusableDialog
         open={confirmOpen}
         title="Confirm Submission"

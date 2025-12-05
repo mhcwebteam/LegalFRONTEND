@@ -137,12 +137,12 @@ const PcbUpdateTable = () => {
       if (type === 'regular') {
         setEmailSubject(`Process Update: ${processInfo.PROCESS}`);
         setEmailMessage(
-          `Dear Team,\n\nPlease find the update for the process: ${processInfo.PROCESS}\n\nPlant: ${selectedPlant}\nApply Date: ${processInfo.APPLY_DT}\n\nComments: ${processInfo.COMMENTS}\n\nBest Regards`
+          `Dear Team,\n\nPlease find the update for the process: ${processInfo.PROCESS}\n\nPlant: ${selectedPlant}\nApply Date: ${formatDate(processInfo.APPLY_DT)}\n\nComments: ${processInfo.COMMENTS}\n\nBest Regards`
         );
       } else if (type === 'amendment') {
         setEmailSubject(`Amendment Update: ${processInfo.PROCESS} - ${amendCategory}`);
         setEmailMessage(
-          `Dear Team,\n\nPlease find the amendment update for:\n\nProcess: ${processInfo.PROCESS}\nAmendment Type: ${amendCategory}\nPlant: ${selectedPlant}\nApply Date: ${processInfo.APPLY_DT}\n\nBest Regards`
+          `Dear Team,\n\nPlease find the amendment update for:\n\nProcess: ${processInfo.PROCESS}\nAmendment Type: ${amendCategory}\nPlant: ${selectedPlant}\nApply Date: ${formatDate(processInfo.APPLY_DT)}\n\nBest Regards`
         );
       }
 
@@ -256,7 +256,7 @@ const PcbUpdateTable = () => {
         loc: selectedPlant,
         process: storeInfo.PROCESS,
         category: selectedAmendCategory,
-        applyDate: storeInfo.APPLY_DT,
+        applyDate: formatDate(storeInfo.APPLY_DT),
         documentPath: storeInfo[docPathKey],
         comments: storeInfo[commentsKey] || '',
         emails: selectedEmails
@@ -357,6 +357,20 @@ const PcbUpdateTable = () => {
 
   const isAmendExists = amendmentRecords.length > 0;
 
+
+  const formatDate = (date) => {
+  if (!date) return "";
+
+  // Split date & time safely
+  const [fullDate, time] = date.split(" ");
+
+  const [y, m, d] = fullDate.split("-");
+
+  // If no time → return only date
+  return time ? `${d}-${m}-${y} ${time}` : `${d}-${m}-${y}`;
+};
+
+
   return (
     <>
       <PlantSelector
@@ -394,7 +408,7 @@ const PcbUpdateTable = () => {
         >
           <div className="table-scroll-wrapper custom-tbl" style={{ width: '100%', overflowX: 'auto' }} >
             <table className="table table-hover table-sm" style={{ marginBottom: '0px' }}>
-              <thead className="custom-thead">
+          <thead className="custom-thead">
                 <tr>
                   <th style={{ width: '30px' }}></th>
                   <th>S.NO</th>
@@ -407,17 +421,18 @@ const PcbUpdateTable = () => {
                   {/* Amendment columns - two columns per category */}
                   {amendCategories?.map(cat => (
                     <React.Fragment key={cat}>
-                      <th style={{ whiteSpace: 'nowrap' }}>{cat}</th>
-                      <th style={{ whiteSpace: 'nowrap' }}>{cat}</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>{cat} DOC</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>{cat} LOGS</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>{cat} ACTION</th>
                     </React.Fragment>
                   ))}
 
                   {/* Individual amendment log columns - only show if they have data */}
-                  {storeData.some(item => item.AMEND1_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD1 LOGS</th>}
+                  {/* {storeData.some(item => item.AMEND1_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD1 LOGS</th>}
                   {storeData.some(item => item.AMEND2_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD2 LOGS</th>}
                   {storeData.some(item => item.AMEND3_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD3 LOGS</th>}
                   {storeData.some(item => item.AMEND4_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD4 LOGS</th>}
-                  {storeData.some(item => item.AMEND5_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD5 LOGS</th>}
+                  {storeData.some(item => item.AMEND5_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD5 LOGS</th>} */}
                 </tr>
               </thead>
               <tbody>
@@ -469,16 +484,7 @@ const PcbUpdateTable = () => {
                       <td style={{ whiteSpace: 'nowrap' }}><em>{row.PROCESS}</em></td>
 
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {storeInfo?.APPLY_DT ?
-                          (() => {
-                            const date = new Date(storeInfo.APPLY_DT);
-                            const day = String(date.getDate()).padStart(2, '0');
-                            const month = String(date.getMonth() + 1).padStart(2, '0');
-                            const year = date.getFullYear();
-                            return `${day}-${month}-${year}`;
-                          })()
-                          : '-'
-                        }
+                        {formatDate(storeInfo?.APPLY_DT)}
                       </td>
 
                       <td style={{ whiteSpace: 'nowrap' }}>
@@ -588,16 +594,20 @@ const PcbUpdateTable = () => {
                         )}
                       </td>
 
+                     {/* Amendment columns - grouped as DOC, LOGS, ACTION */}
                       {amendCategories?.map(cat => {
                         const docPathKey = `${cat}_DOC_PATH`;
                         const docNameKey = `${cat}_DOC_NAME`;
                         const statusKey = `${cat}_STATUS`;
+                        const commentsKey = `${cat}_COMMENTS`;
 
                         const hasDocs = storeInfo?.[docPathKey];
-                        const isUpdated = storeInfo?.[statusKey] === 'YES';
+                        const isAmendUpdated = storeInfo?.[statusKey] === 'YES';
+                        const hasComments = storeInfo?.[commentsKey];
 
                         return (
                           <React.Fragment key={cat}>
+                            {/* DOC Column */}
                             <td>
                               {hasDocs ? (
                                 <OverlayTrigger
@@ -637,8 +647,68 @@ const PcbUpdateTable = () => {
                               ) : '-'}
                             </td>
 
+                            {/* LOGS Column */}
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              {hasComments ? (
+                                <OverlayTrigger
+                                  placement="top"
+                                  overlay={
+                                    <Tooltip id={`tooltip-${cat}-logs-${row.PROCESS}`} className="custom-tooltip">
+                                      View {cat} Comments
+                                    </Tooltip>
+                                  }
+                                >
+                                  <button
+                                    className="btn btn-outline-info btn-sm"
+                                    onClick={() => {
+                                      const amendLogs = [];
+                                      const comments = storeInfo?.[commentsKey];
+
+                                      if (comments) {
+                                        try {
+                                          const parsedComments = JSON.parse(comments);
+                                          if (Array.isArray(parsedComments)) {
+                                            parsedComments.forEach(log => {
+                                              amendLogs.push({
+                                                date: log.date || storeInfo?.[`${cat}_APPLY_DT`] || 'N/A',
+                                                comment: log.comment || 'No comment',
+                                                type: cat
+                                              });
+                                            });
+                                          } else if (typeof parsedComments === 'string') {
+                                            amendLogs.push({
+                                              date: storeInfo?.[`${cat}_APPLY_DT`] || 'N/A',
+                                              comment: parsedComments,
+                                              type: cat
+                                            });
+                                          }
+                                        } catch (e) {
+                                          amendLogs.push({
+                                            date: storeInfo?.[`${cat}_APPLY_DT`] || 'N/A',
+                                            comment: comments,
+                                            type: cat
+                                          });
+                                        }
+                                      }
+
+                                      if (amendLogs.length > 0) {
+                                        setLogModalTitle(`${row.PROCESS} - ${cat} Comments`);
+                                        setCurrentLogs(amendLogs);
+                                        setShowLogModal(true);
+                                      }
+                                    }}
+                                  >
+                                    <i className="fas fa-history"></i>
+                                  </button>
+                                </OverlayTrigger>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
+
+                            {/* ACTION Column */}
                             <td>
-                              {isUpdated ? (
+                              {isAmendUpdated ? (
                                 <button className="btn btn-success btn-sm" disabled>
                                   Updated
                                 </button>
@@ -663,7 +733,7 @@ const PcbUpdateTable = () => {
                       })}
 
                       {/* AMD1 Logs Column */}
-                      {storeData.some(item => item.AMEND1_COMMENTS) && (
+                      {/* {storeData.some(item => item.AMEND1_COMMENTS) && (
                         <td style={{ whiteSpace: 'nowrap' }}>
                           {storeInfo?.AMEND1_COMMENTS ? (
                             <OverlayTrigger
@@ -721,10 +791,10 @@ const PcbUpdateTable = () => {
                             '-'
                           )}
                         </td>
-                      )}
+                      )} */}
 
                       {/* AMD2 Logs Column */}
-                      {storeData.some(item => item.AMEND2_COMMENTS) && (
+                      {/* {storeData.some(item => item.AMEND2_COMMENTS) && (
                         <td style={{ whiteSpace: 'nowrap' }}>
                           {storeInfo?.AMEND2_COMMENTS ? (
                             <OverlayTrigger
@@ -782,10 +852,10 @@ const PcbUpdateTable = () => {
                             '-'
                           )}
                         </td>
-                      )}
+                      )} */}
 
                       {/* AMD3 Logs Column */}
-                      {storeData.some(item => item.AMEND3_COMMENTS) && (
+                      {/* {storeData.some(item => item.AMEND3_COMMENTS) && (
                         <td style={{ whiteSpace: 'nowrap' }}>
                           {storeInfo?.AMEND3_COMMENTS ? (
                             <OverlayTrigger
@@ -843,10 +913,10 @@ const PcbUpdateTable = () => {
                             '-'
                           )}
                         </td>
-                      )}
+                      )} */}
 
                       {/* AMD4 Logs Column */}
-                      {storeData.some(item => item.AMEND4_COMMENTS) && (
+                      {/* {storeData.some(item => item.AMEND4_COMMENTS) && (
                         <td style={{ whiteSpace: 'nowrap' }}>
                           {storeInfo?.AMEND4_COMMENTS ? (
                             <OverlayTrigger
@@ -904,10 +974,10 @@ const PcbUpdateTable = () => {
                             '-'
                           )}
                         </td>
-                      )}
+                      )} */}
 
                       {/* AMD5 Logs Column */}
-                      {storeData.some(item => item.AMEND5_COMMENTS) && (
+                      {/* {storeData.some(item => item.AMEND5_COMMENTS) && (
                         <td style={{ whiteSpace: 'nowrap' }}>
                           {storeInfo?.AMEND5_COMMENTS ? (
                             <OverlayTrigger
@@ -965,7 +1035,7 @@ const PcbUpdateTable = () => {
                             '-'
                           )}
                         </td>
-                      )}
+                      )} */}
                     </tr>
                   );
                 })}
@@ -1024,7 +1094,7 @@ const PcbUpdateTable = () => {
                   <div className="d-flex justify-content-between align-items-start">
                     <div className="flex-grow-1">
                       <div className="d-flex align-items-center mb-1">
-                        <strong className="text-muted me-2">{log.date}:</strong>
+                        <strong className="text-muted me-2">{formatDate(log.date)}:</strong>
                         {log.type && (
                           <span className="badge bg-info me-2">{log.type}</span>
                         )}

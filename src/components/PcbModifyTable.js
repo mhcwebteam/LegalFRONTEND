@@ -72,6 +72,8 @@ const [errors, setErrors] = useState({
     logs: "", // Added logs to modalData state
   });
 
+
+  console.log(modalData?.process,"hiooiiiiiiiiiiiiiiiiiiiiiiii","Received TOR");
   const [showAmendModal, setShowAmendModal] = useState(false);
   const [amendData, setAmendData] = useState({
     plant: "",
@@ -146,6 +148,8 @@ useEffect(() => {
       setShowEmailModal(true);
     }
   };
+
+
 
   // Handle Email Checkbox Toggle
 
@@ -522,6 +526,24 @@ useEffect(() => {
     }
   };
 
+
+  // Add this helper function at the top of your component, after imports
+const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString; // Return original if invalid date
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  } catch (e) {
+    return dateString; // Return original if parsing fails
+  }
+};
+
   // Submit Amend Modal
   // const handleAmendSubmit = async () => {
   //   const {
@@ -673,59 +695,7 @@ useEffect(() => {
   }
 };
 
-// const handleSendAmendEmail = async (emailAmendData) => {
 
-//    console.log("📨 handleSendAmendEmail() triggered!");
-//   console.log("📦 Incoming emailAmendData:", emailAmendData);
-
-//   const { plant, process, applyDate, amendDate, comments, category, selectedAmendEmails } = emailAmendData;
-
-//   const payload = {
-//     plant,
-//     process,
-//     applyDate,
-//     amendDate,
-//     comments,
-//     category,
-//     emails: selectedAmendEmails,
-//   };
-
-//   // ✅ Step 1: Determine endpoint based on existing record
-//   const isExistingRecord = storeData.some(
-//     (item) =>
-//       item.PROCESS?.toLowerCase().trim() === process?.toLowerCase().trim()
-//   );
-
-//   const endpoint = isExistingRecord
-//     ? `${API_BASE_URL}/amendment-updt`
-//     : `${API_BASE_URL}/amendment-submit`;
-
-//   console.log("🛠 Using endpoint:", endpoint);
-
-//    // 🧾 Log payload being sent to backend
-//   console.log("📤 Sending payload to API:", JSON.stringify(payload, null, 2));
-
-//   try {
-//     const response = await axios.post(endpoint, payload);
-//     console.log("✅ Email sent:", response.data);
-//     await Swal.fire({
-//       icon: "success",
-//       title: "Email Sent!",
-//       text: `Amendment (${category}) email sent to ${selectedAmendEmails.length} recipient(s).`,
-//     });
-//   }
-//    catch (error) {
-//     console.error("❌ Email sending failed:", error);
-//     await Swal.fire({
-//       icon: "error",
-//       title: "Email Sending Failed",
-//       text: "Amendment submitted successfully, but email notification failed.",
-//     });
-//   }
-// };
-
-
-// PcbModifyTable.js
 
 const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
   console.log("📨 handleSendAmendEmail triggered!");
@@ -826,6 +796,9 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
       category: amendData.category,
     });
   };
+
+
+  
 
   const handleSendAmendmentEmail = async (emails, amendData) => {
     try {
@@ -1167,7 +1140,7 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
                         <em>{row.PROCESS}</em>
                       </td>
                       <td style={{ whiteSpace: "nowrap" }}>
-                        {storeInfo?.APPLY_DT || "-"}
+                        {formatDate(storeInfo?.APPLY_DT || "-")}
                       </td>
                       <td>{buttonContent}</td>
                       {amendCategories.map((category) => {
@@ -1286,9 +1259,12 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
               <Form.Control type="text" value={modalData.process} readOnly />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Apply Date
-            <span style={{ color: "red" }}>*</span>
-              </Form.Label>
+
+          <Form.Label>
+  {modalData.process === "Received TOR" ? "Received Date" : "Apply Date"}
+  <span style={{ color: "red" }}>*</span>
+</Form.Label>
+
               <Form.Control
                 type="date"
                 value={modalData.applyDate}
