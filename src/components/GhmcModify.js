@@ -1354,13 +1354,12 @@ const GhmcModify = () => {
 
     const payload = new FormData();
 
-    // ✅ Always include hidden project details
+   
     payload.append("Organization", formData.organisation || "");
     payload.append("project_name", formData.project_name || "");
     payload.append("location", formData.location || "");
     payload.append("status", formData.status || "");
 
-    // ✅ Step-based data
     payload.append("loc", formData.loc);
     payload.append("applyDate", formData.applyDate);
     payload.append("process", immediateNextStep?.PROCESS || "");
@@ -1371,7 +1370,7 @@ const GhmcModify = () => {
     payload.append("noOfFlats", formData.noOfFlats || "");
     payload.append("totalProjectArea", formData.TotalProjectArea || "");
     payload.append("projectBuildArea", formData.ProjectBuildArea || "");
-    payload.append("noOfTowers", formData.noOfTowers || "");
+    payload.append("noOfTowers", formData.noOfTowers || null);
     payload.append("TotalAmount", formData.TotalAmount || "");
 
     emails.forEach((email, i) => {
@@ -1605,7 +1604,7 @@ const GhmcModify = () => {
           ) : (
             <Form className="p-3 border rounded bg-light">
               <h4 className="mb-3 text-warning fw-bold">
-                {currentProcess || immediateNextStep?.PROCESS || "Select a Process"} ||  {NumberOfTowers && <> | Towers Count : <span className="text-dark">{NumberOfTowers}</span></>}
+                {currentProcess || immediateNextStep?.PROCESS || "Select a Process"}   {NumberOfTowers && <> | Towers Count : <span className="text-dark">{NumberOfTowers}</span></>}
               </h4>
 
               <Row className="mb-2">
