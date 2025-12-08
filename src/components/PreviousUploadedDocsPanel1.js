@@ -163,6 +163,7 @@ try {
   const othDocs = parseDocs("OTH_DOC_NAME", "OTH_DOC_PATH");
   const feasDocs = parseDocs("FEAS_DOC_NAME", "FEAS_DOC_PATH");
   const docs = parseDocs("DOCUMENT_NAME","DOCUMENT_PATH");
+const paidDoc = parseDocs("AMOUNT_PAID_DOC_NAME", "AMOUNT_PAID_DOC_PATH");
 
 
 
@@ -226,6 +227,14 @@ try {
             title=" Documents"
             docs={docs}
             docType="DOCS"
+            onDelete={handleDelete}
+            deletedDocs={deletedDocuments}
+          />
+
+                 <DocumentList
+            title="paid Documents"
+            docs={paidDoc}
+            docType="paid"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
           />

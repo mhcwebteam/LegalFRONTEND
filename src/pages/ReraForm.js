@@ -79,6 +79,29 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
   }, []);
 
 
+
+
+  const checkIfPlantExists = async (plant) => {
+    try {
+        const res = await axios.post(`${API_BASE_URL}/check-plant-exists-rera`, { loc: plant });
+        console.log("API Response:", res.data);
+        
+        // Check if the response has a specific property indicating existence
+        if (res.data && res.data.exists === true) {
+      
+            toast.error('This plant already has entries.');
+            setFormData((prev) => ({ ...prev, loc: '' }));
+            setHeaderData(null);
+            return true; // Plant exists
+        }
+        return false; // Plant doesn't exist
+    } catch (error) {
+        console.error('Failed to check plant:', error);
+        // Don't clear the selection on error
+        return false;
+    }
+};
+
   const handleChange = async (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -109,6 +132,15 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
 
       // Fetch master data for the selected location
       try {
+
+
+         // Check if plant exists in airport table
+            const plantExists = await checkIfPlantExists(value);
+      
+            if (plantExists) {
+                return; 
+            }
+            
         const res = await getMasterByLoc(value);
         if (res && Object.keys(res).length > 0) {
           setHeaderData(res);

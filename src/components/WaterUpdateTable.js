@@ -19,6 +19,7 @@ import { Home } from "lucide-react";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import { Send } from "react-bootstrap-icons";
 import EmailSelectionModal from "./EmailModal";
+import PreviousUploadedDocsPanel1 from "./PreviousUploadedDocsPanel1";
 
 
 const WaterUpdateTable = () => {
@@ -188,8 +189,7 @@ const WaterUpdateTable = () => {
   useEffect(() => {
     if (nextStepDetails && !selectedProcessDetails) {
       let details = nextStepDetails;
-      console.log(details, "details");
-
+    
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: details.APPLY_DT,
@@ -201,7 +201,7 @@ const WaterUpdateTable = () => {
         amountPaid: details?.AMOUNT_PAID || "",
         Ghmc: details?.GHMC || "",
         OldAmount: details?.OLD_AMOUNT || "",
-        Size: details?.Size_Of_Connection || "",
+        Size: details?.SIZE_OF_CONNECTION || "",
         TotalAmount: details?.TOTAL_AMOUNT || "",
         TotalProjectArea: details?.TOTAL_PROJECT_AREA || '',
         noOfTowers: details?.NUMBER_OF_TOWERS || '',
@@ -288,7 +288,7 @@ const WaterUpdateTable = () => {
         amountPaid: selectedProcessDetails.AMOUNT_PAID || "",
         Ghmc: selectedProcessDetails.GHMC || "",
         OldAmount: selectedProcessDetails.OLD_AMOUNT || "",
-        Size: selectedProcessDetails.Size_Of_Connection || "",
+        Size: selectedProcessDetails.SIZE_OF_CONNECTION || "",
         TotalAmount: selectedProcessDetails.TOTAL_AMOUNT || "",
         TotalProjectArea: selectedProcessDetails?.TOTAL_PROJECT_AREA || '',
         noOfTowers: selectedProcessDetails?.NUMBER_OF_TOWERS || '',
@@ -505,7 +505,7 @@ const WaterUpdateTable = () => {
     else if (processName === "community inspection") {
       console.log("Showing Community Inspection fields");
 
-      if (hasFieldData(process.Size_Of_Connection)) {
+      if (hasFieldData(process.SIZE_OF_CONNECTION)) {
         fields.push(
           <Row key="size" className="mb-2">
             <Col md={12}>
@@ -513,7 +513,7 @@ const WaterUpdateTable = () => {
                 <Form.Label>Size Of Connection</Form.Label>
                 <Form.Control
                   type="number"
-                  value={process.Size_Of_Connection || ""}
+                  value={process.SIZE_OF_CONNECTION || ""}
                   readOnly
                   disabled
                 />
@@ -547,7 +547,7 @@ const WaterUpdateTable = () => {
       }
 
       // Show any other process specific fields
-      if (hasFieldData(process.Size_Of_Connection)) {
+      if (hasFieldData(process.SIZE_OF_CONNECTION)) {
         fields.push(
           <Row key="size" className="mb-2">
             <Col md={12}>
@@ -555,7 +555,7 @@ const WaterUpdateTable = () => {
                 <Form.Label>Size Of Connection</Form.Label>
                 <Form.Control
                   type="number"
-                  value={process.Size_Of_Connection || ""}
+                  value={process.SIZE_OF_CONNECTION || ""}
                   readOnly
                   disabled
                 />
@@ -1153,7 +1153,7 @@ const WaterUpdateTable = () => {
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill  w-50">
-            <PreviousUploadedDocsModal firstStep={firstStep} />
+            <PreviousUploadedDocsPanel1 firstStep={firstStep} />
           </div>
         </Col>
       </Row>

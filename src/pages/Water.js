@@ -71,7 +71,7 @@
 //   // useEffect(() => {
 //   //   if (headerData && headerData.LOC) {
 
-      
+
 //   //     setFormData(prev => ({
 //   //       ...prev,
 //   //       loc: headerData?.LOC || '',
@@ -93,8 +93,8 @@
 //   // useEffect(() => {
 //   //   if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
 //   //     const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
-  
-      
+
+
 //   //     if (defaultLoc) {
 //   //       fetchDataForLoc(defaultLoc);
 //   //     }
@@ -267,10 +267,10 @@
 //     othDocs.forEach(f => formPayload.append('othDocs[]', f));
 //     feasibilityDocs.forEach(f => formPayload.append('feasibilityDocs[]', f));
 //     AmountPaidDocs.forEach(f => formPayload.append('amountPaidDocs[]', f));
-    
+
 //     try {
 //       const data = await submitWaterForm(formPayload);
-      
+
 //       setWaterData(data)
 
 //       toast.success(data.message);
@@ -737,17 +737,18 @@ import "../pages/Water.css"
 import { getMasterByLoc, submitWaterForm } from "../api/Api";
 import { Context } from "../context/ContextData";
 import { MenuItem, Select } from "@mui/material";
+import Swal from "sweetalert2";
 
 const WaterForm = () => {
   const navigate = useNavigate();
-  const { 
-    waterData, 
-    setWaterData, 
-    masterGetData, 
+  const {
+    waterData,
+    setWaterData,
+    masterGetData,
     masterData = [],
-    totalMasterData = [], 
-    setHeaderData, 
-    headerData 
+    totalMasterData = [],
+    setHeaderData,
+    headerData
   } = useContext(Context);
 
   console.log("master data", masterData);
@@ -791,10 +792,10 @@ const WaterForm = () => {
     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     const validExtensions = ['.pdf'];
     const validMimeTypes = ['application/pdf'];
-    
+
     const isValidExtension = validExtensions.includes(fileExtension);
     const isValidMimeType = !file.type || validMimeTypes.includes(file.type);
-    
+
     return isValidExtension && isValidMimeType;
   };
 
@@ -807,9 +808,32 @@ const WaterForm = () => {
 
   // Check if at least one document is uploaded
   const hasAtLeastOneDocument = () => {
-    return planDocs.length > 0 || titleDocs.length > 0 || othDocs.length > 0 || 
-           feasibilityDocs.length > 0 || AmountPaidDocs.length > 0;
+    return planDocs.length > 0 || titleDocs.length > 0 || othDocs.length > 0 ||
+      feasibilityDocs.length > 0 || AmountPaidDocs.length > 0;
   };
+
+
+
+   const checkIfPlantExists = async (plant) => {
+    try {
+        const res = await axios.post(`${API_BASE_URL}/check-plant-exists-water`, { loc: plant });
+        console.log("API Response:", res.data);
+        
+        // Check if the response has a specific property indicating existence
+        if (res.data && res.data.exists === true) {
+      
+            toast.error('This plant already has entries.');
+            setFormData((prev) => ({ ...prev, loc: '' }));
+            setHeaderData(null);
+            return true; // Plant exists
+        }
+        return false; // Plant doesn't exist
+    } catch (error) {
+        console.error('Failed to check plant:', error);
+        // Don't clear the selection on error
+        return false;
+    }
+};
 
   // Fetch process
   useEffect(() => {
@@ -858,16 +882,21 @@ const WaterForm = () => {
       setFormData(prev => ({ ...prev, loc: value }));
 
       try {
+        const plantExists = await checkIfPlantExists(value);
+      
+            if (plantExists) {
+                return; 
+            }
         const res = await getMasterByLoc(value);
         if (res) {
           setHeaderData(res);
           setFormData(prev => ({
             ...prev,
             applyDate: '',
-            noOfTowers:  '',
-            TotalProjectArea:'',
-            ProjectBuildArea:  '',
-            ProjectName:  '',
+            noOfTowers: '',
+            TotalProjectArea: '',
+            ProjectBuildArea: '',
+            ProjectName: '',
           }));
         } else {
           setHeaderData(null);
@@ -922,7 +951,7 @@ const WaterForm = () => {
     e.preventDefault();
 
     const newErrors = {};
-    
+
     // Required field validations
     if (!formData.loc) newErrors.loc = "Project location is required.";
     if (!formData.process) newErrors.process = "Process type is required.";
@@ -933,7 +962,7 @@ const WaterForm = () => {
     if (!formData.noOfFlats) newErrors.noOfFlats = "Number of flats is required.";
     if (!formData.ProjectBuildArea) newErrors.ProjectBuildArea = "Project build area is required.";
     if (!formData.comments) newErrors.comments = "Comments are required.";
-    
+
     // Document validation
     if (!hasAtLeastOneDocument()) {
       newErrors.documents = "Please upload at least one document.";
@@ -943,7 +972,7 @@ const WaterForm = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      
+
       // Show toast for the first error
       const firstError = Object.values(newErrors)[0];
       toast.error(firstError);
@@ -1004,36 +1033,84 @@ const WaterForm = () => {
         formPayload.append('amountPaidDocs[]', f);
       }
     });
-    
-    try {
-      const data = await submitWaterForm(formPayload);
-      
-      setWaterData(data)
 
-      toast.success(data.message);
-      setFormData({
-        loc: '',
-        process: '',
-        applyDate: '',
-        document: null,
-        noOfFlats: '',
-        comments: '',
-        KLD: '',
-        amountPaid: '',
-        feasibilityDoc: null,
-        AmountPaidDoc: null,
-        noOfTowers: '',
-        ProjectBuildArea: '',
-        TotalProjectArea: '',
-        ProjectName: '',
-      });
-      setplanDocs([]);
-      setTitleDocs([]);
-      setOthDocs([]);
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setErrors({});
-      navigate('/create');
+    try {
+      const res = await submitWaterForm(formPayload);
+      console.log("ddddddddddd1111111111111111111",res);
+
+      setWaterData(res)
+
+      if (res.data.message) {
+        Swal.fire({
+          icon: "success",
+          title: res.data.message,
+          showConfirmButton: false,
+          timer: 3000, // Changed to 3 seconds for better UX
+        }).then(() => {
+          // Reset form
+          setFormData({
+            loc: '',
+            process: '',
+            applyDate: '',
+            document: null,
+            noOfFlats: '',
+            comments: '',
+            KLD: '',
+            amountPaid: '',
+            feasibilityDoc: null,
+            AmountPaidDoc: null,
+            noOfTowers: '',
+            ProjectBuildArea: '',
+            TotalProjectArea: '',
+            ProjectName: '',
+          });
+          setplanDocs([]);
+          setTitleDocs([]);
+          setOthDocs([]);
+          setFeasibilityDocs([]);
+          setAmountPaidDocs([]);
+          setErrors({});
+          navigate('/create');
+
+
+        });
+      } else {
+    
+        Swal.fire({
+          icon: "success",
+          title: "Application submitted successfully!",
+          showConfirmButton: false,
+          timer: 2000,
+        }).then(() => {
+          // Reset form
+          setFormData({
+            loc: '',
+            process: '',
+            applyDate: '',
+            document: null,
+            noOfFlats: '',
+            comments: '',
+            KLD: '',
+            amountPaid: '',
+            feasibilityDoc: null,
+            AmountPaidDoc: null,
+            noOfTowers: '',
+            ProjectBuildArea: '',
+            TotalProjectArea: '',
+            ProjectName: '',
+          });
+          setplanDocs([]);
+          setTitleDocs([]);
+          setOthDocs([]);
+          setFeasibilityDocs([]);
+          setAmountPaidDocs([]);
+          setErrors({});
+          navigate('/create');
+
+        });
+      }
+
+
     } catch (err) {
       toast.error(err.response?.data?.message || 'Submission failed. Please try again.');
     } finally {
@@ -1237,7 +1314,7 @@ const WaterForm = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="form-field">
                 <label className="field-label">
                   <FaUpload className="label-icon" /> Upload Documents*
@@ -1257,9 +1334,7 @@ const WaterForm = () => {
                   <div className="error-container">
                     {errors.documents && <p className="error-text">{errors.documents}</p>}
                   </div>
-                  <p className="text-muted small mt-1 mb-0">
-                    Only PDF files are accepted. At least one document required.
-                  </p>
+                  
                 </div>
               </div>
 
@@ -1279,9 +1354,7 @@ const WaterForm = () => {
                         `(${AmountPaidDocs.length} files)`}
                     </span>
                   </button>
-                  <p className="text-muted small mt-1 mb-0">
-                    Only PDF files are accepted.
-                  </p>
+                
                 </div>
               </div>
 
@@ -1301,9 +1374,7 @@ const WaterForm = () => {
                         `(${feasibilityDocs.length} files)`}
                     </span>
                   </button>
-                  <p className="text-muted small mt-1 mb-0">
-                    Only PDF files are accepted.
-                  </p>
+             
                 </div>
               </div>
             </div>
@@ -1353,7 +1424,7 @@ const WaterForm = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="form-field">
                 <label className="field-label">
                   <Calculator className="label-icon" size={20} /> Project Build Area*
@@ -1436,7 +1507,11 @@ const WaterForm = () => {
         setLandDocs={setTitleDocs}
         othDocs={othDocs}
         setOthDocs={setOthDocs}
+        tableType="water"
+  apiType="water"
+
         title="Upload Documents"
+
         validateFileType={validateFileType}
       />
 

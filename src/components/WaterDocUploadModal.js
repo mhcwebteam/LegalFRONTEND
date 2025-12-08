@@ -14,13 +14,14 @@ const WaterDocUploadModal = ({
   setLandDocs,
   othDocs = [],
   setOthDocs,
-  linkLabel = "Choose file",
+  linkLabel = "Upload Doc",
   showLandDocs = true,
   showOthDocs = true,
   title = "Upload Documents"
   
 }) => {
   if (!show) return null;
+
 const handleFilesAppend = (e, setter) => {
     if (e.target.files && e.target.files.length > 0) {
       const incoming = Array.from(e.target.files);
@@ -34,13 +35,6 @@ const handleFilesAppend = (e, setter) => {
   };
 
 
-  // const handleFilesAppend = (e, setter) => {
-  //   if (e.target.files) {
-  //     const incoming = Array.from(e.target.files);
-  //     setter(prev => [...prev, ...incoming]);
-  //     e.target.value = '';
-  //   }
-  // };
 
   const removeFile = (setter, index) => {
     setter(prev => prev.filter((_, i) => i !== index));

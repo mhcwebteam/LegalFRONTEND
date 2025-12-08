@@ -6,7 +6,6 @@ import axios from "axios";
 import { API_BASE_URL } from "../config/Config";
 import Swal from "sweetalert2";
 import FormHeader from "./Header";
-import PreviousUploadedDocsModal from "./PreviousUploadedDocsPanel";
 import WaterDocUploadModal from "./WaterDocUploadModal";
 import { FaCheckCircle, FaTrashAlt, FaUpload } from "react-icons/fa";
 import { fetchWaterDataByPlant, getMasterByLoc } from "../api/Api";
@@ -15,6 +14,7 @@ import ReusableDialog from "./ReusableDialog";
 import { toast } from "react-toastify";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import EmailSelectionModal from "./EmailModal";
+import PreviousWaterUploadedDocs from "./PreviousWaterUploadedDocs";
 
 
 const WaterModifyTable = () => {
@@ -118,7 +118,13 @@ const WaterModifyTable = () => {
     const newErrors = {};
     if (!formData.loc) newErrors.loc = "Plant selection is required";
     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
-    
+
+     if (!validateDocuments()) {
+      // Errors already set in validateDocuments function
+      return false;
+    }
+
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -208,10 +214,12 @@ const WaterModifyTable = () => {
     if (nextStepDetails) {
       let details = nextStepDetails;
 
+
+
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: details?.APPLY_DT,
-        status: details?.STATUS || "",
+        status: details?.STATUS || "YES",
         reason: details?.REASON || "",
         comments: details?.COMMENTS || "",
         noOfFlats: details?.NUMBER_OF_FLATS || "",
@@ -230,7 +238,7 @@ const WaterModifyTable = () => {
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: "",
-        status: "",
+        status: formData.status || "YES",
         reason: "",
         comments: "",
         noOfFlats: "",
@@ -254,6 +262,8 @@ const WaterModifyTable = () => {
         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
         .then((res) => {
           setStoreData(res.data);
+
+          console.log(res.data, "result1111111111111111")
           if (res.data.length > 0) {
             setFormData((prev) => ({
               ...prev,
@@ -339,6 +349,40 @@ const WaterModifyTable = () => {
       }));
     }
   };
+    const validateFileType = (file) => {
+    // Check file extension
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    const validExtensions = ['.pdf'];
+
+    // Check MIME type
+    const validMimeTypes = ['application/pdf'];
+
+    // Validate extension
+    const isValidExtension = validExtensions.includes(fileExtension);
+
+    // Validate MIME type (if available)
+    const isValidMimeType = !file.type || validMimeTypes.includes(file.type);
+
+    return isValidExtension && isValidMimeType;
+  };
+
+
+  const validateDocuments = () => {
+    let isValid = true;
+    const newErrors = {};
+
+    // Validate linkDocs if any files are selected
+    if (AmountPaidDocs.length > 0) {
+      const invalidFiles = AmountPaidDocs.filter(file => !validateFileType(file));
+      if (invalidFiles.length > 0) {
+        newErrors.AmountPaidDocs = "Only PDF files are allowed";
+        isValid = false;
+      }
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleConfirmSubmit = async (emails) => {
     setIsSubmitting(true);
@@ -358,23 +402,24 @@ const WaterModifyTable = () => {
     payload.append("projectBuildArea", formData.ProjectBuildArea || "");
     payload.append("noOfTowers", formData.noOfTowers || 0);
     payload.append("TotalAmount", formData.TotalAmount || "");
-    
+    payload.append("KLD", formData.KLD || "");
+    payload.append("amountPaid", formData.amountPaid || "");
     linkDocs.forEach(f => payload.append("Plan_Doc[]", f));
     landDocs.forEach(f => payload.append("Title_Doc[]", f));
     othDocs.forEach(f => payload.append("Oth_Doc[]", f));
-    
+     AmountPaidDocs.forEach(f => payload.append("AMOUNT_PAID_DOC[]", f));
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
 
-    if (isFirstProcess) {
-      payload.append("noOfFlats", formData.noOfFlats || "");
-      payload.append("KLD", formData.KLD || "");
-      payload.append("amountPaid", formData.amountPaid || "");
-      payload.append("noOfTowers", formData.noOfTowers || 0);
-      feasibilityDocs.forEach(f => payload.append('FEAS_DOC[]', f));
-      AmountPaidDocs.forEach(f => payload.append('AMOUNT_PAID_DOC[]', f));
-    }
+    // if (isFirstProcess) {
+    //   payload.append("noOfFlats", formData.noOfFlats || "");
+    //   payload.append("KLD", formData.KLD || "");
+    //   payload.append("amountPaid", formData.amountPaid || "");
+    //   payload.append("noOfTowers", formData.noOfTowers || 0);
+    //   feasibilityDocs.forEach(f => payload.append('FEAS_DOC[]', f));
+     
+    // }
 
     try {
       const existingRecord = storeData.find(
@@ -397,13 +442,13 @@ const WaterModifyTable = () => {
       );
       setStoreData(refreshed.data);
 
-      const master = await getMasterByLoc(formData.loc);
-      if (master) {
-        setHeaderData(master);
-      }
+      // const master = await getMasterByLoc(formData.loc);
+      // if (master) {
+      //   setHeaderData(master);
+      // }
 
       setFormData({
-        loc: "",
+        loc: formData.loc,
         applyDate: "",
         comments: "",
         noOfFlats: "",
@@ -545,6 +590,7 @@ const WaterModifyTable = () => {
                     name="applyDate"
                     value={formData.applyDate || ""}
                     onChange={handleChange}
+                      max={new Date().toISOString().split("T")[0]}
                     isInvalid={!!errors.applyDate}
                     disabled={!formData.loc}
                   />
@@ -676,23 +722,7 @@ const WaterModifyTable = () => {
               </Row>
             </>
 
-            {formData.status === "YES" && (
-              <Row className="mb-3">
-                <Col md={12}>
-                  <Form.Group>
-                    <Form.Label>Comments</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
-                      name="comments"
-                      value={formData.comments || ""}
-                      disabled={!formData.loc}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-            )}
+           
 
             {formData.status === "NO" && (
               <Row className="mb-2">
@@ -794,52 +824,51 @@ const WaterModifyTable = () => {
               </>
             )}
 
-            {isFirstProcess && (
+          
               <Row className="mb-3">
                 <Col md={6}>
-                  <Form.Label>Amount Paid Document</Form.Label>
+                  <Form.Label>Upload Documents</Form.Label>
                   <button
                     type="button"
                     className="upload-button"
                     onClick={() => setAmountPaidDocModal(true)}
                     disabled={!formData.loc}
                   >
-                    <FaUpload className="upload-icon" /> Upload Paid Documents
+                    <FaUpload className="upload-icon" /> Upload  Documents
                     <span className="upload-count">
                       {AmountPaidDocs.length > 0 &&
                         `(${AmountPaidDocs.length} files)`}
                     </span>
                   </button>
+                      {errors.AmountPaidDocs && (
+                        <p className="error-text text-danger mt-1 mb-0">
+                          {errors.AmountPaidDocs}
+                        </p>
+                      )}
                 </Col>
-                <Col md={6}>
-                  <Form.Label>Feasibility Documents</Form.Label>
-                  <button
-                    type="button"
-                    className="upload-button"
-                    onClick={() => setShowFeasibilityModal(true)}
-                    disabled={!formData.loc}
-                  >
-                    <FaUpload className="upload-icon" /> Upload Feasibility
-                    <span className="upload-count">
-                      {feasibilityDocs.length > 0 &&
-                        `(${feasibilityDocs.length} files)`}
-                    </span>
-                  </button>
-                </Col>
-              </Row>
-            )}
 
-            <Col className="mb-2" md={6}>
-              <Form.Label>Upload Documents</Form.Label>
-              <button
-                type="button"
-                className="btn btn-outline-secondary form-control"
-                onClick={() => setShowUploadModal(true)}
-                disabled={!formData.loc}
-              >
-                Upload Docs
-              </button>
-            </Col>
+              
+          
+          {formData.status !== "NO" && (
+    <Col md={6}>
+      <Form.Group>
+        <Form.Label>Comments</Form.Label>
+        <Form.Control
+          as="textarea"
+          rows={2}
+          name="comments"
+          value={formData.comments || ""}
+          disabled={!formData.loc}
+          onChange={handleChange}
+        />
+      </Form.Group>
+    </Col>
+  )}
+             
+              </Row>
+          
+
+         
 
             <div className="d-grid">
               <Button
@@ -859,7 +888,8 @@ const WaterModifyTable = () => {
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousUploadedDocsModal firstStep={firstStep} />
+            <PreviousWaterUploadedDocs firstStep={firstStep}   type = "modify" 
+           />
           </div>
         </Col>
       </Row>
@@ -910,7 +940,7 @@ const WaterModifyTable = () => {
         onClose={() => setAmountPaidDocModal(false)}
         linkDocs={AmountPaidDocs}
         setLinkDocs={setAmountPaidDocs}
-        title="Upload Paid Document Certificate"
+        title="Upload  Document Certificate"
         showLandDocs={false}
         showOthDocs={false}
       />

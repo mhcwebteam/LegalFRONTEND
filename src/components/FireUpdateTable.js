@@ -727,11 +727,10 @@ import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import { FaFileAlt } from "react-icons/fa";
-import EmailSelectionModal from "./EmailSelectionModal";
 import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
 import ProjectInfoHeader from "./ProjectInfoHeader";
-
+import EmailSelectionModal from "./EmailModal";
 const FireUpdateTable = () => {
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);

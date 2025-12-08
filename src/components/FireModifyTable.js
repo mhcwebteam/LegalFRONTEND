@@ -1904,7 +1904,7 @@ const handleChange = async (e) => {
                   </Form.Select>
                 </Form.Group>
               </Col>
-              {immediateNextStepIndex < 2 && (
+            
                 <Col md={6}>
                   <Form.Group>
                     <Form.Label>
@@ -1920,7 +1920,7 @@ const handleChange = async (e) => {
                     />
                   </Form.Group>
                 </Col>
-              )}
+          
             </Row>
 
             {/* {immediateNextStepIndex >= 1 && (
