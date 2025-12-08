@@ -15,20 +15,17 @@ import { Context } from "../context/ContextData";
 import "../pages/Water.css"
 import ProjectInfoHeader from "../components/ProjectInfoHeader";
 
-
 const ReraForm = () => {
   const navigate = useNavigate();
   const {setFormReraData, totalMasterData = [], setHeaderData, headerData  } = useContext(Context);
 
-
   const [showModal, setShowModal] = useState(false);
-const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
+  const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
   const [planDocs, setplanDocs] = useState([]);
   const [AmountPaidDocs, setAmountPaidDocs] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
- 
 
   const [formData, setFormData] = useState({
     loc: '',
@@ -40,30 +37,27 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
     Comments: '',
   });
 
+  const fetchDataForLoc = async (loc) => {
+    try {
+      const res = await getMasterByLoc(loc);
+      if (res) {
+        setHeaderData(res);
+      }
+    } catch (error) {
+      console.error("Error fetching initial loc data:", error);
+    }
+  };
 
-   const fetchDataForLoc = async (loc) => {
-      try {
-        const res = await getMasterByLoc(loc);
-  
-        if (res) {
-          setHeaderData(res);
-        }
-      } catch (error) {
-        console.error("Error fetching initial loc data:", error);
+  useEffect(() => {
+    if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+      const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+      if (defaultLoc) {
+        fetchDataForLoc(defaultLoc);
       }
-    };
-  
-  
-    useEffect(() => {
-      if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
-        const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
-        if (defaultLoc) {
-          fetchDataForLoc(defaultLoc);
-        }
-      }
-    }, [totalMasterData]);
- 
-    useEffect(() => {
+    }
+  }, [totalMasterData]);
+
+  useEffect(() => {
     const fetchProcess = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/rera-process`);
@@ -78,29 +72,63 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
     fetchProcess();
   }, []);
 
-
-
+  // --------------------------------------------------------------------
+  // 08-12-2025: ADDED FORM VALIDATION FUNCTION
+  // This function validates all required fields before submission
+  // --------------------------------------------------------------------
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Required fields validation
+    if (!formData.loc || formData.loc.trim() === '') {
+      newErrors.loc = 'Plant Name is required';
+    }
+    
+    if (!formData.process || formData.process.trim() === '') {
+      newErrors.process = 'Process Type is required';
+    }
+    
+    if (!formData.applyDate || formData.applyDate.trim() === '') {
+      newErrors.applyDate = 'Application Date is required';
+    }
+    
+    if (!formData.projectDetails || formData.projectDetails.trim() === '') {
+      newErrors.projectDetails = 'Project Name is required';
+    }
+    
+    if (!formData.address || formData.address.trim() === '') {
+      newErrors.address = 'Address is required';
+    }
+    
+    if (!formData.Comments || formData.Comments.trim() === '') {
+      newErrors.Comments = 'Comments are required';
+    }
+    
+    // Document validation - if AmountPaidDocs is required
+    if (AmountPaidDocs.length === 0) {
+      newErrors.AmountPaidDoc = 'At least one document is required';
+    }
+    
+    return newErrors;
+  };
 
   const checkIfPlantExists = async (plant) => {
     try {
-        const res = await axios.post(`${API_BASE_URL}/check-plant-exists-rera`, { loc: plant });
-        console.log("API Response:", res.data);
-        
-        // Check if the response has a specific property indicating existence
-        if (res.data && res.data.exists === true) {
+      const res = await axios.post(`${API_BASE_URL}/check-plant-exists-rera`, { loc: plant });
+      console.log("API Response:", res.data);
       
-            toast.error('This plant already has entries.');
-            setFormData((prev) => ({ ...prev, loc: '' }));
-            setHeaderData(null);
-            return true; // Plant exists
-        }
-        return false; // Plant doesn't exist
+      if (res.data && res.data.exists === true) {
+        toast.error('This plant already has entries.');
+        setFormData((prev) => ({ ...prev, loc: '' }));
+        setHeaderData(null);
+        return true;
+      }
+      return false;
     } catch (error) {
-        console.error('Failed to check plant:', error);
-        // Don't clear the selection on error
-        return false;
+      console.error('Failed to check plant:', error);
+      return false;
     }
-};
+  };
 
   const handleChange = async (e) => {
     const { name, value, type, checked } = e.target;
@@ -113,14 +141,17 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
       return;
     }
 
-
-   if (name === "loc") {
+    if (name === "loc") {
       setFormData((prev) => ({
         ...prev,
         loc: value,
       }));
 
-      // If empty value, clear everything
+      // Clear error for this field
+      if (errors.loc) {
+        setErrors(prev => ({ ...prev, loc: '' }));
+      }
+
       if (!value || value.trim() === "") {
         setHeaderData({});
         setFormData((prev) => ({
@@ -130,24 +161,17 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
         return;
       }
 
-      // Fetch master data for the selected location
       try {
-
-
-         // Check if plant exists in airport table
-            const plantExists = await checkIfPlantExists(value);
-      
-            if (plantExists) {
-                return; 
-            }
-            
+        const plantExists = await checkIfPlantExists(value);
+        if (plantExists) {
+          return; 
+        }
+        
         const res = await getMasterByLoc(value);
         if (res && Object.keys(res).length > 0) {
           setHeaderData(res);
-
           setFormData((prev) => ({
             ...prev,
-      
           }));
         } else {
           console.warn('⚠️ No master data found for location:', value);
@@ -155,7 +179,6 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
           setFormData((prev) => ({
             ...prev,
             applyDate: "",
-
           }));
         }
       } catch (err) {
@@ -164,19 +187,22 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
         setFormData((prev) => ({
           ...prev,
           applyDate: "",
-      
         }));
       }
       return;
     }
 
-    // Normal case
+    // Normal case - update form data and clear error
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
-
 
   const handleProcessChange = (value) => {
     setFormData((prev) => ({
@@ -188,104 +214,88 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
     }
   };
 
-
-
+  // --------------------------------------------------------------------
+  // 08-12-2025: UPDATED HANDLESUBMIT FUNCTION WITH VALIDATION
+  // Now checks all required fields before opening confirmation dialog
+  // --------------------------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate form
-    const newErrors = {};
-
-    if (!formData.loc) {
-      newErrors.loc = 'Please select a plant';
-    }
-
-    if (!formData.process) {
-      newErrors.process = 'Please select a process type';
-    }
-
-    if (!formData.applyDate) {
-      newErrors.applyDate = 'Please select an application date';
-    }
-
-    if (!AmountPaidDocs || AmountPaidDocs.length === 0) {
-      newErrors.AmountPaidDoc = 'Please upload at least one PDF document';
-    }
-
-    if (!formData.projectDetails) {
-      newErrors.projectDetails = 'Please enter project name';
-    }
-
-    if (!formData.address) {
-      newErrors.address = 'Please enter address';
-    }
-
-    // If there are errors, set them and don't proceed
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast.error('Please fill all required fields');
+    // Validate form before opening confirmation dialog
+    const validationErrors = validateForm();
+    
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      
+      // Scroll to first error for better UX
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const errorElement = document.getElementById(firstErrorField) || 
+                        document.querySelector(`[name="${firstErrorField}"]`);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        errorElement.focus();
+      }
+      
+      toast.error('Please fill in all required fields');
       return;
     }
 
-    setErrors({});
+    // If validation passes, open confirmation dialog
     setConfirmOpen(true);
   };
 
   const handleConfirmSubmit = async () => {
-  setConfirmOpen(false);
-  setIsSubmitting(true);
+    setConfirmOpen(false);
+    setIsSubmitting(true);
 
-  const formPayload = new FormData();
+    const formPayload = new FormData();
 
-  formPayload.append('loc', formData.loc);
-  formPayload.append('process', formData.process);
-  formPayload.append('applyDate', formData.applyDate);
-  formPayload.append('prjName', formData.projectDetails);
-  formPayload.append('address', formData.address);
-  formPayload.append('comments', formData.Comments || '');
+    formPayload.append('loc', formData.loc);
+    formPayload.append('process', formData.process);
+    formPayload.append('applyDate', formData.applyDate);
+    formPayload.append('prjName', formData.projectDetails);
+    formPayload.append('address', formData.address);
+    formPayload.append('comments', formData.Comments || '');
 
-  // ✅ Append multiple uploaded docs (from AmountPaidDocs state)
-  if (AmountPaidDocs && AmountPaidDocs.length > 0) {
-    AmountPaidDocs.forEach((file) => {
-      formPayload.append('UPLOAD_DOC[]', file);
-    });
-  }
+    // Append multiple uploaded docs
+    if (AmountPaidDocs && AmountPaidDocs.length > 0) {
+      AmountPaidDocs.forEach((file) => {
+        formPayload.append('UPLOAD_DOC[]', file);
+      });
+    }
 
-  try {
-    const data = await submitReraForm(formPayload);
-    setFormReraData(data);
+    try {
+      const data = await submitReraForm(formPayload);
+      setFormReraData(data);
 
-    toast.success(data.message || "Application submitted successfully!");
+      toast.success(data.message || "Application submitted successfully!");
 
-    // Reset form
-    setFormData({ 
-      loc: '', 
-      process: '', 
-      applyDate: '', 
-      document: null, 
-      address: '',
-      projectDetails: '',
-      Comments: '', 
-    });
-    setplanDocs([]);
-    setAmountPaidDocs([]); 
+      // Reset form
+      setFormData({ 
+        loc: '', 
+        process: '', 
+        applyDate: '', 
+        document: null, 
+        address: '',
+        projectDetails: '',
+        Comments: '', 
+      });
+      setplanDocs([]);
+      setAmountPaidDocs([]);
+      setErrors({}); // Clear errors on success
 
-    navigate('/create');
-  } catch (err) {
-    console.error("Submission error:", err);
-    toast.error(err.response?.data?.message || 'Submission failed. Please try again.');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-
-  
+      navigate('/create');
+    } catch (err) {
+      console.error("Submission error:", err);
+      toast.error(err.response?.data?.message || 'Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleBackClick = () => {
     navigate('/create');
   };
-
 
   return (
     <div className="water-form-wrapper">
@@ -316,27 +326,35 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
             </button>
           </div>
         </header>
-   <ProjectInfoHeader data={headerData} />
+        
+        <ProjectInfoHeader data={headerData} />
+        
         <div className="form-content">
           {/* PROJECT INFORMATION SECTION */}
           <div className="form-section" aria-labelledby="project-info-heading">
             <div className="section-header">
-              <Home className="section-icon" size={20} />
-              <h2 className="section-title" >Plant Information:</h2>
+              <Home className="section-icon" size={15} />
+              <h2 className="section-title" style={{ fontSize: "15px" }}>
+                Plant Information:
+              </h2>
             </div>
 
             <div className="form-grid two-columns">
+              {/* PLANT NAME FIELD */}
               <div className={`form-field ${errors.loc ? 'has-error' : ''}`}>
                 <label className="field-label" htmlFor="project-name">
-                  <Hotel className="label-icon"  size={20}/> 
+                  <Hotel className="label-icon" size={20}/> 
                   Plant Name*
                 </label>
                 <div className="input-wrapper">
-                      <select
+                  <select
                     name="loc"
                     value={formData.loc}
                     onChange={handleChange}
                     className="modern-input appearance-none cursor-pointer focus:ring-2 focus:ring-blue-400"
+                    style={{
+                      border: errors.loc ? '2px solid #ef4444' : '1px solid #d1d5db'
+                    }}
                   >
                     <option value="">Select Plant</option>
                     {Array.isArray(totalMasterData) && totalMasterData.map((ele, index) => (
@@ -346,8 +364,19 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
                     ))}
                   </select>
                 </div>
+                {errors.loc && (
+                  <p style={{
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    marginTop: '4px',
+                    marginBottom: '0'
+                  }}>
+                    {errors.loc}
+                  </p>
+                )}
               </div>
 
+              {/* PROCESS TYPE FIELD */}
               <div className={`form-field ${errors.process ? 'has-error' : ''}`}>
                 <label className="field-label" htmlFor="process-type">
                   <FaLeaf className="label-icon" /> 
@@ -356,20 +385,26 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
                 <div className="input-wrapper">
                   <ProcessField
                     id="process-type"
-                   apiUrl={`${API_BASE_URL}/water-process`}
+                    apiUrl={`${API_BASE_URL}/water-process`}
                     value={formData.process}
                     onChange={handleProcessChange}
                     className={`modern-input ${errors.process ? 'error' : ''}`}
+                    style={{
+                      border: errors.process ? '2px solid #ef4444' : '1px solid #d1d5db'
+                    }}
                     aria-describedby={errors.process ? "process-type-error" : undefined}
                   />
-                  {errors.process && (
-                    <div className="error-container">
-                      <p id="process-type-error" className="error-text" role="alert">
-                        {errors.process}
-                      </p>
-                    </div>
-                  )}
                 </div>
+                {errors.process && (
+                  <p style={{
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    marginTop: '4px',
+                    marginBottom: '0'
+                  }}>
+                    {errors.process}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -377,11 +412,14 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
           {/* APPLICATION DETAILS SECTION */}
           <section className="form-section" aria-labelledby="app-details-heading">
             <div className="section-header">
-              <FileText className="section-icon" size={20}  />
-              <h2 id="app-details-heading" className="section-title">Application Details:</h2>
+              <FileText className="section-icon" size={15}  />
+              <h2 id="app-details-heading" className="section-title" style={{ fontSize: "15px" }}>
+                Application Details:
+              </h2>
             </div>
 
             <div className="form-grid two-columns">
+              {/* APPLICATION DATE FIELD */}
               <div className={`form-field ${errors.applyDate ? 'has-error' : ''}`}>
                 <label className="field-label" htmlFor="apply-date">
                   <FaCalendarAlt className="label-icon" /> 
@@ -393,29 +431,38 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
                     value={formData.applyDate}
                     onChange={handleChange}
                     className={`modern-input ${errors.applyDate ? 'error' : ''}`}
+                    style={{
+                      border: errors.applyDate ? '2px solid #ef4444' : '1px solid #d1d5db'
+                    }}
                     aria-describedby={errors.applyDate ? "apply-date-error" : undefined}
                   />
-                  {errors.applyDate && (
-                    <div className="error-container">
-                      <p id="apply-date-error" className="error-text" role="alert">
-                        {errors.applyDate}
-                      </p>
-                    </div>
-                  )}
                 </div>
+                {errors.applyDate && (
+                  <p style={{
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    marginTop: '4px',
+                    marginBottom: '0'
+                  }}>
+                    {errors.applyDate}
+                  </p>
+                )}
               </div>
 
- 
-              <div className={`form-field ${errors.AmountPaidDoc ? 'has-error' : ''}`}>
+              {/* UPLOAD DOCUMENTS FIELD */}
+              <div className={`form-field ${errors.documents ? 'has-error' : ''}`}>
                 <label className="field-label">
                   <FaUpload className="label-icon" /> 
-                  Upload Documents (PDF Only)*
+                  Upload Documents*
                 </label>
-             <div className="upload-container">
+                <div className="upload-container">
                   <button
                     type="button"
                     className="upload-button"
                     onClick={() => setAmountPaidDocModal(true)}
+                    style={{
+                      border: errors.AmountPaidDoc ? '2px solid #ef4444' : '1px solid #d1d5db'
+                    }}
                   >
                     <FaUpload className="upload-icon" />  Upload Paid Documents
                     <span className="upload-count">
@@ -423,12 +470,17 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
                         `(${AmountPaidDocs.length} files)`}
                     </span>
                   </button>
-                  {errors.AmountPaidDoc && (
-                    <div className="error-container">
-                      <p className="error-text" role="alert">{errors.AmountPaidDoc}</p>
-                    </div>
-                  )}
                 </div>
+                {errors.AmountPaidDoc && (
+                  <p style={{
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    marginTop: '4px',
+                    marginBottom: '0'
+                  }}>
+                    {errors.AmountPaidDoc}
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -436,11 +488,14 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
           {/* PROJECT DETAILS SECTION */}
           <section className="form-section" aria-labelledby="project-details-heading">
             <div className="section-header">
-              <FaBuilding className="section-icon" size={20} />
-              <h2 id="project-details-heading" className="section-title">Project Details:</h2>
+              <FaBuilding className="section-icon" size={15} />
+              <h2 id="project-details-heading" className="section-title" style={{ fontSize: "15px" }}>
+                Project Details:
+              </h2>
             </div>
 
             <div className="form-grid two-columns">
+              {/* PROJECT NAME FIELD */}
               <div className={`form-field ${errors.projectDetails ? 'has-error' : ''}`}>
                 <label className="field-label" htmlFor="plant-details">
                   <ClipboardList className="label-icon" /> 
@@ -455,18 +510,25 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
                     onChange={handleChange}
                     className={`modern-input ${errors.projectDetails ? 'error' : ''}`}
                     placeholder="Enter plant details"
+                    style={{
+                      border: errors.projectDetails ? '2px solid #ef4444' : '1px solid #d1d5db'
+                    }}
                     aria-describedby={errors.projectDetails ? "plant-details-error" : undefined}
                   />
-                  {errors.projectDetails && (
-                    <div className="error-container">
-                      <p id="plant-details-error" className="error-text" role="alert">
-                        {errors.projectDetails}
-                      </p>
-                    </div>
-                  )}
                 </div>
+                {errors.projectDetails && (
+                  <p style={{
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    marginTop: '4px',
+                    marginBottom: '0'
+                  }}>
+                    {errors.projectDetails}
+                  </p>
+                )}
               </div>
 
+              {/* ADDRESS FIELD */}
               <div className={`form-field ${errors.address ? 'has-error' : ''}`}>
                 <label className="field-label" htmlFor="address">
                   <BookUser className="label-icon" size={20} /> 
@@ -480,49 +542,65 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
                     onChange={handleChange}
                     className={`modern-input ${errors.address ? 'error' : ''}`}
                     placeholder="Enter project address"
+                    style={{
+                      border: errors.address ? '2px solid #ef4444' : '1px solid #d1d5db'
+                    }}
                     aria-describedby={errors.address ? "address-error" : undefined}
                   />
-                  {errors.address && (
-                    <div className="error-container">
-                      <p id="address-error" className="error-text" role="alert">
-                        {errors.address}
-                      </p>
-                    </div>
-                  )}
                 </div>
+                {errors.address && (
+                  <p style={{
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    marginTop: '4px',
+                    marginBottom: '0'
+                  }}>
+                    {errors.address}
+                  </p>
+                )}
               </div>
             </div>
           </section>
 
           {/* ADDITIONAL COMMENTS SECTION */}
-        <section className="form-section" aria-labelledby="comments-heading">
-             <div className="section-header">
-               <MessageSquareMore className="section-icon" size={20} />
-              <h2 id="comments-heading" className="section-title">Additional Comments:</h2>
+          <section className="form-section" aria-labelledby="comments-heading">
+            <div className="section-header">
+              <MessageSquareMore className="section-icon" size={15} />
+              <h2 id="comments-heading" className="section-title" style={{ fontSize: "15px" }}>
+                Additional Comments:
+              </h2>
             </div>
 
-             <div className="form-grid single-column">
+            <div className="form-grid single-column">
               <div className="form-field">
                 <label className="field-label" htmlFor="comments">
                   <MessageCircleMore className="label-icon" size= {20} /> 
-                   Comments
+                  Comments*
                 </label>
                 <div className="input-wrapper">
-                   <textarea
+                  <textarea
                     id="comments"
                     name="Comments"
                     value={formData.Comments}
                     onChange={handleChange}
-                    className="modern-input"
-                    placeholder="Enter any additional comments or special requirements"
-                    rows="2"
-                    style={{ 
-                      minHeight: '100px',
-                      resize: 'vertical',
-                      fontFamily: 'inherit'
+                    className={`modern-input ${errors.Comments ? 'error' : ''}`}
+                    placeholder="Enter  comments"
+                    style={{
+                      border: errors.Comments ? '2px solid #ef4444' : '1px solid #d1d5db'
                     }}
+                    aria-describedby={errors.Comments ? "comments-error" : undefined}
                   />
                 </div>
+                {errors.Comments && (
+                  <p style={{
+                    color: '#ef4444',
+                    fontSize: '14px',
+                    marginTop: '4px',
+                    marginBottom: '0'
+                  }}>
+                    {errors.Comments}
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -567,17 +645,14 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
         isLoading={isSubmitting}
       />
       
-
-        <WaterDocUploadModal
+      <WaterDocUploadModal
         show={amountPaidDocModal}
         onClose={() => setAmountPaidDocModal(false)}
         linkDocs={AmountPaidDocs}
         setLinkDocs={setAmountPaidDocs}
-        title="Upload Paid Document Certificate (PDF Only)"
+        title="Upload Paid Document Certificate"
         showLandDocs={false}
         showOthDocs={false}
-        acceptedFileTypes=".pdf"
-        fileTypeMessage="Only PDF files are accepted"
       />
 
       <ToastContainer
@@ -597,17 +672,3 @@ const [amountPaidDocModal, setAmountPaidDocModal]  = useState(false);
 };
 
 export default ReraForm;
-
-
-
-
-
-
-
-
-
-
-
-
-
-

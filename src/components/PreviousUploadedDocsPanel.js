@@ -102,7 +102,7 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
 
 // ------------------ Main Panel ------------------
 const PreviousUploadedDocsPanel = ({ firstStep, onDocumentsChange }) => {
-  console.log(firstStep,"tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt");
+
   const [deletedDocuments, setDeletedDocuments] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
 

@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useMemo, useContext } from "react";
-import { Nav, Form, Button, Row, Col, Badge, OverlayTrigger, Tooltip, Card, Alert } from "react-bootstrap";
+import { Nav, Form, Button, Row, Col, Badge, OverlayTrigger, Tooltip, Card, Alert, Modal } from "react-bootstrap";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import { FaCheckCircle, FaFileAlt } from "react-icons/fa";
-import EmailSelectionModal from "./EmailSelectionModal";
 import { Context } from "../context/ContextData";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import { getMasterByLoc } from "../api/Api";
-
+import EmailSelectionModal from "./EmailModal";
 const SUB_LEVELS = ["Level 1", "Level 2", "Level 3", "Level 4"];
 
 const ReraUpdateTable = () => {
@@ -29,9 +28,12 @@ const ReraUpdateTable = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
-
+ const [showDemoteModal, setShowDemoteModal] = useState(false);
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
+ const [showLogsModal, setShowLogsModal] = useState(false);
+  const [selectedLogs, setSelectedLogs] = useState([]);
+
 
   // ✅ NEW: 'viewedStep' tracks which step the user is currently looking at (could be an old one).
   const [viewedStep, setViewedStep] = useState(null);
@@ -236,6 +238,23 @@ const ReraUpdateTable = () => {
       Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
     }
   };
+
+   const handleDemoteConfirm = (newLevel) => {
+      if (newLevel) {
+          // setLevelToSubmit(newLevel);
+          // setFormData(prev => ({ ...prev, subLevelStatus: 'No' }));
+          Swal.fire({
+              icon: 'info',
+              title: 'Level Changed',
+              text: `The task will be reset to ${newLevel}. Click the main 'Submit' button to save this change.`,
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3500
+          });
+      }
+      setShowDemoteModal(false);
+    };
 
   // --- UI Rendering ---
   const renderDocumentHistory = () => {
@@ -444,28 +463,59 @@ const ReraUpdateTable = () => {
               {renderDocumentHistory()}
             </div>
 
+                <div className="p-2 border-top bg-light text-center">
+                          <Button 
+                            variant="info" 
+                            size="sm" 
+                            onClick={() => {
+                              // 08-12-2025: Parse logs from nextStepDetails
+                              let logs = [];
+                              try {
+                                if (viewedStepDetails?.LOG) {
+                                  logs = JSON.parse(viewedStepDetails?.LOG);
+                                }
+                              } catch (error) {
+                                console.error("Failed to parse logs:", error);
+                              }
+                              setSelectedLogs(logs);
+                              setShowLogsModal(true);
+                            }}
+                          >
+                            View Logs
+                          </Button>
+                        </div>
+
             {/* 💬 Comments (30%) */}
-            <div
-              style={{
-                flexBasis: "30%",
-                overflowY: "auto",
-                overflowX: "hidden",
-              }}
-            >
-              <h6 className="mb-2">Comments</h6>
-              <div
-                style={{
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {viewedStepDetails?.COMMENTS || "No comments available"}
-              </div>
-            </div>
+           
+            
           </Card>
         </Col>
       </Row>
 
+      
+              <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} size="lg">
+  <Modal.Header closeButton>
+    <Modal.Title>Log History</Modal.Title>
+  </Modal.Header>
+   <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
+           {selectedLogs.length === 0 ? (
+             <p>No comments available</p>
+           ) : (
+             selectedLogs.map((log, i) => (
+               <div key={i}>
+                 <strong>{log?.date}:</strong> {log?.comment}
+                 <hr />
+               </div>
+             ))
+           )}
+         </Modal.Body>
+ 
+  <Modal.Footer>
+    <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+      Close
+    </Button>
+  </Modal.Footer>
+</Modal>
       <EmailSelectionModal
         show={showEmailModal}
         onHide={() => setShowEmailModal(false)}

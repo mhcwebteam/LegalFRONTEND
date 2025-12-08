@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useMemo, useContext } from "react";
-import { Nav, Form, Button, Row, Col, Badge, Modal, Card, Alert } from "react-bootstrap";
+import { Nav, Form, Button, Row, Col, Badge, Modal, Card, Alert, ListGroup } from "react-bootstrap"; // 08-12-2025: Added ListGroup
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import ReraDocUploadModal from "./ReraDocUploadModal";
 import { FaCheckCircle, FaFileAlt } from "react-icons/fa";
-import EmailSelectionModal from "./EmailSelectionModal";
+
 import { Context } from "../context/ContextData";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import { getMasterByLoc } from "../api/Api";
+import EmailSelectionModal from "./EmailModal";
 
 // Define the sub-levels as a constant
 const SUB_LEVELS = ['Level 1', 'Level 2', 'Level 3', 'Level 4'];
@@ -34,6 +35,12 @@ const ReraModifyTable = () => {
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
   const [allStepsCompleted, setAllStepsCompleted] = useState(false);
+  
+  // 08-12-2025: Added state for logs modal
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [selectedLogs, setSelectedLogs] = useState([]);
+
+  console.log("selected LLLLLLLLLLLL",selectedLogs);
 
      const {
        storeData,
@@ -43,8 +50,6 @@ const ReraModifyTable = () => {
        headerData,
        setRespModifyData,
      } = useContext(Context);
-
-
 
      
      
@@ -88,8 +93,6 @@ const ReraModifyTable = () => {
              );
            };
 
-
-
         const handleEmailSubmit = () => {
     const newErrors = {};
     if (!formData.loc) newErrors.loc = "Plant selection is required";
@@ -113,7 +116,6 @@ const ReraModifyTable = () => {
     await handleConfirmSubmit(emails);
   };
 
-
   // All useEffect hooks for data fetching are correct and unchanged.
   useEffect(() => {
     axios.get(`${API_BASE_URL}/rera-process`).then((res) => setSteps(res.data)).catch((err) => console.error("Error fetching RERA processes:", err));
@@ -130,7 +132,6 @@ const ReraModifyTable = () => {
     setNextStepDetails(null);
     setProjectInfo({ prjName: "", address: "" });
     setFormData({ loc: selectedPlant, applyDate: "", comments: "", prjName: "", address: "", fromDate: "", toDate: "" });
-
 
     if (selectedPlant && steps.length > 0) {
       axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`)
@@ -182,7 +183,6 @@ const ReraModifyTable = () => {
     if (nextStepDetails && typeof nextStepDetails === 'object' && Object.keys(nextStepDetails).length > 0) {
       const details = nextStepDetails;
 
-
       setFormData((prev) => ({ ...prev, 
         applyDate: details.APPLY_DT, 
         fromDate: details.FRM_DT || "", // Added this line
@@ -222,7 +222,6 @@ const ReraModifyTable = () => {
     }
   }, [activeSubLevelIndex, immediateNextStepIndex]);
 
-
   const handleChange = async (e) => {
     const { name, value } = e.target;
     if (name === 'loc') {
@@ -258,7 +257,6 @@ const ReraModifyTable = () => {
 
      
     }
-
 
     if (name === 'subLevelStatus' && value === 'No') {
       if (activeSubLevelIndex === 1) {
@@ -398,73 +396,51 @@ const ReraModifyTable = () => {
     }
   };
   
-  // const renderDocumentHistory = () => {
-  //   if (!nextStepDetails || typeof nextStepDetails !== 'object' || !nextStepDetails.UPLOAD_DOC) { return <p className="text-muted mb-0">No previous documents for this step.</p>; }
-  //   let documents = [];
-  //   try {
-  //       const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-  //       documents = parsedDocs.map(doc => ({ name: doc.file_name, url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, '/')}` }));
-  //   } catch (error) { console.error("Failed to parse UPLOAD_DOC JSON:", error); return <p className="text-danger mb-0">Error displaying documents.</p>; }
-  //   return documents.length > 0 ? ( <div className="mb-3"> <h6 className="text-primary">Uploaded Documents</h6> <ul className="list-unstyled"> {documents.map((doc, idx) => ( <li key={idx} className="mb-1"> <a href={doc.url} target="_blank" rel="noreferrer" className="text-decoration-none"> <FaFileAlt className="me-2" />{doc.name}</a></li>))}</ul></div>) : (<p className="text-muted mb-0">No documents were uploaded for this step.</p>);
-  // };
-
-
+  // 08-12-2025: Updated renderDocumentHistory to use ListGroup like GHMC component
   const renderDocumentHistory = () => {
-  if (
-    !nextStepDetails ||
-    typeof nextStepDetails !== "object" ||
-    !nextStepDetails.UPLOAD_DOC
-  ) {
-    return <p className="text-muted mb-0">No previous documents for this step.</p>;
-  }
+    if (
+      !nextStepDetails ||
+      typeof nextStepDetails !== "object" ||
+      !nextStepDetails.UPLOAD_DOC
+    ) {
+      return <p className="text-muted text-center mb-0">No previous documents for this step.</p>;
+    }
 
-  let documents = [];
-  try {
-    const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-    documents = parsedDocs.map((doc) => ({
-      name: doc.file_name,
-      url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-    }));
-  } catch (error) {
-    console.error("Failed to parse UPLOAD_DOC JSON:", error);
-    return <p className="text-danger mb-0">Error displaying documents.</p>;
-  }
+    let documents = [];
+    try {
+      const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
+      documents = parsedDocs.map((doc) => ({
+        name: doc.file_name,
+        url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
+      }));
+    } catch (error) {
+      console.error("Failed to parse UPLOAD_DOC JSON:", error);
+      return <p className="text-danger mb-0">Error displaying documents.</p>;
+    }
 
-  return documents.length > 0 ? (
-    <div
-      className="mb-6"
-      style={{
-        overflowY: "auto",
-        overflowX: "hidden",
-        paddingRight: "5px",
-      }}
-    >
-      <h6 className="text-primary">Uploaded Documents</h6>
-      <ul className="list-unstyled mb-0">
+    return documents.length > 0 ? (
+      <ListGroup variant="flush">
         {documents.map((doc, idx) => (
-          <li key={idx} className="mb-1">
+          <ListGroup.Item 
+            key={idx} 
+            className="d-flex align-items-center"
+          >
             <a
               href={doc.url}
               target="_blank"
               rel="noreferrer"
-              className="text-decoration-none text-dark"
-              style={{ display: "flex", alignItems: "center" }}
+              className="text-decoration-none"
             >
               <FaFileAlt className="me-2 text-secondary" />
-              <span className="text-truncate" style={{ maxWidth: "200px" }}>
-                {doc.name}
-              </span>
+              {doc.name}
             </a>
-          </li>
+          </ListGroup.Item>
         ))}
-      </ul>
-    </div>
-  ) : (
-    <p className="text-muted mb-0">No documents were uploaded for this step.</p>
-  );
-
-};
-
+      </ListGroup>
+    ) : (
+      <p className="text-muted text-center mb-0">No documents uploaded for this step.</p>
+    );
+  };
 
   return (
     <>
@@ -645,50 +621,39 @@ const ReraModifyTable = () => {
           </Form>
           )}
         </Col>
- <Col md={3}>
-  <Card
-    className="border rounded bg-white p-3 d-flex flex-column"
-    style={{
-      height: "100%", // full height of the parent
-      minHeight: "400px", // optional: maintain decent size
-    }}
-  >
-    {/* 📂 Document History (70%) */}
-    <div
-      style={{
-        flexBasis: "70%",
-        overflowY: "auto",
-        overflowX: "hidden",
-        borderBottom: "1px solid #ddd",
-        paddingBottom: "8px",
-        marginBottom: "8px",
-      }}
-    >
-      <h5 className="mb-3 text-dark">Document History</h5>
-      {renderDocumentHistory()}
-    </div>
+        
+        {/* 08-12-2025t */}
+        <Col md={3}>
+          <div className="d-flex flex-column" style={{ height: '100%' }}>
+            <Card className="p-3 mb-2" style={{ height: '80%', overflow: 'auto' }}>
+              <h6 className="text-center mb-3">Previously Uploaded Documents</h6>
+              {renderDocumentHistory()}
+            </Card>
 
-    {/* 💬 Comments (30%) */}
-    <div
-      style={{
-        flexBasis: "30%",
-        overflowY: "auto",
-        overflowX: "hidden",
-      }}
-    >
-      <h6 className="mb-2">Comments</h6>
-      <div
-        style={{
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        }}
-      >
-        {formData.comments || "No comments available"}
-      </div>
-    </div>
-  </Card>
-</Col>
-
+            {/* 08-12-2025: Added View Logs button at bottom */}
+            <div className="p-2 border-top bg-light text-center">
+              <Button 
+                variant="info" 
+                size="sm" 
+                onClick={() => {
+                  // 08-12-2025: Parse logs from nextStepDetails
+                  let logs = [];
+                  try {
+                    if (nextStepDetails?.LOG) {
+                      logs = JSON.parse(nextStepDetails.LOG);
+                    }
+                  } catch (error) {
+                    console.error("Failed to parse logs:", error);
+                  }
+                  setSelectedLogs(logs);
+                  setShowLogsModal(true);
+                }}
+              >
+                View Logs
+              </Button>
+            </div>
+          </div>
+        </Col>
 
       </Row>
 
@@ -734,6 +699,32 @@ const ReraModifyTable = () => {
         files={newDocs}
         setFiles={setNewDocs}
       />
+
+      {/* 08-12-2025: Added Logs Modal */}
+      <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Logs</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
+          {selectedLogs.length === 0 ? (
+            <p>No comments available</p>
+          ) : (
+            selectedLogs.map((log, i) => (
+              <div key={i}>
+                <strong>{log?.date}:</strong> {log?.comment}
+                <hr />
+              </div>
+            ))
+          )}
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

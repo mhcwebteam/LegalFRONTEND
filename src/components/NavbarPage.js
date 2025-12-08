@@ -3,10 +3,14 @@ import { Navbar, Container, Button } from 'react-bootstrap';
 import { List } from 'react-bootstrap-icons';
 import logo from '../assets/myhomepmlogo1.png';
 import './NavbarPage.css';
+import { useNavigate } from 'react-router-dom';
 
 
 const NavbarPage = ({ toggleSidebar }) => {
-  const handleLogout = () => alert('Logged out');
+   const navigate = useNavigate();
+
+  const handleLogout = () => navigate('/');
+
   const isSmallScreen = window.innerWidth <= 1396;
   
   return (
