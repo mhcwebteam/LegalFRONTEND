@@ -947,41 +947,103 @@ const WaterForm = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const newErrors = {};
-
-    // Required field validations
-    if (!formData.loc) newErrors.loc = "Project location is required.";
-    if (!formData.process) newErrors.process = "Process type is required.";
-    if (!formData.applyDate) newErrors.applyDate = "Application date is required.";
-    if (!formData.amountPaid) newErrors.amountPaid = "Amount paid is required.";
-    if (!formData.TotalProjectArea) newErrors.TotalProjectArea = "Total project area is required.";
-    if (!formData.noOfTowers) newErrors.noOfTowers = "Number of towers is required.";
-    if (!formData.noOfFlats) newErrors.noOfFlats = "Number of flats is required.";
-    if (!formData.ProjectBuildArea) newErrors.ProjectBuildArea = "Project build area is required.";
-    if (!formData.comments) newErrors.comments = "Comments are required.";
-
-    // Document validation
-    if (!hasAtLeastOneDocument()) {
-      newErrors.documents = "Please upload at least one document.";
-    } else if (!validateDocuments()) {
+  const newErrors = {};
+  
+  // Required field validations
+  if (!formData.loc) newErrors.loc = "Project location is required.";
+  if (!formData.process) newErrors.process = "Process type is required.";
+  if (!formData.applyDate) newErrors.applyDate = "Application date is required.";
+  if (!formData.amountPaid) newErrors.amountPaid = "Amount paid is required.";
+  if (!formData.TotalProjectArea) newErrors.TotalProjectArea = "Total project area is required.";
+  if (!formData.noOfTowers) newErrors.noOfTowers = "Number of towers is required.";
+  if (!formData.noOfFlats) newErrors.noOfFlats = "Number of flats is required.";
+  if (!formData.ProjectBuildArea) newErrors.ProjectBuildArea = "Project build area is required.";
+  if (!formData.comments) newErrors.comments = "Comments are required.";
+  
+  // Document validation - MAIN UPLOAD DOCUMENTS
+  if (planDocs.length === 0 && titleDocs.length === 0 && othDocs.length === 0) {
+    newErrors.documents = "Please upload at least one document.";
+  } else {
+    // Check if all uploaded files are PDFs
+    const allDocs = [...planDocs, ...titleDocs, ...othDocs];
+    const invalidFiles = allDocs.filter(file => !validateFileType(file));
+    if (invalidFiles.length > 0) {
       newErrors.documents = "Only PDF files are allowed for upload.";
     }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-
-      // Show toast for the first error
-      const firstError = Object.values(newErrors)[0];
-      toast.error(firstError);
-      return;
+  }
+  
+  // Feasibility Certificate validation - MAKE THIS REQUIRED
+  if (feasibilityDocs.length === 0) {
+    newErrors.feasibilityDocs = "Feasibility Certificate is required.";
+  } else {
+    const invalidFeasibilityFiles = feasibilityDocs.filter(file => !validateFileType(file));
+    if (invalidFeasibilityFiles.length > 0) {
+      newErrors.feasibilityDocs = "Only PDF files are allowed for Feasibility Certificate.";
     }
+  }
+  
+  // Paid Document validation - MAKE THIS REQUIRED
+  if (AmountPaidDocs.length === 0) {
+    newErrors.AmountPaidDocs = "Paid Document is required.";
+  } else {
+    const invalidPaidFiles = AmountPaidDocs.filter(file => !validateFileType(file));
+    if (invalidPaidFiles.length > 0) {
+      newErrors.AmountPaidDocs = "Only PDF files are allowed for Paid Document.";
+    }
+  }
 
-    setErrors({});
-    setConfirmOpen(true);
-  };
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    
+    // Show toast for the first error
+    const firstError = Object.values(newErrors)[0];
+    toast.error(firstError);
+    return;
+  }
+
+  setErrors({});
+  setConfirmOpen(true);
+};
+
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   const newErrors = {};
+
+  //   // Required field validations
+  //   if (!formData.loc) newErrors.loc = "Project location is required.";
+  //   if (!formData.process) newErrors.process = "Process type is required.";
+  //   if (!formData.applyDate) newErrors.applyDate = "Application date is required.";
+  //   if (!formData.amountPaid) newErrors.amountPaid = "Amount paid is required.";
+  //   if (!formData.TotalProjectArea) newErrors.TotalProjectArea = "Total project area is required.";
+  //   if (!formData.noOfTowers) newErrors.noOfTowers = "Number of towers is required.";
+  //   if (!formData.noOfFlats) newErrors.noOfFlats = "Number of flats is required.";
+  //   if (!formData.ProjectBuildArea) newErrors.ProjectBuildArea = "Project build area is required.";
+  //   if (!formData.comments) newErrors.comments = "Comments are required.";
+
+  //   // Document validation
+  //   if (!hasAtLeastOneDocument()) {
+  //     newErrors.documents = "Please upload at least one document.";
+  //   } else if (!validateDocuments()) {
+  //     newErrors.documents = "Only PDF files are allowed for upload.";
+  //   }
+
+  //   if (Object.keys(newErrors).length > 0) {
+  //     setErrors(newErrors);
+
+  //     // Show toast for the first error
+  //     const firstError = Object.values(newErrors)[0];
+  //     toast.error(firstError);
+  //     return;
+  //   }
+
+  //   setErrors({});
+  //   setConfirmOpen(true);
+  // };
 
   const handleConfirmSubmit = async () => {
     setConfirmOpen(false);
@@ -1348,19 +1410,22 @@ const WaterForm = () => {
                     className="upload-button"
                     onClick={() => setAmountPaidDocModal(true)}
                   >
+
                     <FaUpload className="upload-icon" /> Upload Documents
                     <span className="upload-count">
                       {AmountPaidDocs.length > 0 &&
                         `(${AmountPaidDocs.length} files)`}
                     </span>
                   </button>
-                
+                   <div className="error-container">
+          {errors.AmountPaidDocs && <p className="error-text">{errors.AmountPaidDocs}</p>}
+        </div>
                 </div>
               </div>
 
               <div className="form-field">
                 <label className="field-label">
-                  <FaFileAlt className="label-icon" /> Feasibility Certificate
+                  <FaFileAlt className="label-icon" /> Feasibility Certificate*
                 </label>
                 <div className="upload-container">
                   <button
@@ -1374,7 +1439,9 @@ const WaterForm = () => {
                         `(${feasibilityDocs.length} files)`}
                     </span>
                   </button>
-             
+                <div className="error-container">
+          {errors.feasibilityDocs && <p className="error-text">{errors.feasibilityDocs}</p>}
+        </div>
                 </div>
               </div>
             </div>

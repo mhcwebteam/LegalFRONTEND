@@ -357,88 +357,110 @@ const ReraUpdateTable = () => {
           </div>
         </Col>
 
-        <Col md={6} className="d-flex flex-column">
-          {/* Show completion message at the top if all steps are completed */}
-          {areAllStepsCompleted() && renderCompletionMessage()}
-          
-          {/* Always show the form with process data */}
-          <Form className="p-3 border rounded bg-light">
-            {viewedStep ? (
-              <h4 className="mb-3 text-primary fw-bold">{viewedStep.PROCESS}</h4>
-            ) : (
-              <h4 className="mb-3 text-muted">Select a Plant to begin</h4>
-            )}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Plant</Form.Label>
-                  <Form.Select name="loc" value={selectedPlant} onChange={handleChange}>
-                    <option value="">Select Plant to View</option>
-                    {plants.map((p, idx) => (<option key={idx} value={p.loc}>{p.loc}</option>))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              {/* The date fields now populate from viewedStepDetails */}
-              {viewedStep?.PROCESS === 'Your Step 3 Name Here' ? ( // Replace with your actual step 3 name
-                <>
-                  <Col md={3}>
-                    <Form.Group>
-                      <Form.Label>From Date</Form.Label>
-                      <Form.Control type="date" value={viewedStepDetails?.FROM_DT || ""} disabled />
-                    </Form.Group>
-                  </Col>
-                  <Col md={3}>
-                    <Form.Group>
-                      <Form.Label>To Date</Form.Label>
-                      <Form.Control type="date" value={viewedStepDetails?.TO_DT || ""} disabled />
-                    </Form.Group>
-                  </Col>
-                </>
-              ) : (
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Application Date</Form.Label>
-                    <Form.Control type="date" value={viewedStepDetails?.APPLY_DT || ""} disabled />
-                  </Form.Group>
-                </Col>
-              )}
-            </Row>
-            <Row className="mb-3">
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label>Comments</Form.Label>
-                  <Form.Control as="textarea" rows={2} value={viewedStepDetails?.COMMENTS || ""} disabled />
-                </Form.Group>
-              </Col>
-            </Row>
-            
-            {/* Only show update button if there are steps to update */}
-            {!areAllStepsCompleted() && (
-              <div className="d-grid mt-3">
-                <OverlayTrigger
-                  placement="top"
-                  overlay={
-                    <Tooltip id="update-tooltip">
-                      {!canUpdate ? "You can only update the current active step." :
-                        isStep2Incomplete ? "Please complete all 4 sub-levels to enable this button." :
-                          "Click here to update this step as complete."}
-                    </Tooltip>
-                  }
+         <Col
+                  md={6}
+                  className="d-flex flex-column"
+                  style={{ height: "400px", overflowY: "auto" }}
                 >
-                  <span className="d-grid">
-                    <Button
-                      variant="success"
-                      size="md"
-                      onClick={handleEmailSubmit}
-                    >
-                      Update Status to Complete
-                    </Button>
-                  </span>
-                </OverlayTrigger>
-              </div>
-            )}
-          </Form>
+  {/* Show ONLY completion message if all steps are completed */}
+  {areAllStepsCompleted() ? (
+    <div className="d-flex align-items-center justify-content-center h-60">
+      <Card className="p-4 shadow-sm text-center" style={{ maxWidth: '600px' }}>
+        <Card.Body>
+          <FaCheckCircle size={64} className="text-success mb-3" />
+          <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+          <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+          <Alert variant="success">
+            <Alert.Heading>Project Completion Status</Alert.Heading>
+            <p>
+              All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
+            </p>
+            <hr />
+            <p className="mb-0">
+              The project is now ready for the next phase or final approval.
+            </p>
+          </Alert>
+        </Card.Body>
+      </Card>
+    </div>
+  ) : (
+    // Show form only if steps are NOT all completed
+    <Form className="p-3 border rounded bg-light">
+      {viewedStep ? (
+        <h4 className="mb-3 text-primary fw-bold">{viewedStep.PROCESS}</h4>
+      ) : (
+        <h4 className="mb-3 text-muted">Select a Plant to begin</h4>
+      )}
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form.Group>
+            <Form.Label>Plant</Form.Label>
+            <Form.Select name="loc" value={selectedPlant} onChange={handleChange}>
+              <option value="">Select Plant to View</option>
+              {plants.map((p, idx) => (<option key={idx} value={p.loc}>{p.loc}</option>))}
+            </Form.Select>
+          </Form.Group>
         </Col>
+        {/* The date fields now populate from viewedStepDetails */}
+        {viewedStep?.PROCESS === 'Your Step 3 Name Here' ? ( // Replace with your actual step 3 name
+          <>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>From Date</Form.Label>
+                <Form.Control type="date" value={viewedStepDetails?.FROM_DT || ""} disabled />
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>To Date</Form.Label>
+                <Form.Control type="date" value={viewedStepDetails?.TO_DT || ""} disabled />
+              </Form.Group>
+            </Col>
+          </>
+        ) : (
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Application Date</Form.Label>
+              <Form.Control type="date" value={viewedStepDetails?.APPLY_DT || ""} disabled />
+            </Form.Group>
+          </Col>
+        )}
+      </Row>
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Comments</Form.Label>
+            <Form.Control as="textarea" rows={2} value={viewedStepDetails?.COMMENTS || ""} disabled />
+          </Form.Group>
+        </Col>
+      </Row>
+      
+      {/* Update button */}
+      <div className="d-grid mt-3">
+        <OverlayTrigger
+          placement="top"
+          overlay={
+            <Tooltip id="update-tooltip">
+              {!canUpdate ? "You can only update the current active step." :
+                isStep2Incomplete ? "Please complete all 4 sub-levels to enable this button." :
+                  "Click here to update this step as complete."}
+            </Tooltip>
+          }
+        >
+          <span className="d-grid">
+            <Button
+              variant="success"
+              size="md"
+              onClick={handleEmailSubmit}
+            >
+              Update Status to Complete
+            </Button>
+          </span>
+        </OverlayTrigger>
+      </div>
+    </Form>
+  )}
+</Col>
         
         <Col md={3}>
           <Card

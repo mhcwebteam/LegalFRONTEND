@@ -21,7 +21,7 @@ const ReraModifyTable = () => {
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
   // const [storeData, setStoreData] = useState([]);
-  const [formData, setFormData] = useState({ loc: "", applyDate: "", comments: "", prjName: "", address: "",fromDate:"", toDate:""  });
+  const [formData, setFormData] = useState({ loc: "", applyDate: "", comments: "", prjName: "", address: "",fromDate:"", toDate:"" ,subLevelStatus: "Yes"  });
   const [newDocs, setNewDocs] = useState([]);
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
@@ -37,9 +37,12 @@ const ReraModifyTable = () => {
   const [allStepsCompleted, setAllStepsCompleted] = useState(false);
   
   // 08-12-2025: Added state for logs modal
-  const [showLogsModal, setShowLogsModal] = useState(false);
+  
+ const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
 
+  // ADD THIS: PDF validation error state
+  const [uploadError, setUploadError] = useState("");
   console.log("selected LLLLLLLLLLLL",selectedLogs);
 
      const {
@@ -131,7 +134,7 @@ const ReraModifyTable = () => {
     setImmediateNextStepIndex(-1);
     setNextStepDetails(null);
     setProjectInfo({ prjName: "", address: "" });
-    setFormData({ loc: selectedPlant, applyDate: "", comments: "", prjName: "", address: "", fromDate: "", toDate: "" });
+    setFormData({ loc: selectedPlant, applyDate: "", comments: "", prjName: "", address: "", fromDate: "", toDate: "",subLevelStatus: "Yes" });
 
     if (selectedPlant && steps.length > 0) {
       axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`)
@@ -187,7 +190,8 @@ const ReraModifyTable = () => {
         applyDate: details.APPLY_DT, 
         fromDate: details.FRM_DT || "", // Added this line
         toDate: details.TO_DT || "",     // Added this line,
-        comments: details.COMMENTS || "" }));
+        comments: details.COMMENTS || "",
+       subLevelStatus: details.LEVEL_STATUS === "No" ? "No" : "Yes" }));
     } else {
       setFormData((prev) => ({ ...prev, applyDate: "", fromDate: "", toDate: "", comments: "" }));
     }
@@ -327,6 +331,17 @@ const ReraModifyTable = () => {
       Swal.fire("Validation Error", "Please select a Plant and ensure a process step is active.", "error");
       return;
     }
+     if (newDocs.length > 0) {
+    const nonPDFFiles = newDocs.filter(file => 
+      file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
+    );
+    
+    if (nonPDFFiles.length > 0) {
+      // Show error message instead of popup
+      setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
+      return;
+    }
+  }
     
     const payload = new FormData();
     payload.append("loc", formData.loc);
@@ -603,11 +618,23 @@ const ReraModifyTable = () => {
                 </Col>
               </Row>
             )}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Label>Upload New Documents</Form.Label>
-                <Button variant="outline-secondary" className="form-control" onClick={() => setShowUploadModal(true)}>Upload Docs</Button>
-              </Col>
+           <Row className="mb-3">
+  <Col md={6}>
+    <Form.Label>Upload New Documents</Form.Label>
+    <Button variant="outline-secondary" className="form-control" onClick={() => setShowUploadModal(true)}>
+      Upload Docs
+    </Button>
+    {/* Add this error display */}
+    {uploadError && (
+      <div className="text-danger small mt-1">
+        {uploadError}
+      </div>
+    )}
+    {/* You can also add this hint text */}
+    <Form.Text className="text-muted d-block mt-1">
+      Only PDF files are allowed
+    </Form.Text>
+  </Col>
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Comments</Form.Label>

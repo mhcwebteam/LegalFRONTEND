@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL, API_BASE_URLS } from '../config/Config';
+import { API_BASE_URL } from '../config/Config';
 import { FaLeaf, FaFire, FaBuilding, FaCalendarAlt, FaUpload, FaMoneyBill, FaFileAlt, FaCheckCircle, FaWater } from 'react-icons/fa';
 import { ChevronLeft, FileText, Home, Flame, MessageSquareMore, Calculator, Store, FileCheck, FolderUp, MapPinned, User } from "lucide-react";
 import WaterDocUploadModal from "../components/WaterDocUploadModal";
@@ -96,7 +96,7 @@ useEffect(() => {
   useEffect(() => {
     const fetchProcess = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URLS}/fire-process`);
+        const res = await axios.get(`${API_BASE_URL}/fire-process`);
         setFormData((prev) => ({
           ...prev,
           process: res.data[0].PROCESS,
@@ -286,7 +286,7 @@ useEffect(() => {
     formPayload.append("ProjectArea", formData.ProjectArea);
     formPayload.append("TotalArea", formData.TotalArea);
     formPayload.append("ProjectName", formData.ProjectName);
-    formPayload.append("currentPhase", "0");
+    formPayload.append("steptype", "ProvisionalNOC");
 
     // Append document arrays
     acknowledgeDocs.forEach((f) => formPayload.append("Acknowledge_Doc[]", f));

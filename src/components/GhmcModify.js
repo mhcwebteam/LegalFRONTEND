@@ -606,6 +606,8 @@ const GhmcModify = () => {
       const refreshed = await axios.get(
         `${API_BASE_URL}/GHMC-data?plant=${formData.loc}`
       );
+
+      console.log(refreshed,"gggggggggggggggggggg");
       setStoreData(refreshed.data || []);
 
       const master = await getMasterByLoc(formData.loc);
