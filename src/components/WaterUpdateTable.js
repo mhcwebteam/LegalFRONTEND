@@ -988,7 +988,7 @@ const WaterUpdateTable = () => {
       setDialogConfig({
         title: 'Success',
         message: result.data.emailSent 
-          ? `Form submitted successfully! Emails sent to ${selectedEmails.length} recipient(s).`
+          ? `Form submitted successfully.!`
           : 'Form submitted successfully!',
         confirmText: 'OK',
         showCancel: false,

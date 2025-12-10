@@ -657,45 +657,105 @@ const handleEmailSubmit = () => {
       immediateNextStepIndex
     );
 
+
+    const handleDeleteDocument = async (docType, fileName, index) => {
+
+      console.log("deletedddddd",docType, "file",fileName,"index",index);
+  try {
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Delete Document?',
+      text: `Are you sure you want to delete ${fileName}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Make API call to delete from server
+    const response = await axios.delete(`${API_BASE_URL}/fire-docu-delete`, {
+      data: {
+        loc: formData.loc,
+        process: immediateNextStep?.PROCESS || "",
+        steptype: currentProcess,
+        doc_type: docType, // "New_Doc" or "Acknowledge_Doc"
+        file_name: fileName,
+      },
+    });
+
+    if (response.status === 200) {
+      // Remove from local state
+      if (docType === "New_Doc") {
+        const updatedDocs = newDocs.filter((_, i) => i !== index);
+        setNewDocs(updatedDocs);
+      } else if (docType === "Acknowledge_Doc") {
+        const updatedDocs = acknowledgeDocs.filter((_, i) => i !== index);
+        setAcknowledgeDocs(updatedDocs);
+      }
+
+      // Show success message
+      Swal.fire('Deleted!', 'Document has been deleted.', 'success');
+      
+      // Optionally: Refresh document history
+ 
+    }
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    Swal.fire('Error!', 'Failed to delete document.', 'error');
+  }
+};
+
     
    const currentStepLogs = getCurrentStepLogs();
 
-    console.log(currentStepLogs,"selectedLogsselectedLogsselectedLogs",selectedLogs);
-
+  
     return (
       <div className="d-flex flex-column" style={{ height: "100%" }}>
-        <Card style={{ padding: "1px", height: "80%", overflow: "auto" }}>
-          <h6 className="text-primary p-2">General Uploaded Documents</h6>
-          {generalDocuments.length > 0 ? (
-            <ul className="list-unstyled">
-              {generalDocuments.map((doc, idx) => (
-                <li key={`gen-doc-${idx}`} className="mb-1 p-1">
+     <Card style={{ padding: "1px", height: "80%", overflow: "auto" }}>
+        <h6 className="text-primary p-2">General Uploaded Documents</h6>
+        {generalDocuments.length > 0 ? (
+          <ul className="list-unstyled">
+            {generalDocuments.map((doc, idx) => (
+              <li key={`gen-doc-${idx}`} className="mb-1 p-1 d-flex justify-content-between align-items-center">
+                <div>
                   <a
                     href={doc.url}
                     target="_blank"
                     rel="noreferrer"
                     className="text-decoration-none"
                   >
-                    {/* <FaFileAlt className="me-2" /> */}
+                    <FaFileAlt className="me-2" />
                     {doc.name}
                   </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted mb-0">
-              No general documents were uploaded for this step.
-            </p>
-          )}
+                </div>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => handleDeleteDocument("New_Doc", doc.name, idx)}
+                  title="Delete document"
+                >
+                  <i className="fas fa-trash-alt"></i>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted mb-0">
+            No general documents were uploaded for this step.
+          </p>
+        )}
 
-          {/* Only show acknowledgement receipts if the current step is an OC Process step */}
-          {isOCProcessStep && ( // *** Conditional rendering here ***
-            <>
-              <h6 className="text-primary mt-3">Acknowledgement Receipts</h6>
-              {acknowledgementReceipts.length > 0 ? (
-                <ul className="list-unstyled">
-                  {acknowledgementReceipts.map((doc, idx) => (
-                    <li key={`ack-doc-${idx}`} className="mb-1">
+        {isOCProcessStep && (
+          <>
+            <h6 className="text-primary mt-3">Acknowledgement Receipts</h6>
+            {acknowledgementReceipts.length > 0 ? (
+              <ul className="list-unstyled">
+                {acknowledgementReceipts.map((doc, idx) => (
+                  <li key={`ack-doc-${idx}`} className="mb-1 d-flex justify-content-between align-items-center">
+                    <div>
                       <a
                         href={doc.url}
                         target="_blank"
@@ -705,17 +765,27 @@ const handleEmailSubmit = () => {
                         <FaFileAlt className="me-2" />
                         {doc.name}
                       </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted mb-0">
-                  No acknowledgement receipts available for this step.
-                </p>
-              )}
-            </>
-          )}
-        </Card>
+                    </div>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDeleteDocument("Acknowledge_Doc", doc.name, idx)}
+                      title="Delete receipt"
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted mb-0">
+                No acknowledgement receipts available for this step.
+              </p>
+            )}
+          </>
+        )}
+      </Card>
+
 
            <div className="p-2 border-top bg-light text-center">
                   <Button

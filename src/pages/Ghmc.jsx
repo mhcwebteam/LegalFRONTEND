@@ -668,7 +668,7 @@ const Ghmc = () => {
 
                             <div className="form-field">
                                 <label className="field-label">
-                                    <FaMoneyBill className="label-icon" /> Title Document*
+                                    <FaMoneyBill className="label-icon" /> Upload Documents*
                                 </label>
                                 <div className="upload-container">
                                     <button
@@ -700,7 +700,7 @@ const Ghmc = () => {
                         <div className="form-grid two-columns">
                             <div className="form-field">
                                 <label className="field-label">
-                                    <FaFileAlt className="label-icon" /> Other Document*
+                                    <FaFileAlt className="label-icon" /> Other Documents*
                                 </label>
                                 <div className="upload-container">
                                     <button
@@ -722,7 +722,7 @@ const Ghmc = () => {
 
                             <div className="form-field">
                                 <label className="fire-field-label">
-                                    <MessageSquareMore className="label-icon" /> Comments
+                                    <MessageSquareMore className="label-icon" /> Comments*
                                 </label>
                                 <div className="input-wrapper">
                                     <textarea

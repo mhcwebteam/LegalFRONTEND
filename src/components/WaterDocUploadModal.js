@@ -14,7 +14,7 @@ const WaterDocUploadModal = ({
   setLandDocs,
   othDocs = [],
   setOthDocs,
-  linkLabel = "Upload Doc",
+ linkLabel = "Plan Doc",
   showLandDocs = true,
   showOthDocs = true,
   title = "Upload Documents"

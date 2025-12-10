@@ -108,6 +108,24 @@ useEffect(() => {
     fetchProcess();
   }, []);
 
+  const checkIfPlantExists = async (plant) => {
+      try {
+        const res = await axios.post(`${API_BASE_URL}/check-plant-exists-fire`, { loc: plant });
+        console.log("API Response:", res.data);
+        
+        if (res.data && res.data.exists === true) {
+          toast.error('This plant already has entries.');
+          setFormData((prev) => ({ ...prev, loc: '' }));
+          setHeaderData(null);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Failed to check plant:', error);
+        return false;
+      }
+    };
+
   const handleChange = async (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -144,6 +162,10 @@ useEffect(() => {
 
       // Fetch master data for the selected location
       try {
+         const plantExists = await checkIfPlantExists(value);
+        if (plantExists) {
+          return; 
+        }
         const res = await getMasterByLoc(value);
         if (res && Object.keys(res).length > 0) {
           setHeaderData(res);
