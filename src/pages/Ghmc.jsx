@@ -316,12 +316,10 @@ const Ghmc = () => {
                 setAmountPaidDocs([]);
                 setTowerDocuments([]);
                 setErrors({});
-                
-                // Navigate after the alert is closed
+            
                 navigate('/create');
             });
         } else {
-            // Handle case where there's no message but still success
             Swal.fire({
                 icon: "success",
                 title: "Application submitted successfully!",

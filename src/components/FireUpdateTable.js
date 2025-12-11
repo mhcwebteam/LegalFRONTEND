@@ -65,7 +65,7 @@ const FireUpdateTable = () => {
   }, [viewedStepDetails]);
 
   const fetchStepDetails = useCallback(async (plantId, processName, stepType) => {
-    console.log(stepType,"ffffffffffff555555555555555");
+   
     
     // let steptype = "OCPROCESS";
       setCurrentProcess(stepType);
@@ -388,37 +388,121 @@ const FireUpdateTable = () => {
     const currentStepLogs = getCurrentStepLogs();
 
     return (
-      <div className="d-flex flex-column" style={{ height: '100%' }}>
-        <Card style={{padding:'1px', height: '80%', overflow: 'auto' }}>
-          <h6 className="text-primary p-2">General Uploaded Documents</h6>
+      <div className="d-flex flex-column" style={{ height: "100%", maxHeight: "330px" }}>
+       <Card style={{ 
+            padding: "10px", 
+            flex: "1 1 auto", 
+            minHeight: "0",
+            display: "flex", 
+            flexDirection: "column",
+            overflow: "hidden", 
+            width: "300px"
+          }}>
+             <div style={{ 
+        flex: "1 1 auto",
+        overflowY: "auto",
+        paddingRight: "5px" // Space for scrollbar
+      }}>
+        <h6 className="text-primary p-2">General Uploaded Documents</h6> 
+
+
           {generalDocuments.length > 0 ? (
+              <div style={{ 
+              border: "1px solid #dee2e6",
+              borderRadius: "4px",
+              padding: "5px",
+              backgroundColor: "#f8f9fa"
+            }}>
             <ul className="list-unstyled">
               {generalDocuments.map((doc, idx) => (
-                <li key={`gen-doc-${idx}`} className="p-1">
-                  <a href={doc.url} target="_blank" rel="noreferrer" className="text-decoration-none">
-                    {doc.name}
-                  </a>
-                </li>
+                 <li 
+                                 key={`gen-doc-${idx}`} 
+                                 className="d-flex justify-content-between align-items-center mb-1 p-1"
+                                 style={{ 
+                                   backgroundColor: "white",
+                                   borderRadius: "3px",
+                                   borderBottom: idx < generalDocuments.length - 1 ? "1px solid #e9ecef" : "none"
+                                 }}
+                               >
+                                 <div className="text-truncate" style={{ 
+                                   maxWidth: "calc(100% - 40px)",
+                                   flexShrink: 1
+                                 }}>
+                                   <a
+                                     href={doc.url}
+                                     target="_blank"
+                                     rel="noreferrer"
+                                     className="text-decoration-none text-dark"
+                                     style={{ fontSize: "13px" }}
+                                   >
+                                     <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                                     <span className="text-truncate" style={{ 
+                                       display: "inline-block",
+                                       maxWidth: "calc(100% - 30px)",
+                                       verticalAlign: "middle"
+                                     }}>
+                                       {doc.name}
+                                     </span>
+                                   </a>
+                                 </div>
+                              
+                               </li>
               ))}
             </ul>
+            </div>
           ) : (
             <p className="text-muted mb-0 p-2">No general documents were uploaded for this step.</p>
           )}
 
-          <h6 className="text-primary mt-3 p-2">Acknowledgement Receipts</h6>
+          <h6 className="text-primary">Acknowledgement Receipts</h6>
           {acknowledgementReceipts.length > 0 ? (
+                 <div style={{ 
+              border: "1px solid #dee2e6",
+              borderRadius: "4px",
+              padding: "5px",
+              backgroundColor: "#f8f9fa"
+            }}>
             <ul className="list-unstyled">
               {acknowledgementReceipts.map((doc, idx) => (
-                <li key={`ack-doc-${idx}`} className="p-1">
-                  <a href={doc.url} target="_blank" rel="noreferrer" className="text-decoration-none">
-                    {doc.name}
-                  </a>
-                </li>
+              <li 
+                               key={`ack-doc-${idx}`} 
+                               className="d-flex justify-content-between align-items-center mb-1 p-1"
+                               style={{ 
+                                 backgroundColor: "white",
+                                 borderRadius: "3px",
+                                 borderBottom: idx < acknowledgementReceipts.length - 1 ? "1px solid #e9ecef" : "none"
+                               }}
+                             >
+                               <div className="text-truncate" style={{ 
+                                 maxWidth: "calc(100% - 40px)", // Leave space for button
+                                 flexShrink: 1
+                               }}>
+                                 <a
+                                   href={doc?.url}
+                                   target="_blank"
+                                   rel="noreferrer"
+                                   className="text-decoration-none text-dark"
+                                   style={{ fontSize: "13px" }}
+                                 >
+                                   <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                                   <span className="text-truncate" style={{ 
+                                     display: "inline-block",
+                                     maxWidth: "calc(100% - 20px)",
+                                     verticalAlign: "middle"
+                                   }}>
+                                     {doc?.name}
+                                   </span>
+                                 </a>
+                               </div>
+                              
+                             </li>
               ))}
             </ul>
+            </div>
           ) : (
             <p className="text-muted mb-0 p-1">No acknowledgement receipts available for this step.</p>
           )}
+          </div>
         </Card>
         
         {/* Comments Card with View Logs Button */}

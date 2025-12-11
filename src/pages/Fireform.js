@@ -18,6 +18,7 @@ import { getMasterByLoc, submitFireForm, submitWaterForm } from "../api/Api";
 import { Context } from "../context/ContextData";
 import ReraDocUploadModal from "../components/ReraDocUploadModal";
 import FlatsPerTowerModal from "../components/FlatsPerTowerModal";
+import Swal from "sweetalert2";
 
 const FireForm = () => {
   const navigate = useNavigate();
@@ -240,9 +241,9 @@ useEffect(() => {
     if (!formData.loc) newErrors.loc = "Project location is required.";
     if (!formData.process) newErrors.process = "Process type is required.";
     if (!formData.feePaid) newErrors.feePaid = "Please specify if fee is paid.";
-
+ if (!formData.noOfTowers) newErrors.noOfTowers = "Number of Towers is required.";
     if(!formData.Comments) newErrors.Comments = "Please enter the comments.";
- 
+    
 
     if (formData.feePaid === "YES" && !formData.feeAmount)
       newErrors.feeAmount = "Fee amount is required when fee is paid.";
@@ -277,104 +278,118 @@ useEffect(() => {
     setConfirmOpen(true);
   };
 
-  const handleConfirmSubmit = async () => {
-    setConfirmOpen(false);
-    setIsSubmitting(true);
+ const handleConfirmSubmit = async () => {
+  setConfirmOpen(false);
+  setIsSubmitting(true);
 
-    // Final validation - check all files are PDF
-    if (!validateAllFilesArePDF(newDocs)) {
-      toast.error("Application documents must be PDF files only.");
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (!validateAllFilesArePDF(acknowledgeDocs)) {
-      toast.error("Acknowledgement receipts must be PDF files only.");
-      setIsSubmitting(false);
-      return;
-    }
+  // Final validation - check all files are PDF
+  if (!validateAllFilesArePDF(newDocs)) {
+    toast.error("Application documents must be PDF files only.");
+    setIsSubmitting(false);
+    return;
+  }
+  
+  if (!validateAllFilesArePDF(acknowledgeDocs)) {
+    toast.error("Acknowledgement receipts must be PDF files only.");
+    setIsSubmitting(false);
+    return;
+  }
 
-    const formPayload = new FormData();
-    formPayload.append("loc", formData.loc);
-    formPayload.append("process", formData.process);
-    formPayload.append("applyDate", formData.applyDate);
-    formPayload.append("noOfFlats", formData.noOfFlats);
-    formPayload.append("comments", formData.Comments);
-    formPayload.append("feePaid", formData.feePaid);
-    formPayload.append("feeAmount", formData.feeAmount);
-    formPayload.append("acknowledgeName", formData.acknowledgeName);
-    formPayload.append("noOfTowers", formData.noOfTowers);
-    formPayload.append("BuildArea", formData.BuildArea);
-    formPayload.append("ProjectArea", formData.ProjectArea);
-    formPayload.append("TotalArea", formData.TotalArea);
-    formPayload.append("ProjectName", formData.ProjectName);
-    formPayload.append("steptype", "ProvisionalNOC");
+  const formPayload = new FormData();
+  formPayload.append("loc", formData.loc);
+  formPayload.append("process", formData.process);
+  formPayload.append("applyDate", formData.applyDate);
+  formPayload.append("noOfFlats", formData.noOfFlats);
+  formPayload.append("comments", formData.Comments);
+  formPayload.append("feePaid", formData.feePaid);
+  formPayload.append("feeAmount", formData.feeAmount);
+  formPayload.append("acknowledgeName", formData.acknowledgeName);
+  formPayload.append("noOfTowers", formData.noOfTowers);
+  formPayload.append("BuildArea", formData.BuildArea);
+  formPayload.append("ProjectArea", formData.ProjectArea);
+  formPayload.append("TotalArea", formData.TotalArea);
+  formPayload.append("ProjectName", formData.ProjectName);
+  formPayload.append("steptype", "ProvisionalNOC");
 
-    // Append document arrays
-    acknowledgeDocs.forEach((f) => formPayload.append("Acknowledge_Doc[]", f));
-    newDocs.forEach((f) => formPayload.append("New_Doc[]", f));
+  // Append document arrays
+  acknowledgeDocs.forEach((f) => formPayload.append("Acknowledge_Doc[]", f));
+  newDocs.forEach((f) => formPayload.append("New_Doc[]", f));
 
-    
+  // Append towerFlats data as a JSON string
+  formPayload.append("towerFlats", JSON.stringify(towerFlats));
 
-    // Append towerFlats data as a JSON string
-    formPayload.append("towerFlats", JSON.stringify(towerFlats));
-
-    console.log("--- FormData Payload ---");
-    for (let [key, value] of formPayload.entries()) {
-      if (value instanceof File) {
-        console.log(
-          `${key}: File (name: ${value.name}, type: ${value.type}, size: ${value.size} bytes)`
-        );
-      } else {
-        console.log(`${key}: ${value}`);
-      }
-    }
-    console.log("------------------------");
-
-    try {
-      const response = await submitFireForm(formPayload);
-      console.log("API Response:", response);
-      toast.success(response.message);
-
-      // Reset form
-      setFormData({
-        loc: "",
-        process: "",
-        applyDate: "",
-        document: null,
-        noOfFlats: "",
-        Comments: "",
-        noOfTowers: "",
-        BuildArea: "",
-        ProjectArea: "",
-        TotalArea: "",
-        ProjectName: "",
-        feePaid: "",
-        feeAmount: "",
-        acknowledgeName: "",
-      });
-
-      // Reset document states and towerFlats
-      setAcknowledgeDocs([]);
-      setNewDocs([]);
-      setTowerFlats({});
-
-      navigate("/create");
-    } catch (err) {
-      console.error("Submission error:", err);
-      toast.error(
-        err.response?.data?.message ||
-          err.message ||
-          "Submission failed. Please try again."
+  console.log("--- FormData Payload ---");
+  for (let [key, value] of formPayload.entries()) {
+    if (value instanceof File) {
+      console.log(
+        `${key}: File (name: ${value.name}, type: ${value.type}, size: ${value.size} bytes)`
       );
-
-      if (err.response?.data?.errors) {
-        console.error("Validation Errors:", err.response.data.errors);
-      }
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      console.log(`${key}: ${value}`);
     }
-  };
+  }
+  console.log("------------------------");
+
+  try {
+    const response = await submitFireForm(formPayload);
+    
+    console.log("API Response:", response);
+    
+    // Check if response has message (could be at root or in data property)
+    const successMessage = response?.message || response?.data?.message || "Application submitted successfully!";
+    
+    await Swal.fire({
+      icon: "success",
+      title: successMessage,
+      showConfirmButton: false,
+      timer: 2000,
+    });
+
+    // Reset form
+    setFormData({
+      loc: "",
+      process: "",
+      applyDate: "",
+      document: null,
+      noOfFlats: "",
+      Comments: "",
+      noOfTowers: "",
+      BuildArea: "",
+      ProjectArea: "",
+      TotalArea: "",
+      ProjectName: "",
+      feePaid: "",
+      feeAmount: "",
+      acknowledgeName: "",
+    });
+
+    // Reset document states and towerFlats
+    setAcknowledgeDocs([]);
+    setNewDocs([]);
+    setTowerFlats({});
+
+    // Navigate to create page
+    navigate("/create");
+    
+  } catch (err) {
+    console.error("Submission error:", err);
+    
+    // Use Swal.fire instead of toast for error
+    Swal.fire({
+      icon: "error",
+      title: "Submission Failed",
+      text: err.response?.data?.message ||
+        err.message ||
+        "Submission failed. Please try again.",
+    });
+
+    if (err.response?.data?.errors) {
+      console.error("Validation Errors:", err.response.data.errors);
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleBackClick = () => {
     navigate("/create");

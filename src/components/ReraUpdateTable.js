@@ -72,21 +72,52 @@ const ReraUpdateTable = () => {
     );
   };
 
-  const handleEmailSubmit = () => {
-    console.log("Submit clicked - opening email modal");
-    console.log("selectedPlant:", selectedPlant);
-    console.log("immediateNextStep:", immediateNextStep);
-    console.log("viewedStepDetails:", viewedStepDetails);
+  // const handleEmailSubmit = () => {
+  //   console.log("Submit clicked - opening email modal");
+  //   console.log("selectedPlant:", selectedPlant);
+  //   console.log("immediateNextStep:", immediateNextStep);
+  //   console.log("viewedStepDetails:", viewedStepDetails);
 
-    if (!selectedPlant || !immediateNextStep) {
-      Swal.fire("Validation Error", "Please select a plant and ensure a step is active.", "error");
+  //   if (!selectedPlant || !immediateNextStep) {
+  //     Swal.fire("Validation Error", "Please select a plant and ensure a step is active.", "error");
+  //     return;
+  //   }
+
+  //   console.log("Setting showEmailModal to true");
+  //   setShowEmailModal(true);
+  // };
+
+ const handleEmailSubmit = () => {
+  console.log("Submit clicked - opening email modal");
+  console.log("selectedPlant:", selectedPlant);
+  console.log("immediateNextStep:", immediateNextStep);
+  console.log("viewedStepDetails:", viewedStepDetails);
+
+  if (!selectedPlant || !immediateNextStep) {
+    Swal.fire("Validation Error", "Please select a plant and ensure a step is active.", "error");
+    return;
+  }
+
+  // ✅ NEW: Check if Step 2 has completed all 4 levels
+  if (immediateNextStep.PROCESS === "Status of the Application") {
+    const currentLevel = viewedStepDetails?.LEVEL;
+    const currentStatus = viewedStepDetails?.LEVEL_STATUS;
+    
+    // Check if Level 4 is completed
+    if (!(currentLevel === "Level 4" && currentStatus === "Completed")) {
+      Swal.fire({
+        icon: "warning",
+        title: "Incomplete Levels",
+        text: "Please complete all 4 levels before updating this step.",
+        confirmButtonText: "OK"
+      });
       return;
     }
+  }
 
-    console.log("Setting showEmailModal to true");
-    setShowEmailModal(true);
-  };
-
+  console.log("Setting showEmailModal to true");
+  setShowEmailModal(true);
+};
   const handleEmailSelectionSubmit = async (emails) => {
     console.log('Selected emails:', emails);
     setSelectedEmails(emails);
@@ -144,24 +175,30 @@ const ReraUpdateTable = () => {
         .catch((err) => console.error("Error during data fetching process:", err));
     }
   }, [selectedPlant, steps]);
+useEffect(() => {
+  console.log("viewedStepDetails changed:", viewedStepDetails);
+  console.log("viewedStepDetails.APPLY_DT:", viewedStepDetails?.APPLY_DT);
+  console.log("viewedStepDetails.COMMENTS:", viewedStepDetails?.COMMENTS);
+}, [viewedStepDetails]);
 
   // ✅ NEW: This function is now the single point for fetching and displaying step details.
   const handleStepClick = async (step, plant) => {
-    if (!plant) return;
-    setViewedStep(step); // Set which step we are now viewing
-    try {
-      const apiUrl = `${API_BASE_URL}/rera-step-details/${encodeURIComponent(plant)}/${encodeURIComponent(step.PROCESS)}`;
-      const detailsRes = await axios.get(apiUrl);
-      if (detailsRes && detailsRes.data) {
-        setViewedStepDetails(detailsRes.data);
-      } else {
-        setViewedStepDetails(null); // Clear details if none found
-      }
-    } catch (error) {
-      console.error(`Error fetching details for step: ${step.PROCESS}`, error);
-      setViewedStepDetails(null); // Clear details on error
+  if (!plant) return;
+  setViewedStep(step); // Set which step we are now viewing
+  try {
+    const apiUrl = `${API_BASE_URL}/rera-step-details/${encodeURIComponent(plant)}/${encodeURIComponent(step.PROCESS)}`;
+    const detailsRes = await axios.get(apiUrl);
+    console.log("Fetched step details:", detailsRes.data); // Debug log
+    if (detailsRes && detailsRes.data) {
+      setViewedStepDetails(detailsRes.data);
+    } else {
+      setViewedStepDetails({}); // Set empty object instead of null to prevent null errors
     }
-  };
+  } catch (error) {
+    console.error(`Error fetching details for step: ${step.PROCESS}`, error);
+    setViewedStepDetails({}); // Set empty object on error
+  }
+};
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
@@ -197,47 +234,111 @@ const ReraUpdateTable = () => {
   }, [viewedStep, viewedStepDetails]);
 
   console.log('select plant:', selectedPlant, "apply date:", viewedStepDetails?.APPLY_DT, "comments:", viewedStepDetails?.COMMENTS);
+const handleConfirmSubmit = async (emails) => {
+  const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
+  
+  if (!selectedPlant || !immediateNextStep) {
+    Swal.fire("Error", "No active step is available to update.", "error");
+    return;
+  }
 
-  const handleConfirmSubmit = async (emails) => {
-    const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
-    
-    if (!selectedPlant || !immediateNextStep) {
-      Swal.fire("Error", "No active step is available to update.", "error");
-      return;
+  const payload = new FormData();
+  payload.append("loc", selectedPlant);
+  payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
+  payload.append("process", immediateNextStep.PROCESS);
+
+  emails.forEach((email, i) => {
+    payload.append(`emails[${i}]`, email);
+  });
+
+  const apiUrl = `${API_BASE_URL}/rera-update`;
+
+  try {
+    await axios.post(apiUrl, payload);
+
+    // Refresh the data after update
+    const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
+    const fetchedData = res.data;
+    setStoreData(fetchedData);
+
+    // ✅ CRITICAL: Re-fetch the details for the current viewed step
+    if (selectedPlant && viewedStep) {
+      const detailsRes = await axios.get(
+        `${API_BASE_URL}/rera-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(viewedStep.PROCESS)}`
+      );
+      if (detailsRes && detailsRes.data) {
+        setViewedStepDetails(detailsRes.data);
+      }
     }
 
-    const payload = new FormData();
-    payload.append("loc", selectedPlant);
-    payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
-    payload.append("process", immediateNextStep.PROCESS);
+    // ✅ Also update the immediate next step after completion
+    const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
+    const nextStep = steps.find((step) => !completedProcesses.includes(step.PROCESS));
 
-    emails.forEach((email, i) => {
-      payload.append(`emails[${i}]`, email);
+    if (nextStep) {
+      setImmediateNextStep(nextStep);
+      setImmediateNextStepIndex(steps.indexOf(nextStep));
+    } else {
+      // All steps completed
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(steps.length);
+    }
+
+    await Swal.fire({
+      icon: "success",
+      title: "Status Updated!",
+      text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
+      timer: 2000,
+      showConfirmButton: false
     });
-
-    const apiUrl = `${API_BASE_URL}/rera-update`;
-
-    try {
-      await axios.post(apiUrl, payload);
-
-      // Refresh the data after update
-      const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
-      const fetchedData = res.data;
-      setStoreData(fetchedData);
-
-      await Swal.fire({
-        icon: "success",
-        title: "Status Updated!",
-        text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
-        timer: 2000,
-        showConfirmButton: false
-      });
+    setViewedStepDetails("");
+    
    
-    } catch (error) {
-      console.error("Update failed:", error);
-      Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
-    }
-  };
+  } catch (error) {
+    console.error("Update failed:", error);
+    Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
+  }
+};
+  // const handleConfirmSubmit = async (emails) => {
+  //   const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
+    
+  //   if (!selectedPlant || !immediateNextStep) {
+  //     Swal.fire("Error", "No active step is available to update.", "error");
+  //     return;
+  //   }
+
+  //   const payload = new FormData();
+  //   payload.append("loc", selectedPlant);
+  //   payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
+  //   payload.append("process", immediateNextStep.PROCESS);
+
+  //   emails.forEach((email, i) => {
+  //     payload.append(`emails[${i}]`, email);
+  //   });
+
+  //   const apiUrl = `${API_BASE_URL}/rera-update`;
+
+  //   try {
+  //     await axios.post(apiUrl, payload);
+
+  //     // Refresh the data after update
+  //     const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
+  //     const fetchedData = res.data;
+  //     setStoreData(fetchedData);
+
+  //     await Swal.fire({
+  //       icon: "success",
+  //       title: "Status Updated!",
+  //       text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
+  //       timer: 2000,
+  //       showConfirmButton: false
+  //     });
+   
+  //   } catch (error) {
+  //     console.error("Update failed:", error);
+  //     Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
+  //   }
+  // };
 
    const handleDemoteConfirm = (newLevel) => {
       if (newLevel) {
@@ -254,8 +355,15 @@ const ReraUpdateTable = () => {
           });
       }
       setShowDemoteModal(false);
-    };
+    
+ const isStep2Incomplete = immediateNextStep?.PROCESS === "Status of the Application" && 
+    !(viewedStepDetails?.LEVEL === "Level 4" && (viewedStepDetails?.LEVEL_STATUS === "Completed" || viewedStepDetails?.LEVEL_STATUS === "Yes"));
 
+  // The button is only truly active if the user is viewing the actual immediateNextStep AND conditions are met
+  const canUpdate = immediateNextStep && 
+    viewedStep && 
+    immediateNextStep.PROCESS === viewedStep.PROCESS &&
+    !isStep2Incomplete;};
   // --- UI Rendering ---
   const renderDocumentHistory = () => {
     if (!viewedStepDetails || !viewedStepDetails.UPLOAD_DOC) {
@@ -306,7 +414,7 @@ const ReraUpdateTable = () => {
     );
   };
 
-  // ✅ NEW: These conditions determine the button's state and tooltip text.
+  // ✅ NEW: These conditions determine the button's state and tooltip text.handleEmailSubmit 
   const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
   // The button is only truly active if the user is viewing the actual immediateNextStep.
   const canUpdate = immediateNextStep && viewedStep && immediateNextStep.PROCESS === viewedStep.PROCESS;
@@ -435,29 +543,35 @@ const ReraUpdateTable = () => {
         </Col>
       </Row>
       
+     
       {/* Update button */}
-      <div className="d-grid mt-3">
-        <OverlayTrigger
-          placement="top"
-          overlay={
-            <Tooltip id="update-tooltip">
-              {!canUpdate ? "You can only update the current active step." :
-                isStep2Incomplete ? "Please complete all 4 sub-levels to enable this button." :
-                  "Click here to update this step as complete."}
-            </Tooltip>
-          }
-        >
-          <span className="d-grid">
-            <Button
-              variant="success"
-              size="md"
-              onClick={handleEmailSubmit}
-            >
-              Update Status to Complete
-            </Button>
-          </span>
-        </OverlayTrigger>
-      </div>
+<div className="d-grid mt-3">
+  <OverlayTrigger
+    placement="top"
+    overlay={
+      <Tooltip id="update-tooltip">
+        {!canUpdate ? 
+          (isStep2Incomplete ? 
+            "Complete Level 4 to enable update" : 
+            "You can only update the current active step"
+          ) : 
+          "Click here to update this step as complete."
+        }
+      </Tooltip>
+    }
+  >
+    <span className="d-grid">
+      <Button
+        variant={canUpdate ? "success" : "secondary"}
+        size="md"
+        onClick={handleEmailSubmit}
+        disabled={!canUpdate}
+      >
+        Update Status to Complete
+      </Button>
+    </span>
+  </OverlayTrigger>
+</div>
     </Form>
   )}
 </Col>

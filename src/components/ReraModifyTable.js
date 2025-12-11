@@ -37,66 +37,66 @@ const ReraModifyTable = () => {
   const [allStepsCompleted, setAllStepsCompleted] = useState(false);
   
   // 08-12-2025: Added state for logs modal
-  
- const [showLogsModal, setShowLogsModal] = useState(false);
+  const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
 
   // ADD THIS: PDF validation error state
   const [uploadError, setUploadError] = useState("");
+  
+  // State to track if Level 4 is completed
+  const [isLevel4Completed, setIsLevel4Completed] = useState(false);
+  
   console.log("selected LLLLLLLLLLLL",selectedLogs);
 
-     const {
-       storeData,
-       setStoreData,
-       totalMasterData,
-       setHeaderData,
-       headerData,
-       setRespModifyData,
-     } = useContext(Context);
+  const {
+    storeData,
+    setStoreData,
+    totalMasterData,
+    setHeaderData,
+    headerData,
+    setRespModifyData,
+  } = useContext(Context);
 
-     
-     
-         useEffect(() => {
-           if (steps.length > 0 && storeData.length > 0) {
-             const completedProcesses = storeData
-               .filter((item) => item.UPDATED === "YES")
-               .map((item) => item.PROCESS?.trim());
-       
-             const allCompleted = steps.every(step => 
-               completedProcesses.includes(step.PROCESS?.trim())
-             );
+  useEffect(() => {
+    if (steps.length > 0 && storeData.length > 0) {
+      const completedProcesses = storeData
+        .filter((item) => item.UPDATED === "YES")
+        .map((item) => item.PROCESS?.trim());
 
-             console.log("aaaaaaaaaaaaaaaaa",storeData)
-       
-             setAllStepsCompleted(allCompleted);
-           } else {
-             setAllStepsCompleted(false);
-           }
-         }, [steps, storeData]);
-     
-         
-           const renderCompletionMessage = () => {
-             return (
-               <div className="text-center py-5">
-                 <FaCheckCircle size={64} className="text-success mb-3" />
-                 <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-                 <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-                 <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
-                   <Alert.Heading>Project Completion Status</Alert.Heading>
-                   <p>
-                     All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
-                     You can review the completed project details.
-                   </p>
-                   <hr />
-                   <p className="mb-0">
-                     The project is now ready for the next phase or final approval.
-                   </p>
-                 </Alert>
-               </div>
-             );
-           };
+      const allCompleted = steps.every(step => 
+        completedProcesses.includes(step.PROCESS?.trim())
+      );
 
-        const handleEmailSubmit = () => {
+      console.log("aaaaaaaaaaaaaaaaa",storeData)
+
+      setAllStepsCompleted(allCompleted);
+    } else {
+      setAllStepsCompleted(false);
+    }
+  }, [steps, storeData]);
+
+  const renderCompletionMessage = () => {
+    return (
+      <div className="text-center py-5">
+        <FaCheckCircle size={64} className="text-success mb-3" />
+        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+        <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
+          <Alert.Heading>Project Completion Status</Alert.Heading>
+          <p>
+            All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
+            You can review the completed project details.
+          </p>
+          <hr />
+          <p className="mb-0">
+            The project is now ready for the next phase or final approval.
+          </p>
+        </Alert>
+      </div>
+    );
+  };
+
+  const handleEmailSubmit = () => {
     const newErrors = {};
     if (!formData.loc) newErrors.loc = "Plant selection is required";
     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
@@ -110,7 +110,6 @@ const ReraModifyTable = () => {
     setShowEmailModal(true);
   };
 
-  
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
@@ -128,20 +127,20 @@ const ReraModifyTable = () => {
     axios.get(`${API_BASE_URL}/rera-plants`).then((res) => setPlants(res.data)).catch((err) => console.error("Error fetching RERA plants:", err));
   }, []);
   
-    useEffect(() => {
+  useEffect(() => {
     setStoreData([]);
     setImmediateNextStep(null);
     setImmediateNextStepIndex(-1);
     setNextStepDetails(null);
     setProjectInfo({ prjName: "", address: "" });
     setFormData({ loc: selectedPlant, applyDate: "", comments: "", prjName: "", address: "", fromDate: "", toDate: "",subLevelStatus: "Yes" });
+    setIsLevel4Completed(false);
 
     if (selectedPlant && steps.length > 0) {
       axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`)
         .then(res => {
           const fetchedData = res.data;
 
-        
           setStoreData(fetchedData);
           if (fetchedData && fetchedData.length > 0) {
             const firstRecord = fetchedData[0];
@@ -175,12 +174,18 @@ const ReraModifyTable = () => {
         .then(detailsRes => {
           if (detailsRes && detailsRes.data) {
             setNextStepDetails(detailsRes.data);
+            
+            // Check if Level 4 is completed
+            if (detailsRes.data.LEVEL === 'Level 4' && detailsRes.data.LEVEL_STATUS === 'Completed') {
+              setIsLevel4Completed(true);
+            } else {
+              setIsLevel4Completed(false);
+            }
           }
         })
         .catch(err => console.error("Error during data fetching process:", err));
     }
   }, [selectedPlant, steps]);
-  
   
   useEffect(() => {
     if (nextStepDetails && typeof nextStepDetails === 'object' && Object.keys(nextStepDetails).length > 0) {
@@ -201,9 +206,10 @@ const ReraModifyTable = () => {
   const activeSubLevelIndex = useMemo(() => {
     const currentLevel = nextStepDetails?.LEVEL;
     const currentStatus = nextStepDetails?.LEVEL_STATUS;
-    if (currentLevel === 'Level 4' && currentStatus === 'Completed') {
-      return SUB_LEVELS.length;
-    }
+     if (currentLevel === 'Level 4' && currentStatus === 'Completed') {
+    return SUB_LEVELS.length; 
+  }
+    
     if (!currentLevel) {
       return 0;
     }
@@ -231,35 +237,41 @@ const ReraModifyTable = () => {
     if (name === 'loc') {
       setSelectedPlant(value);
 
-       try {
-           const res = await getMasterByLoc(value);
-           if (res) {
-             setHeaderData(res);
-            //  setFormData((prev) => ({
-            //    ...prev,
-            //    applyDate: res.APPLICATION_DATE || '',
-            //    noOfTowers: res.NUMBER_OF_TOWERS || '',
-            //    TotalProjectArea: res.TOTAL_PROJECT_AREA || '',
-            //    ProjectBuildArea: res.PROJECT_BUILD_AREA || '',
-            //    ProjectName: res.PROJECT_NAME || '',
-            //  }));
-           } else {
-             setHeaderData(null);
-             setFormData((prev) => ({
-               ...prev,
+      try {
+        const res = await getMasterByLoc(value);
+        if (res) {
+          setHeaderData(res);
+          //  setFormData((prev) => ({
+          //    ...prev,
+          //    applyDate: res.APPLICATION_DATE || '',
+          //    noOfTowers: res.NUMBER_OF_TOWERS || '',
+          //    TotalProjectArea: res.TOTAL_PROJECT_AREA || '',
+          //    ProjectBuildArea: res.PROJECT_BUILD_AREA || '',
+          //    ProjectName: res.PROJECT_NAME || '',
+          //  }));
+        } else {
+          setHeaderData(null);
+          setFormData((prev) => ({
+            ...prev,
     
-             }));
-           }
-         } catch (err) {
-           console.error("Error fetching master by loc:", err);
-           setHeaderData(null);
-           setFormData((prev) => ({
-             ...prev,
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching master by loc:", err);
+        setHeaderData(null);
+        setFormData((prev) => ({
+          ...prev,
        
-           }));
-         }
+        }));
+      }
+    }
 
-     
+    // ✅ FIX: Reset levelToSubmit when changing from "No" back to "Yes"
+    if (name === 'subLevelStatus' && value === 'Yes') {
+      // Reset to the current active level when user selects "Yes"
+      setLevelToSubmit(SUB_LEVELS[activeSubLevelIndex]);
+      setFormData(prev => ({ ...prev, subLevelStatus: 'Yes' }));
+      return;
     }
 
     if (name === 'subLevelStatus' && value === 'No') {
@@ -331,24 +343,24 @@ const ReraModifyTable = () => {
       Swal.fire("Validation Error", "Please select a Plant and ensure a process step is active.", "error");
       return;
     }
-     if (newDocs.length > 0) {
-    const nonPDFFiles = newDocs.filter(file => 
-      file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
-    );
-    
-    if (nonPDFFiles.length > 0) {
-      // Show error message instead of popup
-      setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
-      return;
+    if (newDocs.length > 0) {
+      const nonPDFFiles = newDocs.filter(file => 
+        file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
+      );
+      
+      if (nonPDFFiles.length > 0) {
+        // Show error message instead of popup
+        setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
+        return;
+      }
     }
-  }
     
     const payload = new FormData();
     payload.append("loc", formData.loc);
     payload.append("process", immediateNextStep.PROCESS);
     payload.append("comments", formData.comments || "");
 
-  emails.forEach((email, i) => {
+    emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
 
@@ -405,6 +417,7 @@ const ReraModifyTable = () => {
       setImmediateNextStepIndex(-1);
       setNextStepDetails(null);
       setProjectInfo({ prjName: "", address: "" });
+      setIsLevel4Completed(false);
     } catch (error) {
       console.error("Submission failed:", error);
       Swal.fire("Submission Failed", "Please check the console for details.", "error");
@@ -459,7 +472,7 @@ const ReraModifyTable = () => {
 
   return (
     <>
-        <ProjectInfoHeader data={headerData} />
+      <ProjectInfoHeader data={headerData} />
       <Row className="align-items-stretch">
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-light flex-fill">
@@ -468,7 +481,7 @@ const ReraModifyTable = () => {
               {steps.map((step, idx) => {
                 let variant = "secondary", clickable = false, statusIcon = "⏸️";
 
-                        const isCompleted = storeData.some(
+                const isCompleted = storeData.some(
                   (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
                     item.UPDATED === "YES"
                 );
@@ -555,7 +568,9 @@ const ReraModifyTable = () => {
                 <Col md={6}>
                   <Form.Group>
                     <Form.Label>Apply Date</Form.Label>
-                    <Form.Control type="date" name="applyDate" value={formData.applyDate || ""} onChange={handleChange} />
+                    <Form.Control type="date" name="applyDate" value={formData.applyDate || ""} 
+                     max={new Date().toISOString().split("T")[0]}
+                    onChange={handleChange} />
                   </Form.Group>
                 </Col>
               )}
@@ -619,22 +634,22 @@ const ReraModifyTable = () => {
               </Row>
             )}
            <Row className="mb-3">
-  <Col md={6}>
-    <Form.Label>Upload New Documents</Form.Label>
-    <Button variant="outline-secondary" className="form-control" onClick={() => setShowUploadModal(true)}>
-      Upload Docs
-    </Button>
-    {/* Add this error display */}
-    {uploadError && (
-      <div className="text-danger small mt-1">
-        {uploadError}
-      </div>
-    )}
-    {/* You can also add this hint text */}
-    <Form.Text className="text-muted d-block mt-1">
-      Only PDF files are allowed
-    </Form.Text>
-  </Col>
+              <Col md={6}>
+                <Form.Label>Upload New Documents</Form.Label>
+                <Button variant="outline-secondary" className="form-control" onClick={() => setShowUploadModal(true)}>
+                  Upload Docs
+                </Button>
+                {/* Add this error display */}
+                {uploadError && (
+                  <div className="text-danger small mt-1">
+                    {uploadError}
+                  </div>
+                )}
+                {/* You can also add this hint text */}
+                <Form.Text className="text-muted d-block mt-1">
+                  Only PDF files are allowed
+                </Form.Text>
+              </Col>
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Comments</Form.Label>
@@ -643,7 +658,14 @@ const ReraModifyTable = () => {
               </Col>
             </Row>
             <div className="d-grid mt-3">
-              <Button variant="primary" size="lg" onClick={handleEmailSubmit}>Submit</Button>
+              <Button 
+                variant="primary" 
+                size="lg" 
+                onClick={handleEmailSubmit}
+                disabled={isLevel4Completed}
+              >
+                Submit
+              </Button>
             </div>
           </Form>
           )}
@@ -684,33 +706,33 @@ const ReraModifyTable = () => {
 
       </Row>
 
-        <Modal show={showDemoteModal} onHide={() => setShowDemoteModal(false)} centered>
-            <Modal.Header closeButton>
-                <Modal.Title>Reset Task Level</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <p>Since the task was not completed, please select the correct current level to reset to.</p>
-                <Form.Group>
-                    <Form.Label className="fw-bold">Choose the correct level:</Form.Label>
-                    <Form.Select 
-                        onChange={(e) => handleDemoteConfirm(e.target.value)}
-                        defaultValue=""
-                    >
-                        <option value="" disabled>Select a level...</option>
-                        {demoteOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                    </Form.Select>
-                </Form.Group>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={() => setShowDemoteModal(false)}>
-                    Cancel
-                </Button>
-            </Modal.Footer>
-        </Modal>
+      <Modal show={showDemoteModal} onHide={() => setShowDemoteModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Reset Task Level</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Since the task was not completed, please select the correct current level to reset to.</p>
+          <Form.Group>
+            <Form.Label className="fw-bold">Choose the correct level:</Form.Label>
+            <Form.Select 
+              onChange={(e) => handleDemoteConfirm(e.target.value)}
+              defaultValue=""
+            >
+              <option value="" disabled>Select a level...</option>
+              {demoteOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDemoteModal(false)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-  <EmailSelectionModal
+      <EmailSelectionModal
         show={showEmailModal}
         onHide={() => setShowEmailModal(false)}
         onSubmit={handleEmailSelectionSubmit}

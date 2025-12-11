@@ -50,6 +50,9 @@ const FireModifyTable = () => {
     feePaid: "",
     feeAmount: "",
     acknowledgeName: "",
+  noOfTowers: "",
+  feeAmount: "",
+ 
   });
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
@@ -108,6 +111,10 @@ const FireModifyTable = () => {
       .then((res) => setPlants(res.data))
       .catch((err) => console.error("Error fetching FIRE plants:", err));
   }, []);
+
+
+
+
 
   useEffect(() => {
     setStoreData([]);
@@ -287,6 +294,7 @@ const FireModifyTable = () => {
               feePaid: details.FEE_PAID || "", // Load existing fee data
               feeAmount: details.FEE_AMOUNT || "",
               acknowledgeName: details.ACKNOWLEDGE_NAME || "",
+              noOfTowers: details.NO_OF_TOWERS || "",
             }));
             // Parse existing acknowledge docs if any (for display, not re-upload)
             if (details.ACK_DOC) {
@@ -310,6 +318,7 @@ const FireModifyTable = () => {
               feePaid: "",
               feeAmount: "",
               acknowledgeName: "",
+              noOfTowers: ""
             }));
           }
         })
@@ -517,15 +526,16 @@ const handleEmailSubmit = () => {
       payload.append(`emails[${i}]`, email);
     });
       payload.append("steptype", currentProcess);
+
     // Project Name and Address fields are only editable for the very first step (index PROVISIONAL_NOC_STEP_INDICES[0])
-    if (immediateNextStepIndex === PROVISIONAL_NOC_STEP_INDICES[0]) {
-      payload.append("prjName", formData.prjName || "");
-      payload.append("address", formData.address || "");
-    } else {
-      // For subsequent steps, send the projectInfo from state as it's read-only in UI
-      payload.append("prjName", projectInfo.prjName || "");
-      payload.append("address", projectInfo.address || "");
-    }
+    // if (immediateNextStepIndex === PROVISIONAL_NOC_STEP_INDICES[0]) {
+    //   payload.append("prjName", formData.prjName || "");
+    //   payload.append("address", formData.address || "");
+    // } else {
+    //   // For subsequent steps, send the projectInfo from state as it's read-only in UI
+    //   payload.append("prjName", projectInfo.prjName || "");
+    //   payload.append("address", projectInfo.address || "");
+    // }
 
     if (immediateNextStepIndex >= 1) {
 
@@ -541,14 +551,16 @@ const handleEmailSubmit = () => {
     newDocs.forEach((file) => payload.append("New_Doc[]", file));
 
     // Acknowledge documents and fee details (only for OC Process steps)
-    if (isOCProcessStep) {
+    // if (isOCProcessStep) {
       payload.append("feePaid", formData.feePaid || "");
       payload.append("feeAmount", formData.feeAmount || "");
       payload.append("acknowledgeName", formData.acknowledgeName || "");
+
+
       acknowledgeDocs.forEach((file) =>
         payload.append("Acknowledge_Doc[]", file)
       );
-    }
+    // }
 
 
     for (const [key, value] of payload.entries()) {
@@ -557,7 +569,7 @@ const handleEmailSubmit = () => {
   
     let existingRecordStatusField = null;
 
-    console.log("ghhhhhhhhhhhhhhhh",storeData,"immediateNextStep.PROCESS?",immediateNextStep.PROCESS);
+  
     const currentStepRecord = storeData.find(
       (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() && item.STEPTYPE === currentProcess
     );
@@ -566,7 +578,7 @@ const handleEmailSubmit = () => {
     if (isProvisionalNOCStep) {
       existingRecordStatusField = currentStepRecord?.UPDATED;
     } else if (isOCProcessStep) {
-      existingRecordStatusField = currentStepRecord?.OC_UPDATED; // *** Use OC_UPDATED here ***
+      existingRecordStatusField = currentStepRecord?.OC_UPDATED;
     }
 
     console.log("➡️ ExistingRecord :", existingRecordStatusField);
@@ -627,7 +639,7 @@ const handleEmailSubmit = () => {
     let generalDocuments = [];
     let acknowledgementReceipts = [];
 
-    // Parse general uploaded documents (assuming UPLOAD_DOC in details is for New_Doc[])
+
     if (nextStepDetails.UPLOAD_DOC) {
       try {
         const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
@@ -644,10 +656,16 @@ const handleEmailSubmit = () => {
     if (nextStepDetails.ACK_DOC) {
       try {
         const parsedAcknowledgeDocs = JSON.parse(nextStepDetails.ACK_DOC);
+   
         acknowledgementReceipts = parsedAcknowledgeDocs.map((doc) => ({
           name: doc.file_name,
           url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-        }));
+        })
+  
+
+      );
+
+ 
       } catch (error) {
         console.error("Failed to parse ACK_DOC JSON:", error);
       }
@@ -658,9 +676,57 @@ const handleEmailSubmit = () => {
     );
 
 
-    const handleDeleteDocument = async (docType, fileName, index) => {
+//     const handleDeleteDocument = async (docType, fileName, index) => {
 
-      console.log("deletedddddd",docType, "file",fileName,"index",index);
+//   try {
+//     // Show confirmation dialog
+//     const result = await Swal.fire({
+//       title: 'Delete Document?',
+//       text: `Are you sure you want to delete ${fileName}?`,
+//       icon: 'warning',
+//       showCancelButton: true,
+//       confirmButtonColor: '#d33',
+//       cancelButtonColor: '#3085d6',
+//       confirmButtonText: 'Yes, delete it!'
+//     });
+
+//     if (!result.isConfirmed) return;
+
+//     // Make API call to delete from server
+//     const response = await axios.delete(`${API_BASE_URL}/docmt-fire-dlt`, {
+//       data: {
+//         loc: formData.loc,
+//         process: immediateNextStep?.PROCESS || "",
+//         steptype: currentProcess,
+//         doc_type: docType, // "New_Doc" or "Acknowledge_Doc"
+//         file_name: fileName,
+//       },
+//     });
+
+//     if (response.status === 200) {
+//       // Remove from local state
+//       if (docType === "UPLOAD_DOC") {
+//         const updatedDocs = newDocs.filter((_, i) => i !== index);
+//         setNewDocs(updatedDocs);
+//       } else if (docType === "ACK_DOC") {
+//         const updatedDocs = acknowledgeDocs.filter((_, i) => i !== index);
+//         setAcknowledgeDocs(updatedDocs);
+//       }
+
+//       // Show success message
+//       Swal.fire('Deleted!', 'Document has been deleted.', 'success');
+      
+//       // Optionally: Refresh document history
+ 
+//     }
+//   } catch (error) {
+//     console.error('Error deleting document:', error);
+//     Swal.fire('Error!', 'Failed to delete document.', 'error');
+//   }
+// };
+
+
+const handleDeleteDocument = async (docType, fileName, index) => {
   try {
     // Show confirmation dialog
     const result = await Swal.fire({
@@ -676,100 +742,226 @@ const handleEmailSubmit = () => {
     if (!result.isConfirmed) return;
 
     // Make API call to delete from server
-    const response = await axios.delete(`${API_BASE_URL}/fire-docu-delete`, {
+    const response = await axios.delete(`${API_BASE_URL}/docmt-fire-dlt`, {
       data: {
         loc: formData.loc,
         process: immediateNextStep?.PROCESS || "",
         steptype: currentProcess,
-        doc_type: docType, // "New_Doc" or "Acknowledge_Doc"
+        doc_type: docType, // "UPLOAD_DOC" or "ACK_DOC"
         file_name: fileName,
       },
     });
 
     if (response.status === 200) {
-      // Remove from local state
-      if (docType === "New_Doc") {
-        const updatedDocs = newDocs.filter((_, i) => i !== index);
-        setNewDocs(updatedDocs);
-      } else if (docType === "Acknowledge_Doc") {
-        const updatedDocs = acknowledgeDocs.filter((_, i) => i !== index);
-        setAcknowledgeDocs(updatedDocs);
+      // ✅ IMMEDIATELY UPDATE LOCAL STATE
+      if (nextStepDetails) {
+        const updatedDetails = { ...nextStepDetails };
+        
+        if (docType === "UPLOAD_DOC" && updatedDetails.UPLOAD_DOC) {
+          try {
+            const parsedDocs = JSON.parse(updatedDetails.UPLOAD_DOC);
+            const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+            updatedDetails.UPLOAD_DOC = JSON.stringify(filteredDocs);
+          } catch (error) {
+            console.error("Error updating UPLOAD_DOC:", error);
+          }
+        } else if (docType === "ACK_DOC" && updatedDetails.ACK_DOC) {
+          try {
+            const parsedDocs = JSON.parse(updatedDetails.ACK_DOC);
+            const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+            updatedDetails.ACK_DOC = JSON.stringify(filteredDocs);
+          } catch (error) {
+            console.error("Error updating ACK_DOC:", error);
+          }
+        }
+        
+        // Update state immediately
+        setNextStepDetails(updatedDetails);
+      }
+      
+      // Also update storeData
+      if (storeData && storeData.length > 0) {
+        const updatedStoreData = storeData.map(item => {
+          if (item.PROCESS === immediateNextStep.PROCESS && item.STEPTYPE === currentProcess) {
+            const updatedItem = { ...item };
+            
+            if (docType === "UPLOAD_DOC" && updatedItem.UPLOAD_DOC) {
+              try {
+                const parsedDocs = JSON.parse(updatedItem.UPLOAD_DOC);
+                const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+                updatedItem.UPLOAD_DOC = JSON.stringify(filteredDocs);
+              } catch (error) {
+                console.error("Error updating storeData UPLOAD_DOC:", error);
+              }
+            } else if (docType === "ACK_DOC" && updatedItem.ACK_DOC) {
+              try {
+                const parsedDocs = JSON.parse(updatedItem.ACK_DOC);
+                const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+                updatedItem.ACK_DOC = JSON.stringify(filteredDocs);
+              } catch (error) {
+                console.error("Error updating storeData ACK_DOC:", error);
+              }
+            }
+            
+            return updatedItem;
+          }
+          return item;
+        });
+        
+        setStoreData(updatedStoreData);
       }
 
       // Show success message
       Swal.fire('Deleted!', 'Document has been deleted.', 'success');
       
-      // Optionally: Refresh document history
- 
     }
   } catch (error) {
     console.error('Error deleting document:', error);
     Swal.fire('Error!', 'Failed to delete document.', 'error');
   }
 };
-
     
    const currentStepLogs = getCurrentStepLogs();
 
   
-    return (
-      <div className="d-flex flex-column" style={{ height: "100%" }}>
-     <Card style={{ padding: "1px", height: "80%", overflow: "auto" }}>
-        <h6 className="text-primary p-2">General Uploaded Documents</h6>
-        {generalDocuments.length > 0 ? (
-          <ul className="list-unstyled">
-            {generalDocuments.map((doc, idx) => (
-              <li key={`gen-doc-${idx}`} className="mb-1 p-1 d-flex justify-content-between align-items-center">
-                <div>
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-decoration-none"
+return (
+  <div className="d-flex flex-column" style={{ height: "100%", maxHeight: "330px" }}>
+    <Card style={{ 
+      padding: "10px", 
+      flex: "1 1 auto", 
+      minHeight: "0",
+      display: "flex", 
+      flexDirection: "column",
+      overflow: "hidden", 
+      width: "300px"
+    }}>
+      {/* Scrollable content area */}
+      <div style={{ 
+        flex: "1 1 auto",
+        overflowY: "auto",
+        paddingRight: "5px" // Space for scrollbar
+      }}>
+        {/* General Documents Section */}
+        <div style={{ marginBottom: "15px" }}>
+          <h6 className="text-primary mb-2">General Uploaded Documents</h6>
+          {generalDocuments.length > 0 ? (
+            <div style={{ 
+              border: "1px solid #dee2e6",
+              borderRadius: "4px",
+              padding: "5px",
+              backgroundColor: "#f8f9fa"
+            }}>
+              <ul className="list-unstyled mb-0">
+                {generalDocuments.map((doc, idx) => (
+                  <li 
+                    key={`gen-doc-${idx}`} 
+                    className="d-flex justify-content-between align-items-center mb-1 p-1"
+                    style={{ 
+                      backgroundColor: "white",
+                      borderRadius: "3px",
+                      borderBottom: idx < generalDocuments.length - 1 ? "1px solid #e9ecef" : "none"
+                    }}
                   >
-                    <FaFileAlt className="me-2" />
-                    {doc.name}
-                  </a>
-                </div>
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => handleDeleteDocument("New_Doc", doc.name, idx)}
-                  title="Delete document"
-                >
-                  <i className="fas fa-trash-alt"></i>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted mb-0">
-            No general documents were uploaded for this step.
-          </p>
-        )}
-
-        {isOCProcessStep && (
-          <>
-            <h6 className="text-primary mt-3">Acknowledgement Receipts</h6>
-            {acknowledgementReceipts.length > 0 ? (
-              <ul className="list-unstyled">
-                {acknowledgementReceipts.map((doc, idx) => (
-                  <li key={`ack-doc-${idx}`} className="mb-1 d-flex justify-content-between align-items-center">
-                    <div>
+                    <div className="text-truncate" style={{ 
+                      maxWidth: "calc(100% - 40px)",
+                      flexShrink: 1
+                    }}>
                       <a
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-decoration-none"
+                        className="text-decoration-none text-dark"
+                        style={{ fontSize: "13px" }}
                       >
-                        <FaFileAlt className="me-2" />
-                        {doc.name}
+                        <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                        <span className="text-truncate" style={{ 
+                          display: "inline-block",
+                          maxWidth: "calc(100% - 30px)",
+                          verticalAlign: "middle"
+                        }}>
+                          {doc.name}
+                        </span>
                       </a>
                     </div>
                     <Button
                       variant="outline-danger"
                       size="sm"
-                      onClick={() => handleDeleteDocument("Acknowledge_Doc", doc.name, idx)}
+                      className="flex-shrink-0"
+                      style={{ 
+                        padding: "2px 6px", 
+                        fontSize: "11px",
+                        minWidth: "30px",
+                        height: "24px"
+                      }}
+                      onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
+                      title="Delete document"
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
+              No general documents were uploaded for this step.
+            </p>
+          )}
+        </div>
+
+        {/* Acknowledgement Receipts Section */}
+        <div style={{ marginBottom: "15px" }}>
+          <h6 className="text-primary mb-2">Acknowledgement Receipts</h6>
+          {acknowledgementReceipts.length > 0 ? (
+            <div style={{ 
+              border: "1px solid #dee2e6",
+              borderRadius: "4px",
+              padding: "5px",
+              backgroundColor: "#f8f9fa"
+            }}>
+              <ul className="list-unstyled mb-0">
+                {acknowledgementReceipts.map((doc, idx) => (
+                  <li 
+                    key={`ack-doc-${idx}`} 
+                    className="d-flex justify-content-between align-items-center mb-1 p-1"
+                    style={{ 
+                      backgroundColor: "white",
+                      borderRadius: "3px",
+                      borderBottom: idx < acknowledgementReceipts.length - 1 ? "1px solid #e9ecef" : "none"
+                    }}
+                  >
+                    <div className="text-truncate" style={{ 
+                      maxWidth: "calc(100% - 40px)", // Leave space for button
+                      flexShrink: 1
+                    }}>
+                      <a
+                        href={doc?.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-decoration-none text-dark"
+                        style={{ fontSize: "13px" }}
+                      >
+                        <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                        <span className="text-truncate" style={{ 
+                          display: "inline-block",
+                          maxWidth: "calc(100% - 30px)",
+                          verticalAlign: "middle"
+                        }}>
+                          {doc?.name}
+                        </span>
+                      </a>
+                    </div>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      className="flex-shrink-0"
+                      style={{ 
+                        padding: "2px 6px", 
+                        fontSize: "11px",
+                        minWidth: "30px",
+                        height: "24px"
+                      }}
+                      onClick={() => handleDeleteDocument("ACK_DOC", doc.name, idx)}
                       title="Delete receipt"
                     >
                       <i className="fas fa-trash-alt"></i>
@@ -777,35 +969,38 @@ const handleEmailSubmit = () => {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-muted mb-0">
-                No acknowledgement receipts available for this step.
-              </p>
-            )}
-          </>
-        )}
-      </Card>
-
-
-           <div className="p-2 border-top bg-light text-center">
-                  <Button
-                    variant="info"
-                    size="sm"
-                    onClick={() => {
-                   
-                      const logs = getCurrentStepLogs();
-                      setSelectedLogs(logs);
-                      setShowLogsModal(true);
-                    }}
-                    disabled={currentStepLogs.length === 0}
-                  >
-                    {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
-                  </Button>
-                </div>
-
-      
+            </div>
+          ) : (
+            <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
+              No acknowledgement receipts available for this step.
+            </p>
+          )}
+        </div>
       </div>
-    );
+    </Card>
+
+    {/* View Logs Button - Fixed at bottom */}
+    <div className="p-2 border-top bg-light text-center" style={{ flexShrink: 0 }}>
+      <Button
+        variant="info"
+        size="sm"
+        onClick={() => {
+          const logs = getCurrentStepLogs();
+          setSelectedLogs(logs);
+          setShowLogsModal(true);
+        }}
+        disabled={currentStepLogs.length === 0}
+        style={{ 
+          minWidth: "120px",
+          fontSize: "13px",
+          padding: "4px 12px"
+        }}
+      >
+        {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
+      </Button>
+    </div>
+  </div>
+);
   };
 
   const renderProcessColumn = (columnTitle, isOCPhase) => {
@@ -899,7 +1094,7 @@ const handleEmailSubmit = () => {
         {/* Adjusted to md={4} for more width */}
         <Col md={4} className="d-flex">
           <div className="border rounded p-3 bg-light flex-fill">
-            <h5 className="text-center mb-3">Process Steps</h5>
+            <h5 className="text-center">Process Steps</h5>
             <Row>
               {renderProcessColumn("ProvisionalNOC", false)}
               {renderProcessColumn("OCPROCESS", true)}
@@ -946,6 +1141,7 @@ const handleEmailSubmit = () => {
         name="applyDate"
         max={new Date().toISOString().split("T")[0]}
         value={formData.applyDate || ""}
+         disabled={ !formData.loc ||(nextStepDetails && nextStepDetails.APPLY_DT)}
         onChange={handleChange}
         isInvalid={!!errors.applyDate}
       />
@@ -958,6 +1154,43 @@ const handleEmailSubmit = () => {
               
             
             </Row>
+
+            {/* <Row> */}
+              {/* {storeData?.FEE_PAID_STATUS === NO && */}
+    {/* <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Number Of Towers</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={1}
+                    name="towers"
+                    value={formData.noOfTowers || ""}
+                      disabled={ !formData.loc}
+                    onChange={handleChange}
+                  />
+                    
+                </Form.Group>
+              </Col> */}
+
+    {/* <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Fee Amount</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={1}
+                    name="towers"
+                    value={formData.feeAmount || ""}
+                      disabled={ !formData.loc}
+                    onChange={handleChange}
+                  />
+                      
+                </Form.Group>
+              </Col> */}
+
+              
+
+          
+            {/* </Row> */}
 
             {/* {immediateNextStepIndex >= 1 && (
   <Form.Group className="mb-3">
@@ -1101,6 +1334,7 @@ const handleEmailSubmit = () => {
                     rows={1}
                     name="comments"
                     value={formData.comments || ""}
+                      disabled={ !formData.loc}
                     onChange={handleChange}
                   />
                       {errors.comments && (
@@ -1108,9 +1342,19 @@ const handleEmailSubmit = () => {
                         )}
                 </Form.Group>
               </Col>
+
+
             </Row>
+
+            <Row>
+
+            </Row>
+
+
+
+
             <div className="d-grid mt-3">
-              <Button variant="primary" size="lg" onClick={handleEmailSubmit}>
+              <Button variant="primary" size="md" onClick={handleEmailSubmit}>
                 Submit
               </Button>
             </div>
@@ -1119,7 +1363,7 @@ const handleEmailSubmit = () => {
         {/* md={3} remains the same, as 4 + 5 + 3 = 12 */}
         <Col md={3} className="d-flex w-25">
           <div className="border rounded p-3 bg-white flex-fill d-flex flex-column">
-            <h5 className="mb-3 text-dark">Document History</h5>
+            <h5 className="mb-1 text-dark">Document History</h5>
             <div className="flex-grow-1 overflow-auto">
               {renderDocumentHistory()}
             </div>
