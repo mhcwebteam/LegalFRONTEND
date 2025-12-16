@@ -20,14 +20,14 @@ const FireUpdateTable = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
-  
-  const { 
-    storeData, 
-    setStoreData, 
-    respModifyData, 
-    setRespModifyData, 
-    setHeaderData, 
-    headerData 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    storeData,
+    setStoreData,
+    respModifyData,
+    setRespModifyData,
+    setHeaderData,
+    headerData
   } = useContext(Context);
 
   const [formData, setFormData] = useState({
@@ -37,6 +37,10 @@ const FireUpdateTable = () => {
     comments: "",
     prjName: "",
     address: "",
+    feePaid: "",
+    feeAmount: "",
+    noOfTowers: "",
+    feepaidstatus: "",
   });
 
   const [immediateNextStep, setImmediateNextStep] = useState(null);
@@ -49,12 +53,23 @@ const FireUpdateTable = () => {
   const PROVISIONAL_NOC_STEP_INDICES = useMemo(() => [0, 1, 2, 3, 4], []);
   const OC_PROCESS_CONCEPTUAL_START_INDEX = PROVISIONAL_NOC_STEP_INDICES.length;
 
+
+
+
+
+  const provisionalRadioLabels = {
+    1: "Site Inspection Status",
+    2: "Queries Received?",
+    3: "Committee Approved?",
+    4: "Provisional Status?",
+  };
+
   // Function to parse and get logs for current viewed step
   const getCurrentStepLogs = useCallback(() => {
     if (!viewedStepDetails?.LOG) {
       return [];
     }
-    
+
     try {
       const logs = JSON.parse(viewedStepDetails.LOG);
       return Array.isArray(logs) ? logs : [];
@@ -65,10 +80,10 @@ const FireUpdateTable = () => {
   }, [viewedStepDetails]);
 
   const fetchStepDetails = useCallback(async (plantId, processName, stepType) => {
-   
-    
+
+
     // let steptype = "OCPROCESS";
-      setCurrentProcess(stepType);
+    setCurrentProcess(stepType);
     if (!plantId || !processName || !stepType) return null;
     try {
       const apiUrl = `${API_BASE_URL}/fire-step-details/${encodeURIComponent(plantId)}/${encodeURIComponent(processName)}/${encodeURIComponent(stepType)}`;
@@ -162,7 +177,7 @@ const FireUpdateTable = () => {
         detailsForViewedStep = await fetchStepDetails(plantId, lastOCStep.PROCESS, "OCPROCESS");
         setViewedStepConceptualIndex(lastOCStepIndex);
       }
-      
+
       setViewedStepDetails(detailsForViewedStep);
 
       // Load logs if available
@@ -178,6 +193,13 @@ const FireUpdateTable = () => {
         setSelectedLogs([]);
       }
 
+      const currentStepRecord = storeData.find(
+        (item) =>
+          item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
+          item.STEPTYPE === currentProcess
+      );
+
+
       setFormData((prev) => ({
         ...prev,
         loc: plantId,
@@ -185,6 +207,13 @@ const FireUpdateTable = () => {
         address: currentAddress,
         applyDate: detailsForViewedStep?.APPLY_DT || "",
         comments: detailsForViewedStep?.COMMENTS || "",
+        noOfTowers: detailsForViewedStep.NO_OF_TOWERS || "",
+        feepaidstatus: detailsForViewedStep.FEE_PAID_STATUS || "",
+        feePaid: detailsForViewedStep.FEE_PAID || "",
+        feeAmount: detailsForViewedStep.FEE_AMOUNT || "",
+        [`stepStatus_${immediateNextStepIndex}`]:
+          currentStepRecord?.LEVEL_STATUS || ""
+
       }));
 
     } catch (err) {
@@ -202,6 +231,10 @@ const FireUpdateTable = () => {
         comments: "",
         prjName: "",
         address: "",
+        noOfTowers: "",
+        feepaidstatus: "",
+        feePaid: "",
+        feeAmount: "",
       });
       setProvisionalNOCCompleted(false);
       setSelectedLogs([]);
@@ -244,6 +277,7 @@ const FireUpdateTable = () => {
   };
 
   const handleConfirmSubmit = async (emails) => {
+    setIsSubmitting(true);
     if (!formData.loc || !immediateNextStep) {
       Swal.fire("Selection Error", "Please select a Plant and ensure an active process step.", "error");
       return;
@@ -255,8 +289,8 @@ const FireUpdateTable = () => {
     const payload = new FormData();
     payload.append("loc", formData.loc);
     payload.append("process", immediateNextStep.PROCESS);
-  //  payload.append("stepType", currentStepType);
-     payload.append("steptype", currentProcess);
+    //  payload.append("stepType", currentStepType);
+    payload.append("steptype", currentProcess);
     payload.append("applyDate", formData.applyDate);
     payload.append("comments", formData.comments);
 
@@ -278,6 +312,9 @@ const FireUpdateTable = () => {
       console.error("Submission failed:", error);
       Swal.fire("Submission Failed", "Please check the console for details.", "error");
     }
+    finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleStepClick = useCallback(async (processName, stepType, conceptualIndex) => {
@@ -285,7 +322,7 @@ const FireUpdateTable = () => {
       Swal.fire("Error", "Please select a plant first", "error");
       return;
     }
-    
+
     setViewedStepConceptualIndex(conceptualIndex);
     const details = await fetchStepDetails(selectedPlant, processName, stepType);
     setViewedStepDetails(details);
@@ -353,7 +390,7 @@ const FireUpdateTable = () => {
   };
 
   const renderDocumentHistory = () => {
-    const details = viewedStepDetails; 
+    const details = viewedStepDetails;
     if (!details || typeof details !== "object" || Object.keys(details).length === 0) {
       return (<p className="text-muted mb-0">No previous documents for this step.</p>);
     }
@@ -389,129 +426,131 @@ const FireUpdateTable = () => {
 
     return (
       <div className="d-flex flex-column" style={{ height: "100%", maxHeight: "330px" }}>
-       <Card style={{ 
-            padding: "10px", 
-            flex: "1 1 auto", 
-            minHeight: "0",
-            display: "flex", 
-            flexDirection: "column",
-            overflow: "hidden", 
-            width: "300px"
+        <Card style={{
+          padding: "10px",
+          flex: "1 1 auto",
+          minHeight: "0",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          width: "300px"
+        }}>
+          <div style={{
+            flex: "1 1 auto",
+            overflowY: "auto",
+            paddingRight: "5px" // Space for scrollbar
           }}>
-             <div style={{ 
-        flex: "1 1 auto",
-        overflowY: "auto",
-        paddingRight: "5px" // Space for scrollbar
-      }}>
-        <h6 className="text-primary p-2">General Uploaded Documents</h6> 
+            <h6 className="text-primary p-2">General Uploaded Documents</h6>
 
 
-          {generalDocuments.length > 0 ? (
-              <div style={{ 
-              border: "1px solid #dee2e6",
-              borderRadius: "4px",
-              padding: "5px",
-              backgroundColor: "#f8f9fa"
-            }}>
-            <ul className="list-unstyled">
-              {generalDocuments.map((doc, idx) => (
-                 <li 
-                                 key={`gen-doc-${idx}`} 
-                                 className="d-flex justify-content-between align-items-center mb-1 p-1"
-                                 style={{ 
-                                   backgroundColor: "white",
-                                   borderRadius: "3px",
-                                   borderBottom: idx < generalDocuments.length - 1 ? "1px solid #e9ecef" : "none"
-                                 }}
-                               >
-                                 <div className="text-truncate" style={{ 
-                                   maxWidth: "calc(100% - 40px)",
-                                   flexShrink: 1
-                                 }}>
-                                   <a
-                                     href={doc.url}
-                                     target="_blank"
-                                     rel="noreferrer"
-                                     className="text-decoration-none text-dark"
-                                     style={{ fontSize: "13px" }}
-                                   >
-                                     <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
-                                     <span className="text-truncate" style={{ 
-                                       display: "inline-block",
-                                       maxWidth: "calc(100% - 30px)",
-                                       verticalAlign: "middle"
-                                     }}>
-                                       {doc.name}
-                                     </span>
-                                   </a>
-                                 </div>
-                              
-                               </li>
-              ))}
-            </ul>
-            </div>
-          ) : (
-            <p className="text-muted mb-0 p-2">No general documents were uploaded for this step.</p>
-          )}
+            {generalDocuments.length > 0 ? (
+              <div style={{
+                border: "1px solid #dee2e6",
+                borderRadius: "4px",
+                padding: "5px",
+                backgroundColor: "#f8f9fa"
+              }}>
+                <ul className="list-unstyled">
+                  {generalDocuments.map((doc, idx) => (
+                    <li
+                      key={`gen-doc-${idx}`}
+                      className="d-flex justify-content-between align-items-center mb-1 p-1"
+                      style={{
+                        backgroundColor: "white",
+                        borderRadius: "3px",
+                        borderBottom: idx < generalDocuments.length - 1 ? "1px solid #e9ecef" : "none"
+                      }}
+                    >
+                      <div className="text-truncate" style={{
+                        maxWidth: "calc(100% - 40px)",
+                        flexShrink: 1
+                      }}>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-decoration-none text-dark"
+                          style={{ fontSize: "13px" }}
+                        >
+                          <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                          <span className="text-truncate" style={{
+                            display: "inline-block",
+                            maxWidth: "calc(100% - 30px)",
+                            verticalAlign: "middle"
+                          }}>
+                            {doc.name}
+                          </span>
+                        </a>
+                      </div>
 
-          <h6 className="text-primary">Acknowledgement Receipts</h6>
-          {acknowledgementReceipts.length > 0 ? (
-                 <div style={{ 
-              border: "1px solid #dee2e6",
-              borderRadius: "4px",
-              padding: "5px",
-              backgroundColor: "#f8f9fa"
-            }}>
-            <ul className="list-unstyled">
-              {acknowledgementReceipts.map((doc, idx) => (
-              <li 
-                               key={`ack-doc-${idx}`} 
-                               className="d-flex justify-content-between align-items-center mb-1 p-1"
-                               style={{ 
-                                 backgroundColor: "white",
-                                 borderRadius: "3px",
-                                 borderBottom: idx < acknowledgementReceipts.length - 1 ? "1px solid #e9ecef" : "none"
-                               }}
-                             >
-                               <div className="text-truncate" style={{ 
-                                 maxWidth: "calc(100% - 40px)", // Leave space for button
-                                 flexShrink: 1
-                               }}>
-                                 <a
-                                   href={doc?.url}
-                                   target="_blank"
-                                   rel="noreferrer"
-                                   className="text-decoration-none text-dark"
-                                   style={{ fontSize: "13px" }}
-                                 >
-                                   <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
-                                   <span className="text-truncate" style={{ 
-                                     display: "inline-block",
-                                     maxWidth: "calc(100% - 20px)",
-                                     verticalAlign: "middle"
-                                   }}>
-                                     {doc?.name}
-                                   </span>
-                                 </a>
-                               </div>
-                              
-                             </li>
-              ))}
-            </ul>
-            </div>
-          ) : (
-            <p className="text-muted mb-0 p-1">No acknowledgement receipts available for this step.</p>
-          )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-muted mb-0 p-2">No general documents were uploaded for this step.</p>
+            )}
+
+            { immediateNextStepIndex === 0  &&  <h6 className="text-primary mb-2">Acknowledgement Receipts</h6>} 
+            {acknowledgementReceipts.length > 0 ? (
+              <div style={{
+                border: "1px solid #dee2e6",
+                borderRadius: "4px",
+                padding: "5px",
+                backgroundColor: "#f8f9fa"
+              }}>
+                <ul className="list-unstyled">
+                  {acknowledgementReceipts.map((doc, idx) => (
+                    <li
+                      key={`ack-doc-${idx}`}
+                      className="d-flex justify-content-between align-items-center mb-1 p-1"
+                      style={{
+                        backgroundColor: "white",
+                        borderRadius: "3px",
+                        borderBottom: idx < acknowledgementReceipts.length - 1 ? "1px solid #e9ecef" : "none"
+                      }}
+                    >
+                      <div className="text-truncate" style={{
+                        maxWidth: "calc(100% - 40px)", // Leave space for button
+                        flexShrink: 1
+                      }}>
+                        <a
+                          href={doc?.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-decoration-none text-dark"
+                          style={{ fontSize: "13px" }}
+                        >
+                          <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                          <span className="text-truncate" style={{
+                            display: "inline-block",
+                            maxWidth: "calc(100% - 30px)",
+                            verticalAlign: "middle"
+                          }}>
+                            {doc?.name}
+                          </span>
+                        </a>
+                      </div>
+
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-muted mb-0 p-1">
+                
+              </p>
+            )}
           </div>
         </Card>
-        
+
         {/* Comments Card with View Logs Button */}
         <Card className="m-2 p-2" style={{ height: '25%', overflow: 'hidden' }}>
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h6 className="mb-0">Comments</h6>
             {selectedLogs.length > 0 && (
-              <Button 
-                variant="outline-info" 
+              <Button
+                variant="outline-info"
                 size="sm"
                 onClick={() => setShowLogsModal(true)}
                 className="d-flex align-items-center gap-1"
@@ -521,18 +560,18 @@ const FireUpdateTable = () => {
               </Button>
             )}
           </div>
-          <div style={{ 
-            whiteSpace: 'nowrap', 
-            overflow: 'hidden', 
+          <div style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
             textOverflow: 'ellipsis',
             cursor: selectedLogs.length > 0 ? 'pointer' : 'default'
           }}
-          onClick={() => {
-            if (selectedLogs.length > 0) {
-              setShowLogsModal(true);
-            }
-          }}
-          title={selectedLogs.length > 0 ? "Click to view full logs" : ""}
+            onClick={() => {
+              if (selectedLogs.length > 0) {
+                setShowLogsModal(true);
+              }
+            }}
+            title={selectedLogs.length > 0 ? "Click to view full logs" : ""}
           >
           </div>
           {selectedLogs.length > 0 && (
@@ -606,6 +645,10 @@ const FireUpdateTable = () => {
     );
   };
 
+  const FeeAmount = storeData[0]?.FEE_AMOUNT;
+  const NumberOfTowers = storeData[0]?.NO_OF_TOWERS;
+
+
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -624,7 +667,19 @@ const FireUpdateTable = () => {
           <Form className="p-3 border rounded bg-light flex-fill">
             {viewedStepConceptualIndex !== -1 && steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length] ? (
               <h4 className="mb-3 text-primary fw-bold">
-                Viewing: {steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length].PROCESS} {viewedStepConceptualIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX ? "(OCPROCESS)" : "(ProvisionalNOC)"}
+                Viewing: {steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length].PROCESS}
+                {/* {viewedStepConceptualIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX ? "(OCPROCESS)" : "(ProvisionalNOC)"} */}
+                {immediateNextStep && (
+                  <h4 className="mb-3 text-primary fw-bold">
+
+                    {immediateNextStepIndex >= 1 && immediateNextStepIndex <= 4 && NumberOfTowers && (
+                      <> | Towers: <span className="text-dark">{NumberOfTowers}</span></>
+                    )}
+                    {immediateNextStepIndex >= 1 && immediateNextStepIndex <= 4 && FeeAmount && (
+                      <> | FeeAmount: <span className="text-dark">{FeeAmount}</span></>
+                    )}
+                  </h4>
+                )}
               </h4>
             ) : (
               <h4 className="mb-3 text-muted">Select a Plant to begin</h4>
@@ -669,6 +724,189 @@ const FireUpdateTable = () => {
               </Col>
             </Row>
 
+
+            <Row className="mb-3">
+
+
+              {immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission" && (
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Fee Paid?</Form.Label>
+                    <div className="d-flex gap-3 mt-2">
+                      <Form.Check
+                        type="radio"
+                        label="Yes"
+                        name="feepaidstatus"
+                        value="YES"
+                        checked={formData.feepaidstatus === "YES"}
+                        disabled
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="No"
+                        name="feepaidstatus"
+                        value="NO"
+                        checked={formData.feepaidstatus === "NO"}
+                        disabled
+                      />
+                    </div>
+                  </Form.Group>
+                </Col>
+              )}
+              {/* Column 1: Number of Towers */}
+              {immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission" && (
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Number Of Towers</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="noOfTowers"
+                      value={formData.noOfTowers || ""}
+                      disabled
+
+                    />
+                  </Form.Group>
+                </Col>
+              )}
+
+              {/* Column 2: Fee Paid Radio */}
+
+
+              {/* Column 3: Fee Amount - Only shown if feepaidstatus is YES */}
+              {immediateNextStepIndex === 0 &&
+                immediateNextStep?.PROCESS === "Application Submission" &&
+                formData.feepaidstatus === 'YES' ? (
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Fee Amount</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="feeAmount"
+                      value={formData.feeAmount || ""}
+                      disabled
+
+                    />
+                  </Form.Group>
+                </Col>
+              ) : immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission" ? (
+                // Empty column to maintain layout when Fee Amount is not shown
+                <Col md={4}></Col>
+              ) : null}
+            </Row>
+
+
+
+            {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
+              <Form.Group className="mb-3">
+                <Form.Label>
+                  {provisionalRadioLabels[immediateNextStepIndex] ||
+                    "Status for this step"}
+                </Form.Label>
+                <div>
+                  {/* Get the current step record for the VIEWED step */}
+                  {(() => {
+                    const viewedStep = steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length];
+                    if (!viewedStep) return null;
+
+                    const stepRecord = storeData.find(
+                      (item) =>
+                        item.PROCESS?.trim() === viewedStep.PROCESS?.trim() &&
+                        item.STEPTYPE === (viewedStepConceptualIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX ? "OCPROCESS" : "ProvisionalNOC")
+                    );
+
+                    const currentStatus = stepRecord?.LEVEL_STATUS || "";
+                    const isStepCompleted = stepRecord?.UPDATED === "YES" ||
+                      stepRecord?.OC_UPDATED === "YES";
+                    const isActiveStep = viewedStepConceptualIndex === immediateNextStepIndex;
+
+                    // If step is completed, show as disabled
+                    if (isStepCompleted) {
+                      return (
+                        <div className="d-flex align-items-center gap-2">
+                          <Form.Check
+                            type="radio"
+                            inline
+                            label="Yes"
+                            checked={currentStatus === "YES"}
+                            disabled
+                          />
+                          <Form.Check
+                            type="radio"
+                            inline
+                            label="No"
+                            checked={currentStatus === "NO"}
+                            disabled
+                          />
+                          <Badge bg="success" className="ms-2">
+                            Completed
+                          </Badge>
+                        </div>
+                      );
+                    }
+
+                    // If it's the active step, show as editable
+                    if (isActiveStep) {
+                      return (
+                        <div>
+                          <Form.Check
+                            type="radio"
+                            inline
+                            label="Yes"
+                            name={`stepStatus_${viewedStepConceptualIndex}`}
+                            id={`stepYes_${viewedStepConceptualIndex}`}
+                            value="YES"
+                            checked={currentStatus === "YES"}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                [`stepStatus_${viewedStepConceptualIndex}`]: e.target.value,
+                              }))
+                            }
+                          />
+                          <Form.Check
+                            type="radio"
+                            inline
+                            label="No"
+                            name={`stepStatus_${viewedStepConceptualIndex}`}
+                            id={`stepNo_${viewedStepConceptualIndex}`}
+                            value="NO"
+                            checked={currentStatus === "NO"}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                [`stepStatus_${viewedStepConceptualIndex}`]: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      );
+                    }
+
+                    // For other steps, show as disabled
+                    return (
+                      <div className="d-flex align-items-center gap-2">
+                        <Form.Check
+                          type="radio"
+                          inline
+                          label="Yes"
+                          checked={currentStatus === "YES"}
+                          disabled
+                        />
+                        <Form.Check
+                          type="radio"
+                          inline
+                          label="No"
+                          checked={currentStatus === "NO"}
+                          disabled
+                        />
+                        <span className="text-muted small">(View only)</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </Form.Group>
+            )}
+
             <Form.Group className="mb-3">
               <Form.Label>Comments</Form.Label>
               <Form.Control
@@ -688,21 +926,15 @@ const FireUpdateTable = () => {
                   <Tooltip id="update-tooltip">
                     {!selectedPlant ? "Please select a Plant." :
                       (!immediateNextStep ? "All steps are completed." :
-                      (viewedStepConceptualIndex !== immediateNextStepIndex ? "You can only update the active step." :
-                      "Click here to update the current active step."))
+                        (viewedStepConceptualIndex !== immediateNextStepIndex ? "You can only update the active step." :
+                          "Click here to update the current active step."))
                     }
                   </Tooltip>
                 }
               >
                 <span className="d-grid">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={handleEmailSubmit}
-                    disabled={!formData.loc || !immediateNextStep || (viewedStepConceptualIndex !== immediateNextStepIndex)}
-                    style={(!formData.loc || !immediateNextStep || (viewedStepConceptualIndex !== immediateNextStepIndex)) ? { pointerEvents: "none" } : {}}
-                  >
-                    Update
+                  <Button variant="primary" size="md" onClick={handleEmailSubmit} disabled={!formData.loc || isSubmitting}>
+                    Submit
                   </Button>
                 </span>
               </OverlayTrigger>
@@ -737,23 +969,23 @@ const FireUpdateTable = () => {
             </div>
           ) : (
             <div className="timeline">
-            {selectedLogs && selectedLogs.length > 0 ? (
-  selectedLogs.map((logItem, i) => {
-   
-return (
-  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-    <strong>{logItem.date}</strong>
-    <span>{logItem.comment}</span>
-  </div>
-);
+              {selectedLogs && selectedLogs.length > 0 ? (
+                selectedLogs.map((logItem, i) => {
+
+                  return (
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <strong>{logItem.date}</strong>
+                      <span>{logItem.comment}</span>
+                    </div>
+                  );
 
 
 
 
-  })
-) : (
-  <p>No logs available</p>
-)}
+                })
+              ) : (
+                <p>No logs available</p>
+              )}
             </div>
           )}
         </Modal.Body>

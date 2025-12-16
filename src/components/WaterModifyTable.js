@@ -221,7 +221,7 @@ const WaterModifyTable = () => {
         applyDate: details?.APPLY_DT,
         status: details?.STATUS || "YES",
         reason: details?.REASON || "",
-        comments: details?.COMMENTS || "",
+        comments:  "",
         noOfFlats: details?.NUMBER_OF_FLATS || "",
         KLD: details?.KLD || "",
         amountPaid: details?.AMOUNT_PAID || "",
@@ -592,7 +592,7 @@ const WaterModifyTable = () => {
                     onChange={handleChange}
                       max={new Date().toISOString().split("T")[0]}
                     isInvalid={!!errors.applyDate}
-                    disabled={!formData.loc}
+                    disabled={!formData.loc || (nextStepDetails && nextStepDetails.APPLY_DT)}
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.applyDate}

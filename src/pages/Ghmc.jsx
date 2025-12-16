@@ -46,7 +46,7 @@ const Ghmc = () => {
     const validateFileType = (file) => {
         const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
         const isValidType = fileExtension === '.pdf';
-        
+
         if (!isValidType) {
             toast.error(`${file.name} is not a PDF file. Only PDF files are allowed.`);
             return false;
@@ -83,25 +83,25 @@ const Ghmc = () => {
 
 
     const checkIfPlantExists = async (plant) => {
-    try {
-        const res = await axios.post(`${API_BASE_URL}/check-plant-exists-ghmc`, { loc: plant });
-        console.log("API Response:", res.data);
-        
-        // Check if the response has a specific property indicating existence
-        if (res.data && res.data.exists === true) {
-      
-            toast.error('This plant already has entries.');
-            setFormData((prev) => ({ ...prev, loc: '' }));
-            setHeaderData(null);
-            return true; // Plant exists
+        try {
+            const res = await axios.post(`${API_BASE_URL}/check-plant-exists-ghmc`, { loc: plant });
+            console.log("API Response:", res.data);
+
+            // Check if the response has a specific property indicating existence
+            if (res.data && res.data.exists === true) {
+
+                toast.error('This plant already has entries.');
+                setFormData((prev) => ({ ...prev, loc: '' }));
+                setHeaderData(null);
+                return true; // Plant exists
+            }
+            return false; // Plant doesn't exist
+        } catch (error) {
+            console.error('Failed to check plant:', error);
+            // Don't clear the selection on error
+            return false;
         }
-        return false; // Plant doesn't exist
-    } catch (error) {
-        console.error('Failed to check plant:', error);
-        // Don't clear the selection on error
-        return false;
-    }
-};
+    };
 
 
     const handleChange = async (e) => {
@@ -112,11 +112,11 @@ const Ghmc = () => {
 
             try {
 
-                            const plantExists = await checkIfPlantExists(value);
-      
-            if (plantExists) {
-                return; 
-            }
+                const plantExists = await checkIfPlantExists(value);
+
+                if (plantExists) {
+                    return;
+                }
                 const res = await getMasterByLoc(value);
                 if (res) {
                     setHeaderData(res);
@@ -192,14 +192,14 @@ const Ghmc = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const newErrors = {};
-        
+
         // Required field validations
         if (!formData.loc) newErrors.loc = "Plant Name is required.";
         if (!formData.process) newErrors.process = "Process Type is required.";
         if (!formData.applyDate) newErrors.applyDate = "Application date is required.";
         if (!formData.Organization) newErrors.Organization = "Organization is required.";
         if (!formData.noOfTowers) newErrors.noOfTowers = "Number Of Towers is required.";
-        if(!formData.Comments) newErrors.Comments = "Please enter comments.";
+        if (!formData.Comments) newErrors.Comments = "Please enter comments.";
 
         // ✅ Feasibility Docs validation (MANDATORY)
         if (feasibilityDocs.length === 0) {
@@ -242,7 +242,7 @@ const Ghmc = () => {
             toast.error("Please fix all validation errors before submitting");
             return;
         }
-        
+
         setErrors({});
         setConfirmOpen(true);
     };
@@ -255,107 +255,107 @@ const Ghmc = () => {
     };
 
     const handleConfirmSubmit = async () => {
-    const allInvalidFiles = [
-        ...feasibilityDocs.filter(file => !validateFileType(file)),
-        ...AmountPaidDocs.filter(file => !validateFileType(file)),
-        ...towerDocuments.flatMap(tower => 
-            tower.documents.filter(file => !validateFileType(file))
-        )
-    ];
+        const allInvalidFiles = [
+            ...feasibilityDocs.filter(file => !validateFileType(file)),
+            ...AmountPaidDocs.filter(file => !validateFileType(file)),
+            ...towerDocuments.flatMap(tower =>
+                tower.documents.filter(file => !validateFileType(file))
+            )
+        ];
 
-    if (allInvalidFiles.length > 0) {
-        toast.error('Please remove non-PDF files before submitting');
-        setIsSubmitting(false);
-        setConfirmOpen(false);
-        return;
-    }
-
-    setConfirmOpen(false);
-    setIsSubmitting(true);
-
-    const formPayload = new FormData();
-    formPayload.append('loc', formData.loc);
-    formPayload.append('process', formData.process);
-    formPayload.append('applyDate', formData.applyDate);
-    formPayload.append('Organization', formData.Organization);
-    formPayload.append('noOfTowers', formData.noOfTowers);
-    formPayload.append('Comments', formData.Comments || "");
-
-    // Append documents
-    feasibilityDocs.forEach(file => formPayload.append('feas_doc_name[]', file));
-    AmountPaidDocs.forEach(file => formPayload.append('amount_doc_name[]', file));
-
-    towerDocuments.forEach(tower => {
-        tower.documents.forEach(file => {
-            formPayload.append('tower_doc_name[]', file);
-        });
-    });
-
-    try {
-        const res = await axios.post(`${API_BASE_URL}/GHMC-submit`, formPayload, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
-        
-        if (res.data.message) {
-            Swal.fire({
-                icon: "success",
-                title: res.data.message,
-                showConfirmButton: false,
-                timer: 3000, // Changed to 3 seconds for better UX
-            }).then(() => {
-                // Reset form
-                setFormData({
-                    loc: "",
-                    process: "",
-                    Organization: "",
-                    applyDate: "",
-                    noOfTowers: "",
-                    Comments: "",
-                });
-                setFeasibilityDocs([]);
-                setAmountPaidDocs([]);
-                setTowerDocuments([]);
-                setErrors({});
-            
-                navigate('/create');
-            });
-        } else {
-            Swal.fire({
-                icon: "success",
-                title: "Application submitted successfully!",
-                showConfirmButton: false,
-                timer: 2000,
-            }).then(() => {
-                // Reset form
-                setFormData({
-                    loc: "",
-                    process: "",
-                    Organization: "",
-                    applyDate: "",
-                    noOfTowers: "",
-                    Comments: "",
-                });
-                setFeasibilityDocs([]);
-                setAmountPaidDocs([]);
-                setTowerDocuments([]);
-                setErrors({});
-                
-                // Navigate after the alert is closed
-                navigate('/create');
-            });
+        if (allInvalidFiles.length > 0) {
+            toast.error('Please remove non-PDF files before submitting');
+            setIsSubmitting(false);
+            setConfirmOpen(false);
+            return;
         }
-    } catch (err) {
-        // Show error alert instead of toast for consistency
-        Swal.fire({
-            icon: "error",
-            title: "Submission Failed",
-            text: err.response?.data?.message || "Something went wrong. Please try again.",
-            confirmButtonText: "OK"
+
+        setConfirmOpen(false);
+        setIsSubmitting(true);
+
+        const formPayload = new FormData();
+        formPayload.append('loc', formData.loc);
+        formPayload.append('process', formData.process);
+        formPayload.append('applyDate', formData.applyDate);
+        formPayload.append('Organization', formData.Organization);
+        formPayload.append('noOfTowers', formData.noOfTowers);
+        formPayload.append('Comments', formData.Comments || "");
+
+        // Append documents
+        feasibilityDocs.forEach(file => formPayload.append('feas_doc_name[]', file));
+        AmountPaidDocs.forEach(file => formPayload.append('amount_doc_name[]', file));
+
+        towerDocuments.forEach(tower => {
+            tower.documents.forEach(file => {
+                formPayload.append('tower_doc_name[]', file);
+            });
         });
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+
+        try {
+            const res = await axios.post(`${API_BASE_URL}/GHMC-submit`, formPayload, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            if (res.data.message) {
+                Swal.fire({
+                    icon: "success",
+                    title: res.data.message,
+                    showConfirmButton: false,
+                    timer: 3000, // Changed to 3 seconds for better UX
+                }).then(() => {
+                    // Reset form
+                    setFormData({
+                        loc: "",
+                        process: "",
+                        Organization: "",
+                        applyDate: "",
+                        noOfTowers: "",
+                        Comments: "",
+                    });
+                    setFeasibilityDocs([]);
+                    setAmountPaidDocs([]);
+                    setTowerDocuments([]);
+                    setErrors({});
+
+                    navigate('/create');
+                });
+            } else {
+                Swal.fire({
+                    icon: "success",
+                    title: "Application submitted successfully!",
+                    showConfirmButton: false,
+                    timer: 2000,
+                }).then(() => {
+                    // Reset form
+                    setFormData({
+                        loc: "",
+                        process: "",
+                        Organization: "",
+                        applyDate: "",
+                        noOfTowers: "",
+                        Comments: "",
+                    });
+                    setFeasibilityDocs([]);
+                    setAmountPaidDocs([]);
+                    setTowerDocuments([]);
+                    setErrors({});
+
+                    // Navigate after the alert is closed
+                    navigate('/create');
+                });
+            }
+        } catch (err) {
+            // Show error alert instead of toast for consistency
+            Swal.fire({
+                icon: "error",
+                title: "Submission Failed",
+                text: err.response?.data?.message || "Something went wrong. Please try again.",
+                confirmButtonText: "OK"
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     // ✅ Final validation before submit
     // const handleConfirmSubmit = async () => {
@@ -399,7 +399,7 @@ const Ghmc = () => {
     //         const res = await axios.post(`${API_BASE_URL}/GHMC-submit`, formPayload, {
     //             headers: { "Content-Type": "multipart/form-data" },
     //         });
-            
+
     //              if (res.data.message) {
     //           Swal.fire({
     //             icon: "success",
@@ -441,7 +441,7 @@ const Ghmc = () => {
     const updateTowerDocs = (towerId, newDocs) => {
         // Validate all new files are PDFs
         const invalidFiles = newDocs.filter(file => !validateFileType(file));
-        
+
         if (invalidFiles.length > 0) {
             toast.error(`Only PDF files are allowed for Tower ${towerId}`);
             return; // Don't update if any invalid files
@@ -462,20 +462,20 @@ const Ghmc = () => {
         input.type = 'file';
         input.multiple = true;
         input.accept = '.pdf,application/pdf'; // ✅ Only show PDFs in file picker
-        
+
         input.onchange = (e) => {
             const files = Array.from(e.target.files);
-            
+
             // Validate all files are PDFs
             const allValid = files.every(file => validateFileType(file));
-            
+
             if (allValid) {
                 updateTowerDocs(towerId, [...currentDocs, ...files]);
             } else {
                 toast.error('Some files were not added because they are not PDFs');
             }
         };
-        
+
         input.click();
     };
 
@@ -732,9 +732,9 @@ const Ghmc = () => {
                                         rows="2"
                                     />
                                 </div>
-                                   <div className="error-container">
-                                        {errors.Comments && <p className="error-text">{errors.Comments}</p>}
-                                    </div>
+                                <div className="error-container">
+                                    {errors.Comments && <p className="error-text">{errors.Comments}</p>}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -764,7 +764,7 @@ const Ghmc = () => {
             {/* Tower Documents Modal */}
             {towerDocModal && (
                 <div className="modal-overlay" onClick={() => setTowerDocModal(false)}>
-                    <div style={{backgroundColor:'white'}} className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div style={{ backgroundColor: 'white' }} className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Upload Tower Documents ({formData.noOfTowers} Towers) - PDF Only</h3>
                             <button onClick={() => setTowerDocModal(false)} className="close-btn">×</button>
@@ -788,7 +788,7 @@ const Ghmc = () => {
                                         </button>
                                     </div>
                                     {errors[`tower_${tower.towerId}`] && (
-                                        <p className="error-text" style={{color: 'red', fontSize: '12px', marginTop: '4px'}}>
+                                        <p className="error-text" style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
                                             {errors[`tower_${tower.towerId}`]}
                                         </p>
                                     )}

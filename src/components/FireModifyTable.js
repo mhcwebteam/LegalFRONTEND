@@ -1,6 +1,3 @@
-
-
-
 import React, { useEffect, useState, useMemo, useContext } from "react";
 import {
   Nav,
@@ -36,10 +33,10 @@ const FireModifyTable = () => {
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
-  // const [storeData, setStoreData] = useState([]);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
@@ -50,39 +47,28 @@ const FireModifyTable = () => {
     feePaid: "",
     feeAmount: "",
     acknowledgeName: "",
-  noOfTowers: "",
-  feeAmount: "",
- 
+    noOfTowers: "",
+    feepaidstatus: "", // Fixed field name
   });
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
-  
- 
-
-
+ const [stepdata, setSetData] = useState([]);
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
   const [nextStepDetails, setNextStepDetails] = useState(null);
 
   const [projectInfo, setProjectInfo] = useState({ prjName: "", address: "" });
-
   const [newDocs, setNewDocs] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
-
-  const [showAcknowledgeModal, setShowAcknowledgeModal] = useState(false);
   const [acknowledgeDocs, setAcknowledgeDocs] = useState([]);
-  // State to hold validation errors for display
-  const [errors, setErrors] = useState({}); // Added for displaying validation errors
+  const [errors, setErrors] = useState({});
   const [provisionalNOCCompleted, setProvisionalNOCCompleted] = useState(false);
-
   const [currentProcess, setCurrentProcess] = useState("");
   const [latestLogs, setLatestLogs] = useState([]);
-  // You MUST adjust these indices based on the actual number of "Provisional NOC" steps
-  const PROVISIONAL_NOC_STEP_INDICES = useMemo(() => [0, 1, 2, 3, 4], []);
 
+  const PROVISIONAL_NOC_STEP_INDICES = useMemo(() => [0, 1, 2, 3, 4], []);
   const OC_PROCESS_STEP_RANGE = useMemo(() => [5, 6, 7, 8, 9, 10], []);
 
-  // For Provisional NOC steps (1–4)
   const provisionalRadioLabels = {
     1: "Site Inspection Status",
     2: "Queries Received?",
@@ -95,7 +81,6 @@ const FireModifyTable = () => {
     7: "Queries Received?",
     8: "Committee Approved?",
     9: "OC Status?",
-    //   10: "OC Completion Confirmed?",
   };
 
   useEffect(() => {
@@ -112,10 +97,6 @@ const FireModifyTable = () => {
       .catch((err) => console.error("Error fetching FIRE plants:", err));
   }, []);
 
-
-
-
-
   useEffect(() => {
     setStoreData([]);
     setImmediateNextStep(null);
@@ -131,15 +112,13 @@ const FireModifyTable = () => {
       feePaid: "",
       feeAmount: "",
       acknowledgeName: "",
+      noOfTowers: "",
+      feepaidstatus: ""
     });
     setNewDocs([]);
     setAcknowledgeDocs([]);
     setErrors({});
     setProvisionalNOCCompleted(false);
-
-    console.log("PROVISIONAL_NOC_STEP_INDICES:", PROVISIONAL_NOC_STEP_INDICES);
-    console.log("OC_PROCESS_STEP_RANGE:", OC_PROCESS_STEP_RANGE); // Keep this for clarity in renderProcessColumn
-    console.log("Steps array:", steps);
 
     if (selectedPlant && steps.length > 0) {
       axios
@@ -147,7 +126,6 @@ const FireModifyTable = () => {
         .then((res) => {
           const fetchedData = res.data;
           setStoreData(fetchedData);
-          console.log("Fetched Data (full):", fetchedData);
 
           if (fetchedData && fetchedData.length > 0) {
             const firstRecord = fetchedData[0];
@@ -156,8 +134,6 @@ const FireModifyTable = () => {
               address: firstRecord.ADDRESS || "",
             };
             setProjectInfo(info);
-            // Only set form data for project name and address if it's the very first step
-            // Otherwise, keep the projectInfo as read-only based on the first record
             if (
               PROVISIONAL_NOC_STEP_INDICES[0] === 0 &&
               !fetchedData.some(
@@ -175,87 +151,67 @@ const FireModifyTable = () => {
             }
           }
 
-          // --- Determine Provisional NOC Completion ---
-          const provisionalNOCStepsCompleted =
-            PROVISIONAL_NOC_STEP_INDICES.every(
-              (index) =>
-                steps[index] && // Ensure step exists
-                fetchedData.some(
-                  (item) =>
-                    item.PROCESS === steps[index].PROCESS &&
-                    item.UPDATED === "YES"
-                )
-            );
-          setProvisionalNOCCompleted(provisionalNOCStepsCompleted);
-          console.log(
-            "provisionalNOCStepsCompleted:",
-            provisionalNOCStepsCompleted
+          const provisionalNOCStepsCompleted = PROVISIONAL_NOC_STEP_INDICES.every(
+            (index) =>
+              steps[index] &&
+              fetchedData.some(
+                (item) =>
+                  item.PROCESS === steps[index].PROCESS &&
+                  item.UPDATED === "YES"
+              )
           );
+          setProvisionalNOCCompleted(provisionalNOCStepsCompleted);
 
           let nextStepFound = null;
-          let nextStepIdx = -1; // This will be the 0-based index for the *conceptual* combined steps (0-9 if 5+5)
-          let currentStepType = null; // NEW: To store the step type
+          let nextStepIdx = -1;
+          let currentStepType = null;
 
-          // --- MODIFIED LOGIC FOR FINDING IMMEDIATE NEXT STEP ---
           if (!provisionalNOCStepsCompleted) {
-            // PHASE 1: Provisional NOC is NOT complete. Find the next incomplete Provisional NOC step.
             for (const idx of PROVISIONAL_NOC_STEP_INDICES) {
-              // Loops 0,1,2,3,4
               if (
-                steps[idx] && // Ensure step exists (it will, as steps has 5 items)
+                steps[idx] &&
                 !fetchedData.some(
                   (item) =>
                     item.PROCESS === steps[idx].PROCESS &&
-                    item.UPDATED === "YES" // Check for Provisional completion
+                    item.UPDATED === "YES"
                 )
               ) {
                 nextStepFound = steps[idx];
-                nextStepIdx = idx; // The index directly corresponds to the steps array for PNOC
-                currentStepType = "ProvisionalNOC"; // NEW: Set step type
-                break; // Found the first incomplete Provisional NOC step
+                nextStepIdx = idx;
+                currentStepType = "ProvisionalNOC";
+                break;
               }
             }
           } else {
-            // PHASE 2: Provisional NOC IS complete. Now, find the next incomplete OC step.
-            // Loop through the SAME steps array indices, but check the OC_UPDATED flag.
             for (const idx of PROVISIONAL_NOC_STEP_INDICES) {
-              // Loops 0,1,2,3,4 again
               if (
-                steps[idx] && // Ensure step exists
+                steps[idx] &&
                 !fetchedData.some(
                   (item) =>
                     item.PROCESS === steps[idx].PROCESS &&
-                    item.OC_UPDATED === "YES" // Check for OC completion
+                    item.OC_UPDATED === "YES"
                 )
               ) {
                 nextStepFound = steps[idx];
-                // IMPORTANT: Adjust nextStepIdx to be a conceptual index for OC process.
-                // This makes OC's step 0 (actual steps[0]) appear as combined step 5 in UI.
                 nextStepIdx = idx + PROVISIONAL_NOC_STEP_INDICES.length;
-                currentStepType = "OCPROCESS"; // NEW: Set step type
-                break; // Found the first incomplete OC step
+                currentStepType = "OCPROCESS";
+                break;
               }
             }
           }
 
           setImmediateNextStep(nextStepFound);
           setImmediateNextStepIndex(nextStepIdx);
-
-
-
           setCurrentProcess(currentStepType);
 
           if (nextStepFound) {
-            // Use the correct PROCESS name for the API call, which is from nextStepFound.PROCESS
             const apiUrl = `${API_BASE_URL}/fire-step-details/${encodeURIComponent(
               selectedPlant
             )}/${encodeURIComponent(
               nextStepFound.PROCESS
-            )}/${encodeURIComponent(currentStepType)}`; // NEW: Add stepType query parameter
+            )}/${encodeURIComponent(currentStepType)}`;
             return axios.get(apiUrl);
           } else {
-            // All steps (both Provisional and OC) completed
-            // Check if ALL OC steps are also marked as complete
             const allOCStepsCompleted = PROVISIONAL_NOC_STEP_INDICES.every(
               (index) =>
                 steps[index] &&
@@ -267,13 +223,7 @@ const FireModifyTable = () => {
             );
 
             if (provisionalNOCStepsCompleted && allOCStepsCompleted) {
-              setImmediateNextStepIndex(
-                PROVISIONAL_NOC_STEP_INDICES.length * 2
-              ); // Represents all 10 conceptual steps are done
-            } else {
-              // Fallback for an unexpected state, e.g., if provisional complete but OC not started/found.
-              // This branch should ideally be unreachable if the logic is perfect and data is consistent.
-              setImmediateNextStepIndex(-1); // Or some other indicator for "no active step"
+              setImmediateNextStepIndex(PROVISIONAL_NOC_STEP_INDICES.length * 2);
             }
             return Promise.resolve(null);
           }
@@ -282,33 +232,29 @@ const FireModifyTable = () => {
           if (detailsRes && detailsRes.data) {
             const details = detailsRes.data;
             setNextStepDetails(details);
-            console.log("NExtstep Detials:", details);
             setLatestLogs(details);
-          
-            // Load form data from fetched details for the current step
+setSetData(details)
+
+    const currentStepRecord = storeData.find(
+            (item) =>
+              item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
+              item.STEPTYPE === currentProcess
+          );
+
             setFormData((prev) => ({
               ...prev,
               applyDate: details.APPLY_DT || "",
               comments: details.COMMENTS || "",
               logs: details.LOG || "",
-              feePaid: details.FEE_PAID || "", // Load existing fee data
+              feePaid: details.FEE_PAID || "",
               feeAmount: details.FEE_AMOUNT || "",
               acknowledgeName: details.ACKNOWLEDGE_NAME || "",
               noOfTowers: details.NO_OF_TOWERS || "",
+              feepaidstatus: details.FEE_PAID_STATUS || "" ,
+                 [`stepStatus_${immediateNextStepIndex}`]: 
+              currentStepRecord?.LEVEL_STATUS || ""// Load feepaidstatus from backend
             }));
-            // Parse existing acknowledge docs if any (for display, not re-upload)
-            if (details.ACK_DOC) {
-              try {
-                // This part remains the same for parsing existing docs
-              } catch (e) {
-                console.error(
-                  "Failed to parse existing acknowledge docs for details:",
-                  e
-                );
-              }
-            }
           } else {
-            // Clear form fields if no details for the next step or all steps are complete
             setNextStepDetails(null);
             setFormData((prev) => ({
               ...prev,
@@ -318,7 +264,8 @@ const FireModifyTable = () => {
               feePaid: "",
               feeAmount: "",
               acknowledgeName: "",
-              noOfTowers: ""
+              noOfTowers: "",
+              feepaidstatus: ""
             }));
           }
         })
@@ -326,7 +273,7 @@ const FireModifyTable = () => {
           console.error("Error during data fetching process:", err)
         );
     }
-  }, [selectedPlant, steps, PROVISIONAL_NOC_STEP_INDICES]); // Remove OC_PROCESS_STEP_RANGE from dependencies as it's not used here for step finding
+  }, [selectedPlant, steps, PROVISIONAL_NOC_STEP_INDICES]);
 
   useEffect(() => {
     if (
@@ -338,31 +285,25 @@ const FireModifyTable = () => {
       setFormData((prev) => ({
         ...prev,
         applyDate: details.APPLY_DT,
-        comments: details.COMMENTS || "",
+        comments: "",
       }));
     } else {
       setFormData((prev) => ({ ...prev, applyDate: "", comments: "" }));
     }
   }, [nextStepDetails]);
 
+  const getCurrentStepLogs = () => {
+    const currentStepRecord = storeData.find(
+      (item) =>
+        item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
+        item.STEPTYPE === currentProcess
+    );
 
-
-    const getCurrentStepLogs = () => {
-
-  
-  const currentStepRecord = storeData.find(
-    (item) => 
-      item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() &&
-      item.STEPTYPE === currentProcess
-  );
-  
-    
     if (!currentStepRecord?.LOG) {
       return [];
     }
-    
-    try {
 
+    try {
       return JSON.parse(currentStepRecord.LOG);
     } catch (error) {
       console.error("Failed to parse logs:", error);
@@ -370,12 +311,8 @@ const FireModifyTable = () => {
     }
   };
 
-
   const handleChange = async (e) => {
     const { name, value } = e.target;
-
-    console.log(name, value, "Field changed");
-
 
     if (name === "loc") {
       setSelectedPlant(value);
@@ -384,7 +321,6 @@ const FireModifyTable = () => {
         loc: value,
       }));
 
-      // 🧹 If location is empty, clear dependent fields
       if (!value || value.trim() === "") {
         setHeaderData({});
         setFormData((prev) => ({
@@ -397,24 +333,11 @@ const FireModifyTable = () => {
       }
 
       try {
-        // 🌐 Fetch master data for selected location
         const res = await getMasterByLoc(value);
 
         if (res && Object.keys(res).length > 0) {
-          console.log("✅ Master data fetched:", res);
-
-          // 🧩 Update header data (used by ProjectInfoHeader)
           setHeaderData(res);
-
-          // (Optional) update form fields based on res if needed
-          setFormData((prev) => ({
-            ...prev,
-            // Example if you want to fill auto fields:
-            // totalPrjArea: res.totalArea || "",
-            // noOfNocs: res.nocCount || "",
-          }));
         } else {
-          console.warn("⚠️ No master data found for location:", value);
           setHeaderData({});
           setFormData((prev) => ({
             ...prev,
@@ -433,45 +356,41 @@ const FireModifyTable = () => {
           noOfNocs: "",
         }));
       }
-
       return;
     }
 
-    // 🧾 Handle other input fields normally
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
+  const handleEmailSubmit = () => {
+    const newErrors = {};
 
-const handleEmailSubmit = () => {
-  const newErrors = {};
-  
-  if (!formData.loc) newErrors.loc = "Plant selection is required";
-  if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
-  if (!formData.comments) newErrors.comments = "Please enter comments";
+    if (!formData.loc) newErrors.loc = "Plant selection is required";
+    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+    if (!formData.comments) newErrors.comments = "Please enter comments";
 
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    
-    // Just set errors without scrolling
-    return;
-  }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-  setErrors({});
-  setShowEmailModal(true);
-};
+    setErrors({});
+    setShowEmailModal(true);
+  };
+
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
-
-    // Proceed with form submission
     await handleConfirmSubmit(emails);
   };
+
   const handleConfirmSubmit = async (emails) => {
+    setIsSubmitting(true);
     const newErrors = {};
-    setErrors({}); // Clear previous errors
+    setErrors({});
 
     if (!formData.loc || !immediateNextStep) {
       Swal.fire(
@@ -479,41 +398,15 @@ const handleEmailSubmit = () => {
         "Please select a Plant and ensure a process step is active.",
         "error"
       );
+      setIsSubmitting(false);
       return;
     }
-
-    // --- Validation based on current step type ---
-    const isProvisionalNOCStep = PROVISIONAL_NOC_STEP_INDICES.includes(
-      immediateNextStepIndex
-    );
-    const isOCProcessStep = OC_PROCESS_STEP_RANGE.includes(
-      immediateNextStepIndex
-    );
-
-    // if (isProvisionalNOCStep) {
-    //   if (!formData.applyDate) {
-    //     newErrors.applyDate =
-    //       "Please provide an Apply/Inspection Date for this step.";
-    //   }
-    // }
-
-    // if (isOCProcessStep) {
-    //   if (!formData.feePaid)
-    //     newErrors.feePaid = "Please specify if fee is paid.";
-    //   if (formData.feePaid === "YES" && !formData.feeAmount)
-    //     newErrors.feeAmount = "Fee amount is required when fee is paid.";
-    //   if (!formData.acknowledgeName)
-    //     newErrors.acknowledgeName = "Acknowledge name is required.";
-    //   if (acknowledgeDocs.length === 0) {
-    //     newErrors.acknowledgeDocs =
-    //       "Please upload at least one acknowledgement receipt.";
-    //   }
-    // }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       const errorMessages = Object.values(newErrors).join("<br>");
       Swal.fire("Validation Error", errorMessages, "error");
+      setIsSubmitting(false);
       return;
     }
 
@@ -521,23 +414,23 @@ const handleEmailSubmit = () => {
     payload.append("loc", formData.loc);
     payload.append("process", immediateNextStep.PROCESS);
     payload.append("comments", formData.comments || "");
-    payload.append("applyDate", formData.applyDate || ""); // Always append if present
+    payload.append("applyDate", formData.applyDate || "");
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
-      payload.append("steptype", currentProcess);
+    payload.append("steptype", currentProcess);
 
-    // Project Name and Address fields are only editable for the very first step (index PROVISIONAL_NOC_STEP_INDICES[0])
-    // if (immediateNextStepIndex === PROVISIONAL_NOC_STEP_INDICES[0]) {
-    //   payload.append("prjName", formData.prjName || "");
-    //   payload.append("address", formData.address || "");
-    // } else {
-    //   // For subsequent steps, send the projectInfo from state as it's read-only in UI
-    //   payload.append("prjName", projectInfo.prjName || "");
-    //   payload.append("address", projectInfo.address || "");
-    // }
 
-    if (immediateNextStepIndex >= 1) {
+    // Add Number of Towers, Fee Amount, and Fee Paid Status only for Application Submission
+    if (immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission") {
+      payload.append("noOfTowers", formData.noOfTowers || "");
+      payload.append("feeAmount", formData.feeAmount || "");
+      // payload.append("feepaidstatus", formData.feepaidstatus || "");
+ payload.append("feePaid", formData.feepaidstatus || "");
+
+    }
+
+      if (immediateNextStepIndex >= 1) {
 
     
 
@@ -547,74 +440,47 @@ const handleEmailSubmit = () => {
       );
     }
 
-    // General application documents
     newDocs.forEach((file) => payload.append("New_Doc[]", file));
 
-    // Acknowledge documents and fee details (only for OC Process steps)
-    // if (isOCProcessStep) {
-      payload.append("feePaid", formData.feePaid || "");
-      payload.append("feeAmount", formData.feeAmount || "");
-      payload.append("acknowledgeName", formData.acknowledgeName || "");
+   
+    payload.append("acknowledgeName", formData.acknowledgeName || "");
 
+    acknowledgeDocs.forEach((file) =>
+      payload.append("Acknowledge_Doc[]", file)
+    );
 
-      acknowledgeDocs.forEach((file) =>
-        payload.append("Acknowledge_Doc[]", file)
-      );
-    // }
-
-
-    for (const [key, value] of payload.entries()) {
-      console.log(`${key}:`, value);
-    }
-  
-    let existingRecordStatusField = null;
-
-  
     const currentStepRecord = storeData.find(
       (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() && item.STEPTYPE === currentProcess
     );
 
-
-    if (isProvisionalNOCStep) {
-      existingRecordStatusField = currentStepRecord?.UPDATED;
-    } else if (isOCProcessStep) {
-      existingRecordStatusField = currentStepRecord?.OC_UPDATED;
-    }
-
-    console.log("➡️ ExistingRecord :", existingRecordStatusField);
-    // const apiUrl =
-    //   existingRecordStatusField === "YES"
-    //   //  ? `${API_BASE_URL}/fire-modify`
-    //     : `${API_BASE_URL}/fire-submit`;
-   
     const apiUrl = currentStepRecord
-  ? `${API_BASE_URL}/fire-modify`
-  : `${API_BASE_URL}/fire-submit`;
+      ? `${API_BASE_URL}/fire-modify`
+      : `${API_BASE_URL}/fire-submit`;
 
-        // console.log("➡️ Triggering API:", apiUrl);
     try {
-       await axios.post(apiUrl, payload);
+      await axios.post(apiUrl, payload);
       await Swal.fire({
         icon: "success",
-        title: existingRecordStatusField === "YES" ? "Updated!" : "Submitted!",
+        title: currentStepRecord ? "Updated!" : "Submitted!",
         text: "Your data has been saved successfully.",
         timer: 1500,
         showConfirmButton: false,
       });
 
-      // After successful submission, re-fetch data for the current plant to update the UI
-      setSelectedPlant(formData.loc); // Trigger useEffect to re-fetch data
+   
       setFormData((prev) => ({
         ...prev,
-        applyDate: "", // Clear fields that change per step
+        applyDate: "",
         comments: "",
         feePaid: "",
         feeAmount: "",
         acknowledgeName: "",
+        noOfTowers: "",
+        feepaidstatus: ""
       }));
-      setNewDocs([]); // Clear uploaded general docs
-      setAcknowledgeDocs([]); // Clear uploaded acknowledge docs
-      setErrors({}); // Clear errors
+      setNewDocs([]);
+      setAcknowledgeDocs([]);
+      setErrors({});
     } catch (error) {
       console.error("Submission failed:", error);
       Swal.fire(
@@ -622,6 +488,96 @@ const handleEmailSubmit = () => {
         "Please check the console for details.",
         "error"
       );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docType, fileName, index) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Delete Document?',
+        text: `Are you sure you want to delete ${fileName}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+      });
+
+      if (!result.isConfirmed) return;
+
+      const response = await axios.delete(`${API_BASE_URL}/docmt-fire-dlt`, {
+        data: {
+          loc: formData.loc,
+          process: immediateNextStep?.PROCESS || "",
+          steptype: currentProcess,
+          doc_type: docType,
+          file_name: fileName,
+        },
+      });
+
+      if (response.status === 200) {
+        if (nextStepDetails) {
+          const updatedDetails = { ...nextStepDetails };
+
+          if (docType === "UPLOAD_DOC" && updatedDetails.UPLOAD_DOC) {
+            try {
+              const parsedDocs = JSON.parse(updatedDetails.UPLOAD_DOC);
+              const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+              updatedDetails.UPLOAD_DOC = JSON.stringify(filteredDocs);
+            } catch (error) {
+              console.error("Error updating UPLOAD_DOC:", error);
+            }
+          } else if (docType === "ACK_DOC" && updatedDetails.ACK_DOC) {
+            try {
+              const parsedDocs = JSON.parse(updatedDetails.ACK_DOC);
+              const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+              updatedDetails.ACK_DOC = JSON.stringify(filteredDocs);
+            } catch (error) {
+              console.error("Error updating ACK_DOC:", error);
+            }
+          }
+
+          setNextStepDetails(updatedDetails);
+        }
+
+        if (storeData && storeData.length > 0) {
+          const updatedStoreData = storeData.map(item => {
+            if (item.PROCESS === immediateNextStep.PROCESS && item.STEPTYPE === currentProcess) {
+              const updatedItem = { ...item };
+
+              if (docType === "UPLOAD_DOC" && updatedItem.UPLOAD_DOC) {
+                try {
+                  const parsedDocs = JSON.parse(updatedItem.UPLOAD_DOC);
+                  const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+                  updatedItem.UPLOAD_DOC = JSON.stringify(filteredDocs);
+                } catch (error) {
+                  console.error("Error updating storeData UPLOAD_DOC:", error);
+                }
+              } else if (docType === "ACK_DOC" && updatedItem.ACK_DOC) {
+                try {
+                  const parsedDocs = JSON.parse(updatedItem.ACK_DOC);
+                  const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
+                  updatedItem.ACK_DOC = JSON.stringify(filteredDocs);
+                } catch (error) {
+                  console.error("Error updating storeData ACK_DOC:", error);
+                }
+              }
+
+              return updatedItem;
+            }
+            return item;
+          });
+
+          setStoreData(updatedStoreData);
+        }
+
+        Swal.fire('Deleted!', 'Document has been deleted.', 'success');
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      Swal.fire('Error!', 'Failed to delete document.', 'error');
     }
   };
 
@@ -639,7 +595,6 @@ const handleEmailSubmit = () => {
     let generalDocuments = [];
     let acknowledgementReceipts = [];
 
-
     if (nextStepDetails.UPLOAD_DOC) {
       try {
         const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
@@ -652,359 +607,198 @@ const handleEmailSubmit = () => {
       }
     }
 
-    // Parse acknowledgement receipts (from ACK_DOC)
     if (nextStepDetails.ACK_DOC) {
       try {
         const parsedAcknowledgeDocs = JSON.parse(nextStepDetails.ACK_DOC);
-   
         acknowledgementReceipts = parsedAcknowledgeDocs.map((doc) => ({
           name: doc.file_name,
           url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-        })
-  
-
-      );
-
- 
+        }));
       } catch (error) {
         console.error("Failed to parse ACK_DOC JSON:", error);
       }
     }
 
-    const isOCProcessStep = OC_PROCESS_STEP_RANGE.includes(
-      immediateNextStepIndex
-    );
+    const currentStepLogs = getCurrentStepLogs();
 
 
-//     const handleDeleteDocument = async (docType, fileName, index) => {
 
-//   try {
-//     // Show confirmation dialog
-//     const result = await Swal.fire({
-//       title: 'Delete Document?',
-//       text: `Are you sure you want to delete ${fileName}?`,
-//       icon: 'warning',
-//       showCancelButton: true,
-//       confirmButtonColor: '#d33',
-//       cancelButtonColor: '#3085d6',
-//       confirmButtonText: 'Yes, delete it!'
-//     });
-
-//     if (!result.isConfirmed) return;
-
-//     // Make API call to delete from server
-//     const response = await axios.delete(`${API_BASE_URL}/docmt-fire-dlt`, {
-//       data: {
-//         loc: formData.loc,
-//         process: immediateNextStep?.PROCESS || "",
-//         steptype: currentProcess,
-//         doc_type: docType, // "New_Doc" or "Acknowledge_Doc"
-//         file_name: fileName,
-//       },
-//     });
-
-//     if (response.status === 200) {
-//       // Remove from local state
-//       if (docType === "UPLOAD_DOC") {
-//         const updatedDocs = newDocs.filter((_, i) => i !== index);
-//         setNewDocs(updatedDocs);
-//       } else if (docType === "ACK_DOC") {
-//         const updatedDocs = acknowledgeDocs.filter((_, i) => i !== index);
-//         setAcknowledgeDocs(updatedDocs);
-//       }
-
-//       // Show success message
-//       Swal.fire('Deleted!', 'Document has been deleted.', 'success');
-      
-//       // Optionally: Refresh document history
- 
-//     }
-//   } catch (error) {
-//     console.error('Error deleting document:', error);
-//     Swal.fire('Error!', 'Failed to delete document.', 'error');
-//   }
-// };
-
-
-const handleDeleteDocument = async (docType, fileName, index) => {
-  try {
-    // Show confirmation dialog
-    const result = await Swal.fire({
-      title: 'Delete Document?',
-      text: `Are you sure you want to delete ${fileName}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!'
-    });
-
-    if (!result.isConfirmed) return;
-
-    // Make API call to delete from server
-    const response = await axios.delete(`${API_BASE_URL}/docmt-fire-dlt`, {
-      data: {
-        loc: formData.loc,
-        process: immediateNextStep?.PROCESS || "",
-        steptype: currentProcess,
-        doc_type: docType, // "UPLOAD_DOC" or "ACK_DOC"
-        file_name: fileName,
-      },
-    });
-
-    if (response.status === 200) {
-      // ✅ IMMEDIATELY UPDATE LOCAL STATE
-      if (nextStepDetails) {
-        const updatedDetails = { ...nextStepDetails };
-        
-        if (docType === "UPLOAD_DOC" && updatedDetails.UPLOAD_DOC) {
-          try {
-            const parsedDocs = JSON.parse(updatedDetails.UPLOAD_DOC);
-            const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
-            updatedDetails.UPLOAD_DOC = JSON.stringify(filteredDocs);
-          } catch (error) {
-            console.error("Error updating UPLOAD_DOC:", error);
-          }
-        } else if (docType === "ACK_DOC" && updatedDetails.ACK_DOC) {
-          try {
-            const parsedDocs = JSON.parse(updatedDetails.ACK_DOC);
-            const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
-            updatedDetails.ACK_DOC = JSON.stringify(filteredDocs);
-          } catch (error) {
-            console.error("Error updating ACK_DOC:", error);
-          }
-        }
-        
-        // Update state immediately
-        setNextStepDetails(updatedDetails);
-      }
-      
-      // Also update storeData
-      if (storeData && storeData.length > 0) {
-        const updatedStoreData = storeData.map(item => {
-          if (item.PROCESS === immediateNextStep.PROCESS && item.STEPTYPE === currentProcess) {
-            const updatedItem = { ...item };
-            
-            if (docType === "UPLOAD_DOC" && updatedItem.UPLOAD_DOC) {
-              try {
-                const parsedDocs = JSON.parse(updatedItem.UPLOAD_DOC);
-                const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
-                updatedItem.UPLOAD_DOC = JSON.stringify(filteredDocs);
-              } catch (error) {
-                console.error("Error updating storeData UPLOAD_DOC:", error);
-              }
-            } else if (docType === "ACK_DOC" && updatedItem.ACK_DOC) {
-              try {
-                const parsedDocs = JSON.parse(updatedItem.ACK_DOC);
-                const filteredDocs = parsedDocs.filter(doc => doc.file_name !== fileName);
-                updatedItem.ACK_DOC = JSON.stringify(filteredDocs);
-              } catch (error) {
-                console.error("Error updating storeData ACK_DOC:", error);
-              }
-            }
-            
-            return updatedItem;
-          }
-          return item;
-        });
-        
-        setStoreData(updatedStoreData);
-      }
-
-      // Show success message
-      Swal.fire('Deleted!', 'Document has been deleted.', 'success');
-      
-    }
-  } catch (error) {
-    console.error('Error deleting document:', error);
-    Swal.fire('Error!', 'Failed to delete document.', 'error');
-  }
-};
-    
-   const currentStepLogs = getCurrentStepLogs();
-
-  
-return (
-  <div className="d-flex flex-column" style={{ height: "100%", maxHeight: "330px" }}>
-    <Card style={{ 
-      padding: "10px", 
-      flex: "1 1 auto", 
-      minHeight: "0",
-      display: "flex", 
-      flexDirection: "column",
-      overflow: "hidden", 
-      width: "300px"
-    }}>
-      {/* Scrollable content area */}
-      <div style={{ 
-        flex: "1 1 auto",
-        overflowY: "auto",
-        paddingRight: "5px" // Space for scrollbar
-      }}>
-        {/* General Documents Section */}
-        <div style={{ marginBottom: "15px" }}>
-          <h6 className="text-primary mb-2">General Uploaded Documents</h6>
-          {generalDocuments.length > 0 ? (
-            <div style={{ 
-              border: "1px solid #dee2e6",
-              borderRadius: "4px",
-              padding: "5px",
-              backgroundColor: "#f8f9fa"
-            }}>
-              <ul className="list-unstyled mb-0">
-                {generalDocuments.map((doc, idx) => (
-                  <li 
-                    key={`gen-doc-${idx}`} 
-                    className="d-flex justify-content-between align-items-center mb-1 p-1"
-                    style={{ 
-                      backgroundColor: "white",
-                      borderRadius: "3px",
-                      borderBottom: idx < generalDocuments.length - 1 ? "1px solid #e9ecef" : "none"
-                    }}
-                  >
-                    <div className="text-truncate" style={{ 
-                      maxWidth: "calc(100% - 40px)",
-                      flexShrink: 1
-                    }}>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-decoration-none text-dark"
-                        style={{ fontSize: "13px" }}
+    return (
+      <div className="d-flex flex-column" style={{ height: "100%", maxHeight: "330px" }}>
+        <Card style={{
+          padding: "10px",
+          flex: "1 1 auto",
+          minHeight: "0",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          width: "300px"
+        }}>
+          <div style={{
+            flex: "1 1 auto",
+            overflowY: "auto",
+            paddingRight: "5px"
+          }}>
+            <div style={{ marginBottom: "15px" }}>
+              <h6 className="text-primary mb-2">General Uploaded Documents</h6>
+              {generalDocuments.length > 0 ? (
+                <div style={{
+                  border: "1px solid #dee2e6",
+                  borderRadius: "4px",
+                  padding: "5px",
+                  backgroundColor: "#f8f9fa"
+                }}>
+                  <ul className="list-unstyled mb-0">
+                    {generalDocuments.map((doc, idx) => (
+                      <li
+                        key={`gen-doc-${idx}`}
+                        className="d-flex justify-content-between align-items-center mb-1 p-1"
+                        style={{
+                          backgroundColor: "white",
+                          borderRadius: "3px",
+                          borderBottom: idx < generalDocuments.length - 1 ? "1px solid #e9ecef" : "none"
+                        }}
                       >
-                        <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
-                        <span className="text-truncate" style={{ 
-                          display: "inline-block",
-                          maxWidth: "calc(100% - 30px)",
-                          verticalAlign: "middle"
+                        <div className="text-truncate" style={{
+                          maxWidth: "calc(100% - 40px)",
+                          flexShrink: 1
                         }}>
-                          {doc.name}
-                        </span>
-                      </a>
-                    </div>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      className="flex-shrink-0"
-                      style={{ 
-                        padding: "2px 6px", 
-                        fontSize: "11px",
-                        minWidth: "30px",
-                        height: "24px"
-                      }}
-                      onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
-                      title="Delete document"
-                    >
-                      <i className="fas fa-trash-alt"></i>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-decoration-none text-dark"
+                            style={{ fontSize: "13px" }}
+                          >
+                            <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                            <span className="text-truncate" style={{
+                              display: "inline-block",
+                              maxWidth: "calc(100% - 30px)",
+                              verticalAlign: "middle"
+                            }}>
+                              {doc.name}
+                            </span>
+                          </a>
+                        </div>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          className="flex-shrink-0"
+                          style={{
+                            padding: "2px 6px",
+                            fontSize: "11px",
+                            minWidth: "30px",
+                            height: "24px"
+                          }}
+                          onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
+                          title="Delete document"
+                        >
+                          <i className="fas fa-trash-alt"></i>
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
+                  No general documents were uploaded for this step.
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
-              No general documents were uploaded for this step.
-            </p>
-          )}
-        </div>
 
-        {/* Acknowledgement Receipts Section */}
-        <div style={{ marginBottom: "15px" }}>
-          <h6 className="text-primary mb-2">Acknowledgement Receipts</h6>
-          {acknowledgementReceipts.length > 0 ? (
-            <div style={{ 
-              border: "1px solid #dee2e6",
-              borderRadius: "4px",
-              padding: "5px",
-              backgroundColor: "#f8f9fa"
-            }}>
-              <ul className="list-unstyled mb-0">
-                {acknowledgementReceipts.map((doc, idx) => (
-                  <li 
-                    key={`ack-doc-${idx}`} 
-                    className="d-flex justify-content-between align-items-center mb-1 p-1"
-                    style={{ 
-                      backgroundColor: "white",
-                      borderRadius: "3px",
-                      borderBottom: idx < acknowledgementReceipts.length - 1 ? "1px solid #e9ecef" : "none"
-                    }}
-                  >
-                    <div className="text-truncate" style={{ 
-                      maxWidth: "calc(100% - 40px)", // Leave space for button
-                      flexShrink: 1
-                    }}>
-                      <a
-                        href={doc?.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-decoration-none text-dark"
-                        style={{ fontSize: "13px" }}
+            <div style={{ marginBottom: "15px" }}>
+             { immediateNextStepIndex === 0  &&  <h6 className="text-primary mb-2">Acknowledgement Receipts</h6>} 
+              {acknowledgementReceipts.length > 0 ? (
+                <div style={{
+                  border: "1px solid #dee2e6",
+                  borderRadius: "4px",
+                  padding: "5px",
+                  backgroundColor: "#f8f9fa"
+                }}>
+                  <ul className="list-unstyled mb-0">
+                    {acknowledgementReceipts.map((doc, idx) => (
+                      <li
+                        key={`ack-doc-${idx}`}
+                        className="d-flex justify-content-between align-items-center mb-1 p-1"
+                        style={{
+                          backgroundColor: "white",
+                          borderRadius: "3px",
+                          borderBottom: idx < acknowledgementReceipts.length - 1 ? "1px solid #e9ecef" : "none"
+                        }}
                       >
-                        <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
-                        <span className="text-truncate" style={{ 
-                          display: "inline-block",
-                          maxWidth: "calc(100% - 30px)",
-                          verticalAlign: "middle"
+                        <div className="text-truncate" style={{
+                          maxWidth: "calc(100% - 40px)",
+                          flexShrink: 1
                         }}>
-                          {doc?.name}
-                        </span>
-                      </a>
-                    </div>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      className="flex-shrink-0"
-                      style={{ 
-                        padding: "2px 6px", 
-                        fontSize: "11px",
-                        minWidth: "30px",
-                        height: "24px"
-                      }}
-                      onClick={() => handleDeleteDocument("ACK_DOC", doc.name, idx)}
-                      title="Delete receipt"
-                    >
-                      <i className="fas fa-trash-alt"></i>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+                          <a
+                            href={doc?.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-decoration-none text-dark"
+                            style={{ fontSize: "13px" }}
+                          >
+                            <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
+                            <span className="text-truncate" style={{
+                              display: "inline-block",
+                              maxWidth: "calc(100% - 30px)",
+                              verticalAlign: "middle"
+                            }}>
+                              {doc?.name}
+                            </span>
+                          </a>
+                        </div>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          className="flex-shrink-0"
+                          style={{
+                            padding: "2px 6px",
+                            fontSize: "11px",
+                            minWidth: "30px",
+                            height: "24px"
+                          }}
+                          onClick={() => handleDeleteDocument("ACK_DOC", doc.name, idx)}
+                          title="Delete receipt"
+                        >
+                          <i className="fas fa-trash-alt"></i>
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
+                
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
-              No acknowledgement receipts available for this step.
-            </p>
-          )}
+          </div>
+        </Card>
+
+        <div className="p-2 border-top bg-light text-center" style={{ flexShrink: 0 }}>
+          <Button
+            variant="info"
+            size="sm"
+            onClick={() => {
+              const logs = getCurrentStepLogs();
+              setSelectedLogs(logs);
+              setShowLogsModal(true);
+            }}
+            disabled={currentStepLogs.length === 0}
+            style={{
+              minWidth: "120px",
+              fontSize: "13px",
+              padding: "4px 12px"
+            }}
+          >
+            {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
+          </Button>
         </div>
       </div>
-    </Card>
-
-    {/* View Logs Button - Fixed at bottom */}
-    <div className="p-2 border-top bg-light text-center" style={{ flexShrink: 0 }}>
-      <Button
-        variant="info"
-        size="sm"
-        onClick={() => {
-          const logs = getCurrentStepLogs();
-          setSelectedLogs(logs);
-          setShowLogsModal(true);
-        }}
-        disabled={currentStepLogs.length === 0}
-        style={{ 
-          minWidth: "120px",
-          fontSize: "13px",
-          padding: "4px 12px"
-        }}
-      >
-        {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
-      </Button>
-    </div>
-  </div>
-);
+    );
   };
 
   const renderProcessColumn = (columnTitle, isOCPhase) => {
-    // Added isOCPhase boolean
     return (
       <Col xs={6}>
         <h6 className="text-center mb-2">{columnTitle}</h6>
@@ -1014,28 +808,23 @@ return (
               clickable = false,
               statusIcon = "⏸️";
 
-            // Now, we use the isOCPhase flag passed to the function
             let isCompleted = false;
-            let currentConceptualIndex; // This will be the index that aligns with immediateNextStepIndex
+            let currentConceptualIndex;
 
             if (isOCPhase) {
               isCompleted = storeData.some(
                 (item) =>
                   item.PROCESS === step.PROCESS && item.OC_UPDATED === "YES"
               );
-              // For OC phase, the conceptual index is offset
-              currentConceptualIndex =
-                idx + PROVISIONAL_NOC_STEP_INDICES.length;
+              currentConceptualIndex = idx + PROVISIONAL_NOC_STEP_INDICES.length;
             } else {
-              // Provisional NOC Phase
               isCompleted = storeData.some(
                 (item) =>
                   item.PROCESS === step.PROCESS && item.UPDATED === "YES"
               );
-              currentConceptualIndex = idx; // For Provisional, it's the direct index
+              currentConceptualIndex = idx;
             }
 
-            // Check if this step (in its current phase) is the immediate next step
             const isActive = currentConceptualIndex === immediateNextStepIndex;
 
             if (isCompleted) {
@@ -1046,20 +835,17 @@ return (
               statusIcon = "⚠️";
             }
 
-            // Lock OC Process steps if Provisional NOC is not completed
             if (isOCPhase && !provisionalNOCCompleted) {
-              clickable = false; // Override clickability
-              variant = "secondary"; // Set to locked style
+              clickable = false;
+              variant = "secondary";
               statusIcon = "🔒";
             } else {
-              // For Provisional NOC steps or unlocked OC Process steps, determine clickability
-              // A step is clickable if it's already completed (for review) or if it's the current active step.
               if (currentConceptualIndex < immediateNextStepIndex) {
-                clickable = true; // Completed steps in this phase are clickable
+                clickable = true;
               } else if (currentConceptualIndex === immediateNextStepIndex) {
-                clickable = true; // Current active step in this phase is clickable
+                clickable = true;
               } else {
-                clickable = false; // Future steps in this phase are not clickable
+                clickable = false;
               }
             }
 
@@ -1068,11 +854,9 @@ return (
                 className="mb-2"
                 key={`${isOCPhase ? "oc-" : "pnoc-"}${step.PROCESS}`}
               >
-                {" "}
-                {/* Add key prefix for uniqueness */}
                 <Nav.Link
-                  eventKey={currentConceptualIndex} // Use the conceptual index for eventKey
-                  disabled={!clickable} // Disable based on `clickable`
+                  eventKey={currentConceptualIndex}
+                  disabled={!clickable}
                   className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
                   style={{ cursor: clickable ? "pointer" : "not-allowed" }}
                 >
@@ -1087,11 +871,15 @@ return (
     );
   };
 
+
+  const FeeAmount = storeData[0]?.FEE_AMOUNT;
+  const NumberOfTowers = storeData[0]?.NO_OF_TOWERS;
+
+
   return (
     <>
       <ProjectInfoHeader data={headerData} />
       <Row className="align-items-stretch">
-        {/* Adjusted to md={4} for more width */}
         <Col md={4} className="d-flex">
           <div className="border rounded p-3 bg-light flex-fill">
             <h5 className="text-center">Process Steps</h5>
@@ -1102,14 +890,20 @@ return (
           </div>
         </Col>
 
-        {/* Adjusted to md={5} for less width */}
         <Col md={5} className="d-flex flex-column">
           <Form className="p-3 border rounded bg-light">
             {immediateNextStep && (
-              <h4 className="mb-3 text-primary fw-bold">
-                {immediateNextStep.PROCESS}
-              </h4>
-            )}
+                  <h4 className="mb-3 text-primary fw-bold">
+                    {immediateNextStep.PROCESS}
+                    {/* Show Towers and FeeAmount only for steps 1-4 (after Application Submission) */}
+                    {immediateNextStepIndex >= 1 && immediateNextStepIndex <= 4 && NumberOfTowers && (
+                      <> | Towers: <span className="text-dark">{NumberOfTowers}</span></>
+                    )}
+                    {immediateNextStepIndex >= 1 && immediateNextStepIndex <= 4 && FeeAmount && (
+                      <> | FeeAmount: <span className="text-dark">{FeeAmount}</span></>
+                    )}
+                  </h4>
+                )}
 
             <Row className="mb-3">
               <Col md={6}>
@@ -1119,6 +913,7 @@ return (
                     name="loc"
                     value={formData.loc}
                     onChange={handleChange}
+                    isInvalid={!!errors.loc}
                   >
                     <option value="">Select Plant</option>
                     {plants.map((p, idx) => (
@@ -1127,81 +922,120 @@ return (
                       </option>
                     ))}
                   </Form.Select>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.loc}
+                  </Form.Control.Feedback>
                 </Form.Group>
               </Col>
 
-
               <Col md={6}>
-    <Form.Group>
-      <Form.Label>
-        {immediateNextStepIndex === 1 ? "Inspection Date" : "Apply Date"}
-      </Form.Label>
-      <Form.Control
-        type="date"
-        name="applyDate"
-        max={new Date().toISOString().split("T")[0]}
-        value={formData.applyDate || ""}
-         disabled={ !formData.loc ||(nextStepDetails && nextStepDetails.APPLY_DT)}
-        onChange={handleChange}
-        isInvalid={!!errors.applyDate}
-      />
-      <Form.Control.Feedback type="invalid">
-        {errors.applyDate}
-      </Form.Control.Feedback>
-    </Form.Group>
-  </Col>
-           
-              
-            
+                <Form.Group>
+                  <Form.Label>
+                    {immediateNextStepIndex === 1 ? "Inspection Date" : "Apply Date"}
+                  </Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="applyDate"
+                    max={new Date().toISOString().split("T")[0]}
+                    value={formData.applyDate || ""}
+                    disabled={!formData.loc || (nextStepDetails && nextStepDetails.APPLY_DT)}
+                    onChange={handleChange}
+                    isInvalid={!!errors.applyDate}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.applyDate}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Col>
             </Row>
 
-            {/* <Row> */}
-              {/* {storeData?.FEE_PAID_STATUS === NO && */}
-    {/* <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Number Of Towers</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={1}
-                    name="towers"
-                    value={formData.noOfTowers || ""}
-                      disabled={ !formData.loc}
-                    onChange={handleChange}
-                  />
-                    
-                </Form.Group>
-              </Col> */}
+            {/* Show Number of Towers and Fee Amount only for Application Submission */}
+         <Row className="mb-3">
 
-    {/* <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Fee Amount</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={1}
-                    name="towers"
-                    value={formData.feeAmount || ""}
-                      disabled={ !formData.loc}
-                    onChange={handleChange}
-                  />
-                      
-                </Form.Group>
-              </Col> */}
 
-              
+            {immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission" && (
+    <Col md={4}>
+      <Form.Group>
+        <Form.Label>Fee Paid?</Form.Label>
+        <div className="d-flex gap-3 mt-2">
+          <Form.Check
+            type="radio"
+            label="Yes"
+            name="feepaidstatus"
+            value="YES"
+            checked={formData.feepaidstatus === "YES"}
+           disabled
+          />
+          <Form.Check
+            type="radio"
+            label="No"
+            name="feepaidstatus"
+            value="NO"
+            checked={formData.feepaidstatus === "NO"}
+           disabled
+          />
+        </div>
+      </Form.Group>
+    </Col>
+  )}
+  {/* Column 1: Number of Towers */}
+  {immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission" && (
+    <Col md={4}>
+      <Form.Group>
+        <Form.Label>Number Of Towers</Form.Label>
+        <Form.Control
+          type="text"
+          name="noOfTowers"
+          value={formData.noOfTowers || ""}
+          disabled={!formData.loc}
+          onChange={handleChange}
+        />
+      </Form.Group>
+    </Col>
+  )}
+  
+  {/* Column 2: Fee Paid Radio */}
 
-          
-            {/* </Row> */}
+  
+  {/* Column 3: Fee Amount - Only shown if feepaidstatus is YES */}
+  {immediateNextStepIndex === 0 && 
+   immediateNextStep?.PROCESS === "Application Submission" && 
+   formData.feepaidstatus === 'YES' ? (
+    <Col md={4}>
+      <Form.Group>
+        <Form.Label>Fee Amount</Form.Label>
+        <Form.Control
+          type="text"
+          name="feeAmount"
+          value={formData.feeAmount || ""}
+          disabled={!formData.loc}
+          onChange={handleChange}
+        />
+      </Form.Group>
+    </Col>
+  ) : immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission" ? (
+    // Empty column to maintain layout when Fee Amount is not shown
+    <Col md={4}></Col>
+  ) : null}
+</Row>
 
-            {/* {immediateNextStepIndex >= 1 && (
+ {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
   <Form.Group className="mb-3">
-    <Form.Label>{stepRadioLabels[immediateNextStepIndex] || "Status for this step"}</Form.Label>
+    <Form.Label>
+      {provisionalRadioLabels[immediateNextStepIndex] ||
+        "Status for this step"}
+    </Form.Label>
     <div>
       <Form.Check
         type="radio"
+        inline
         label="Yes"
         name={`stepStatus_${immediateNextStepIndex}`}
+        id={`stepYes_${immediateNextStepIndex}`}
         value="YES"
-        checked={formData[`stepStatus_${immediateNextStepIndex}`] === "YES"}
+        checked={
+          formData[`stepStatus_${immediateNextStepIndex}`] === "YES"
+        }
         onChange={(e) =>
           setFormData((prev) => ({
             ...prev,
@@ -1211,10 +1045,14 @@ return (
       />
       <Form.Check
         type="radio"
+        inline
         label="No"
         name={`stepStatus_${immediateNextStepIndex}`}
+        id={`stepNo_${immediateNextStepIndex}`}
         value="NO"
-        checked={formData[`stepStatus_${immediateNextStepIndex}`] === "NO"}
+        checked={
+          formData[`stepStatus_${immediateNextStepIndex}`] === "NO"
+        }
         onChange={(e) =>
           setFormData((prev) => ({
             ...prev,
@@ -1224,92 +1062,8 @@ return (
       />
     </div>
   </Form.Group>
-)} */}
-            {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
-              <Form.Group className="mb-3">
-                <Form.Label>
-                  {provisionalRadioLabels[immediateNextStepIndex] ||
-                    "Status for this step"}
-                </Form.Label>
-                <div>
-                  <Form.Check
-                    type="radio"
-                    label="Yes"
-                    name={`stepStatus_${immediateNextStepIndex}`}
-                    value="YES"
-                    checked={
-                      formData[`stepStatus_${immediateNextStepIndex}`] === "YES"
-                    }
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [`stepStatus_${immediateNextStepIndex}`]:
-                          e.target.value,
-                      }))
-                    }
-                  />
-                  <Form.Check
-                    type="radio"
-                    label="No"
-                    name={`stepStatus_${immediateNextStepIndex}`}
-                    value="NO"
-                    checked={
-                      formData[`stepStatus_${immediateNextStepIndex}`] === "NO"
-                    }
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [`stepStatus_${immediateNextStepIndex}`]:
-                          e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </Form.Group>
-            )}
-
-            {immediateNextStepIndex >= 6 && (
-              <Form.Group className="mb-3">
-                <Form.Label>
-                  {ocRadioLabels[immediateNextStepIndex] ||
-                    "Status for this step"}
-                </Form.Label>
-                <div>
-                  <Form.Check
-                    type="radio"
-                    label="Yes"
-                    name={`stepStatus_${immediateNextStepIndex}`}
-                    value="YES"
-                    checked={
-                      formData[`stepStatus_${immediateNextStepIndex}`] === "YES"
-                    }
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [`stepStatus_${immediateNextStepIndex}`]:
-                          e.target.value,
-                      }))
-                    }
-                  />
-                  <Form.Check
-                    type="radio"
-                    label="No"
-                    name={`stepStatus_${immediateNextStepIndex}`}
-                    value="NO"
-                    checked={
-                      formData[`stepStatus_${immediateNextStepIndex}`] === "NO"
-                    }
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [`stepStatus_${immediateNextStepIndex}`]:
-                          e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </Form.Group>
-            )}
+)}
+          
 
             <Row className="mb-3">
               <Col md={6}>
@@ -1334,33 +1088,30 @@ return (
                     rows={1}
                     name="comments"
                     value={formData.comments || ""}
-                      disabled={ !formData.loc}
+                    disabled={!formData.loc}
                     onChange={handleChange}
+                    isInvalid={!!errors.comments}
                   />
-                      {errors.comments && (
-                          <p className="error-text text-danger">{errors.comments}</p>
-                        )}
+                  <Form.Control.Feedback type="invalid">
+                    {errors.comments}
+                  </Form.Control.Feedback>
                 </Form.Group>
               </Col>
-
-
             </Row>
-
-            <Row>
-
-            </Row>
-
-
-
 
             <div className="d-grid mt-3">
-              <Button variant="primary" size="md" onClick={handleEmailSubmit}>
-                Submit
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleEmailSubmit}
+                disabled={!formData.loc || isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
             </div>
           </Form>
         </Col>
-        {/* md={3} remains the same, as 4 + 5 + 3 = 12 */}
+
         <Col md={3} className="d-flex w-25">
           <div className="border rounded p-3 bg-white flex-fill d-flex flex-column">
             <h5 className="mb-1 text-dark">Document History</h5>
@@ -1371,7 +1122,7 @@ return (
         </Col>
       </Row>
 
-       <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
+      <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Logs for {immediateNextStep?.PROCESS}</Modal.Title>
         </Modal.Header>
@@ -1414,4 +1165,3 @@ return (
 };
 
 export default FireModifyTable;
-

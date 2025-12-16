@@ -97,6 +97,26 @@ const GhmcModify = () => {
     return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
 
+
+   useEffect(() => {
+      if (nextStepDetails) {
+        let details = nextStepDetails;
+
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          applyDate: details?.applyDate,
+        
+        }));
+  
+      } else {
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          applyDate: "",
+          comments: ""
+        }));
+  
+      }
+    }, [nextStepDetails]);
   // Validate file type - PDF only
   const validateFileType = (file) => {
     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
@@ -447,7 +467,7 @@ const GhmcModify = () => {
         setFormData((prev) => ({
           ...prev,
           applyDate: nextStepDetails.applyDate || "",
-          Comments: nextStepDetails.Comments || "",
+          Comments:  "",
         }));
       }
     } else {
@@ -607,7 +627,6 @@ const GhmcModify = () => {
         `${API_BASE_URL}/GHMC-data?plant=${formData.loc}`
       );
 
-      console.log(refreshed,"gggggggggggggggggggg");
       setStoreData(refreshed.data || []);
 
       const master = await getMasterByLoc(formData.loc);
@@ -710,7 +729,7 @@ const GhmcModify = () => {
       setFormData((prev) => ({
         ...prev,
         applyDate: parsed.applyDate || "",
-        Comments: parsed.Comments || parsed.COMMENTS || "",
+        Comments:  "",
       }));
 
       setViewedStepDetails(parsed);
@@ -833,7 +852,9 @@ const GhmcModify = () => {
                       value={formData.applyDate || ""}
                       onChange={handleChange}
                       isInvalid={!!errors.applyDate}
-                      disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)}
+                      // disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)}
+
+                        disabled={!formData.loc || (nextStepDetails && nextStepDetails.applyDate)}
                     />
                     <Form.Control.Feedback type="invalid">
                       {errors.applyDate}
@@ -843,26 +864,8 @@ const GhmcModify = () => {
               </Row>
 
               <Row className="mb-2">
-                <Col md={12}>
-                  <Form.Group controlId="formComments">
-                    <Form.Label>Comments</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      name="Comments"
-                      value={formData.Comments || ""}
-                      onChange={handleChange}
-                      disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)}
-                    />
-                    {errors.Comments && (
-                      <p className="error-text text-danger">{errors.Comments}</p>
-                    )}
-                  </Form.Group>
-                </Col>
-              </Row>
 
-              <Row className="mb-3">
-                <Col md={6}>
+                   <Col md={6}>
                   <Form.Label>Upload Document</Form.Label>
                   <button
                     type="button"
@@ -883,6 +886,26 @@ const GhmcModify = () => {
                 
                 </Col>
 
+                <Col md={6}>
+                  <Form.Group controlId="formComments">
+                    <Form.Label>Comments</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      name="Comments"
+                      value={formData.Comments || ""}
+                      onChange={handleChange}
+                      disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)}
+                    />
+                    {errors.Comments && (
+                      <p className="error-text text-danger">{errors.Comments}</p>
+                    )}
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row className="mb-3">
+             
 
                 {isFirstProcess &&
 
@@ -892,7 +915,6 @@ const GhmcModify = () => {
                       <Form.Control as="textarea" rows={1} name="noOfTowers" value={formData.noOfTowers || ""} onChange={handleChange} disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)} />
                     </Form.Group>
                   </Col>
-
 
                 }
               </Row>

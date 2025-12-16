@@ -53,6 +53,7 @@ const handleFilesAppend = (e, setter) => {
           <div className="d-flex gap-2 mb-1">
             <input
               type="file"
+              accept=".pdf,application/pdf"
               multiple
               onChange={(e) => handleFilesAppend(e, setLinkDocs)}
               id="link-doc-input"
@@ -72,6 +73,7 @@ const handleFilesAppend = (e, setter) => {
             <div className="d-flex gap-2 mb-1">
               <input
                 type="file"
+                accept=".pdf,application/pdf"
                 multiple
                 onChange={(e) => handleFilesAppend(e, setLandDocs)}
                 id="land-doc-input"
@@ -92,6 +94,7 @@ const handleFilesAppend = (e, setter) => {
             <div className="d-flex gap-2 mb-1">
               <input
                 type="file"
+                accept=".pdf,application/pdf"
                 multiple
                 onChange={(e) => handleFilesAppend(e, setOthDocs)}
                 id="oth-doc-input"

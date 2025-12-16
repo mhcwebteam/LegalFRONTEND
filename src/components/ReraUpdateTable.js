@@ -24,14 +24,15 @@ const ReraUpdateTable = () => {
 
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPlant, setSelectedPlant] = useState("");
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
- const [showDemoteModal, setShowDemoteModal] = useState(false);
+  const [showDemoteModal, setShowDemoteModal] = useState(false);
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
- const [showLogsModal, setShowLogsModal] = useState(false);
+  const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
 
 
@@ -87,37 +88,37 @@ const ReraUpdateTable = () => {
   //   setShowEmailModal(true);
   // };
 
- const handleEmailSubmit = () => {
-  console.log("Submit clicked - opening email modal");
-  console.log("selectedPlant:", selectedPlant);
-  console.log("immediateNextStep:", immediateNextStep);
-  console.log("viewedStepDetails:", viewedStepDetails);
+  const handleEmailSubmit = () => {
+    console.log("Submit clicked - opening email modal");
+    console.log("selectedPlant:", selectedPlant);
+    console.log("immediateNextStep:", immediateNextStep);
+    console.log("viewedStepDetails:", viewedStepDetails);
 
-  if (!selectedPlant || !immediateNextStep) {
-    Swal.fire("Validation Error", "Please select a plant and ensure a step is active.", "error");
-    return;
-  }
-
-  // ✅ NEW: Check if Step 2 has completed all 4 levels
-  if (immediateNextStep.PROCESS === "Status of the Application") {
-    const currentLevel = viewedStepDetails?.LEVEL;
-    const currentStatus = viewedStepDetails?.LEVEL_STATUS;
-    
-    // Check if Level 4 is completed
-    if (!(currentLevel === "Level 4" && currentStatus === "Completed")) {
-      Swal.fire({
-        icon: "warning",
-        title: "Incomplete Levels",
-        text: "Please complete all 4 levels before updating this step.",
-        confirmButtonText: "OK"
-      });
+    if (!selectedPlant || !immediateNextStep) {
+      Swal.fire("Validation Error", "Please select a plant and ensure a step is active.", "error");
       return;
     }
-  }
 
-  console.log("Setting showEmailModal to true");
-  setShowEmailModal(true);
-};
+    // ✅ NEW: Check if Step 2 has completed all 4 levels
+    if (immediateNextStep.PROCESS === "Status of the Application") {
+      const currentLevel = viewedStepDetails?.LEVEL;
+      const currentStatus = viewedStepDetails?.LEVEL_STATUS;
+
+      // Check if Level 4 is completed
+      if (!(currentLevel === "Level 4" && currentStatus === "Completed")) {
+        Swal.fire({
+          icon: "warning",
+          title: "Incomplete Levels",
+          text: "Please complete all 4 levels before updating this step.",
+          confirmButtonText: "OK"
+        });
+        return;
+      }
+    }
+
+    console.log("Setting showEmailModal to true");
+    setShowEmailModal(true);
+  };
   const handleEmailSelectionSubmit = async (emails) => {
     console.log('Selected emails:', emails);
     setSelectedEmails(emails);
@@ -175,30 +176,30 @@ const ReraUpdateTable = () => {
         .catch((err) => console.error("Error during data fetching process:", err));
     }
   }, [selectedPlant, steps]);
-useEffect(() => {
-  console.log("viewedStepDetails changed:", viewedStepDetails);
-  console.log("viewedStepDetails.APPLY_DT:", viewedStepDetails?.APPLY_DT);
-  console.log("viewedStepDetails.COMMENTS:", viewedStepDetails?.COMMENTS);
-}, [viewedStepDetails]);
+  useEffect(() => {
+    console.log("viewedStepDetails changed:", viewedStepDetails);
+    console.log("viewedStepDetails.APPLY_DT:", viewedStepDetails?.APPLY_DT);
+    console.log("viewedStepDetails.COMMENTS:", viewedStepDetails?.COMMENTS);
+  }, [viewedStepDetails]);
 
   // ✅ NEW: This function is now the single point for fetching and displaying step details.
   const handleStepClick = async (step, plant) => {
-  if (!plant) return;
-  setViewedStep(step); // Set which step we are now viewing
-  try {
-    const apiUrl = `${API_BASE_URL}/rera-step-details/${encodeURIComponent(plant)}/${encodeURIComponent(step.PROCESS)}`;
-    const detailsRes = await axios.get(apiUrl);
-    console.log("Fetched step details:", detailsRes.data); // Debug log
-    if (detailsRes && detailsRes.data) {
-      setViewedStepDetails(detailsRes.data);
-    } else {
-      setViewedStepDetails({}); // Set empty object instead of null to prevent null errors
+    if (!plant) return;
+    setViewedStep(step); // Set which step we are now viewing
+    try {
+      const apiUrl = `${API_BASE_URL}/rera-step-details/${encodeURIComponent(plant)}/${encodeURIComponent(step.PROCESS)}`;
+      const detailsRes = await axios.get(apiUrl);
+      console.log("Fetched step details:", detailsRes.data); // Debug log
+      if (detailsRes && detailsRes.data) {
+        setViewedStepDetails(detailsRes.data);
+      } else {
+        setViewedStepDetails({}); // Set empty object instead of null to prevent null errors
+      }
+    } catch (error) {
+      console.error(`Error fetching details for step: ${step.PROCESS}`, error);
+      setViewedStepDetails({}); // Set empty object on error
     }
-  } catch (error) {
-    console.error(`Error fetching details for step: ${step.PROCESS}`, error);
-    setViewedStepDetails({}); // Set empty object on error
-  }
-};
+  };
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
@@ -221,87 +222,189 @@ useEffect(() => {
 
   // This logic now correctly calculates sub-level status based on the VIEWED step's details
   const activeSubLevelIndex = useMemo(() => {
-    if (viewedStep?.PROCESS !== "Status of the Application") return -1; // Only calculate for step 2
+    if (viewedStep?.PROCESS !== "Status of the Application") return -1;
     const currentLevel = viewedStepDetails?.LEVEL;
     const currentStatus = viewedStepDetails?.LEVEL_STATUS;
 
-    if (currentLevel === "Level 4" && currentStatus === "Completed") { return SUB_LEVELS.length; }
-    if (!currentLevel) { return 0; }
+    // ✅ Check if Level 4 is completed
+    if (currentLevel === "Level 4" && currentStatus === "Completed") {
+      return SUB_LEVELS.length; // This should be 4, meaning all levels are complete
+    }
+
+    if (!currentLevel) return 0;
+
     let currentIndex = SUB_LEVELS.indexOf(currentLevel);
     if (currentIndex === -1) currentIndex = 0;
-    if (currentStatus === "Yes") { return currentIndex + 1; }
+
+    if (currentStatus === "Yes") {
+      return currentIndex + 1;
+    }
+
     return currentIndex;
   }, [viewedStep, viewedStepDetails]);
 
   console.log('select plant:', selectedPlant, "apply date:", viewedStepDetails?.APPLY_DT, "comments:", viewedStepDetails?.COMMENTS);
-const handleConfirmSubmit = async (emails) => {
-  const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
-  
-  if (!selectedPlant || !immediateNextStep) {
-    Swal.fire("Error", "No active step is available to update.", "error");
-    return;
-  }
-
-  const payload = new FormData();
-  payload.append("loc", selectedPlant);
-  payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
-  payload.append("process", immediateNextStep.PROCESS);
-
-  emails.forEach((email, i) => {
-    payload.append(`emails[${i}]`, email);
-  });
-
-  const apiUrl = `${API_BASE_URL}/rera-update`;
-
-  try {
-    await axios.post(apiUrl, payload);
-
-    // Refresh the data after update
-    const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
-    const fetchedData = res.data;
-    setStoreData(fetchedData);
-
-    // ✅ CRITICAL: Re-fetch the details for the current viewed step
-    if (selectedPlant && viewedStep) {
-      const detailsRes = await axios.get(
-        `${API_BASE_URL}/rera-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(viewedStep.PROCESS)}`
-      );
-      if (detailsRes && detailsRes.data) {
-        setViewedStepDetails(detailsRes.data);
-      }
+  const handleConfirmSubmit = async (emails) => {
+    setIsSubmitting(true);
+    if (!selectedPlant || !immediateNextStep) {
+      Swal.fire("Error", "No active step is available to update.", "error");
+      return;
     }
 
-    // ✅ Also update the immediate next step after completion
-    const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
-    const nextStep = steps.find((step) => !completedProcesses.includes(step.PROCESS));
-
-    if (nextStep) {
-      setImmediateNextStep(nextStep);
-      setImmediateNextStepIndex(steps.indexOf(nextStep));
-    } else {
-      // All steps completed
-      setImmediateNextStep(null);
-      setImmediateNextStepIndex(steps.length);
-    }
-
-    await Swal.fire({
-      icon: "success",
-      title: "Status Updated!",
-      text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
-      timer: 2000,
-      showConfirmButton: false
+    const payload = new FormData();
+    payload.append("loc", selectedPlant);
+    payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
+    payload.append("process", immediateNextStep.PROCESS);
+ payload.append("comments", viewedStepDetails.COMMENTS || "");
+    emails.forEach((email, i) => {
+      payload.append(`emails[${i}]`, email);
     });
-    setViewedStepDetails("");
-    
-   
-  } catch (error) {
-    console.error("Update failed:", error);
-    Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
-  }
-};
+
+    const apiUrl = `${API_BASE_URL}/rera-update`;
+
+    try {
+      await axios.post(apiUrl, payload);
+
+      // ✅ Wait a moment for backend to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // ✅ FIRST: Refresh the storeData to update step completion status
+      const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
+      const fetchedData = res.data;
+      setStoreData(fetchedData);
+
+      // ✅ SECOND: Check current step status
+      const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
+      const nextStep = steps.find((step) => !completedProcesses.includes(step.PROCESS));
+
+      if (nextStep) {
+        setImmediateNextStep(nextStep);
+        setImmediateNextStepIndex(steps.indexOf(nextStep));
+
+        // ✅ Automatically load the next step's details
+        handleStepClick(nextStep, selectedPlant);
+      } else {
+        // All steps completed
+        setImmediateNextStep(null);
+        setImmediateNextStepIndex(steps.length);
+      }
+
+      // ✅ THIRD: Show success message
+      await Swal.fire({
+        icon: "success",
+        title: "Status Updated!",
+        text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+    } catch (error) {
+      console.error("Update failed:", error);
+      Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
+    }
+
+    finally {
+      setIsSubmitting(false);
+    }
+  };
+  // Add this useEffect after your existing useEffect hooks
+  useEffect(() => {
+    // When storeData changes (after update), refresh the viewed step details
+    if (selectedPlant && viewedStep) {
+      const fetchUpdatedDetails = async () => {
+        try {
+          const detailsRes = await axios.get(
+            `${API_BASE_URL}/rera-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(viewedStep.PROCESS)}`
+          );
+          if (detailsRes && detailsRes.data) {
+            setViewedStepDetails(detailsRes.data);
+          }
+        } catch (error) {
+          console.error("Error refreshing step details:", error);
+        }
+      };
+
+      fetchUpdatedDetails();
+    }
+  }, [storeData, selectedPlant, viewedStep]);
+  useEffect(() => {
+    console.log("Debug badge states:", {
+      viewedStep: viewedStep?.PROCESS,
+      currentLevel: viewedStepDetails?.LEVEL,
+      currentStatus: viewedStepDetails?.LEVEL_STATUS,
+      activeSubLevelIndex: activeSubLevelIndex,
+      SUB_LEVELS_length: SUB_LEVELS.length,
+      isLevel4Completed: viewedStepDetails?.LEVEL === "Level 4" && viewedStepDetails?.LEVEL_STATUS === "Completed"
+    });
+  }, [viewedStep, viewedStepDetails, activeSubLevelIndex]);
   // const handleConfirmSubmit = async (emails) => {
   //   const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
-    
+
+  //   if (!selectedPlant || !immediateNextStep) {
+  //     Swal.fire("Error", "No active step is available to update.", "error");
+  //     return;
+  //   }
+
+  //   const payload = new FormData();
+  //   payload.append("loc", selectedPlant);
+  //   payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
+  //   payload.append("process", immediateNextStep.PROCESS);
+
+  //   emails.forEach((email, i) => {
+  //     payload.append(`emails[${i}]`, email);
+  //   });
+
+  //   const apiUrl = `${API_BASE_URL}/rera-update`;
+
+  //   try {
+  //     await axios.post(apiUrl, payload);
+
+  //     // Refresh the data after update
+  //     const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
+  //     const fetchedData = res.data;
+  //     setStoreData(fetchedData);
+
+  //     // ✅ CRITICAL: Re-fetch the details for the current viewed step
+  //     if (selectedPlant && viewedStep) {
+  //       const detailsRes = await axios.get(
+  //         `${API_BASE_URL}/rera-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(viewedStep.PROCESS)}`
+  //       );
+  //       if (detailsRes && detailsRes.data) {
+  //         setViewedStepDetails(detailsRes.data);
+  //       }
+  //     }
+
+  //     // ✅ Also update the immediate next step after completion
+  //     const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
+  //     const nextStep = steps.find((step) => !completedProcesses.includes(step.PROCESS));
+
+  //     if (nextStep) {
+  //       setImmediateNextStep(nextStep);
+  //       setImmediateNextStepIndex(steps.indexOf(nextStep));
+  //     } else {
+  //       // All steps completed
+  //       setImmediateNextStep(null);
+  //       setImmediateNextStepIndex(steps.length);
+  //     }
+
+  //     await Swal.fire({
+  //       icon: "success",
+  //       title: "Status Updated!",
+  //       text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
+  //       timer: 2000,
+  //       showConfirmButton: false
+  //     });
+  //     setViewedStepDetails("");
+
+
+  //   } catch (error) {
+  //     console.error("Update failed:", error);
+  //     Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
+  //   }
+  // };
+  // const handleConfirmSubmit = async (emails) => {
+  //   const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
+
   //   if (!selectedPlant || !immediateNextStep) {
   //     Swal.fire("Error", "No active step is available to update.", "error");
   //     return;
@@ -333,37 +436,38 @@ const handleConfirmSubmit = async (emails) => {
   //       timer: 2000,
   //       showConfirmButton: false
   //     });
-   
+
   //   } catch (error) {
   //     console.error("Update failed:", error);
   //     Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
   //   }
   // };
 
-   const handleDemoteConfirm = (newLevel) => {
-      if (newLevel) {
-          // setLevelToSubmit(newLevel);
-          // setFormData(prev => ({ ...prev, subLevelStatus: 'No' }));
-          Swal.fire({
-              icon: 'info',
-              title: 'Level Changed',
-              text: `The task will be reset to ${newLevel}. Click the main 'Submit' button to save this change.`,
-              toast: true,
-              position: 'top-end',
-              showConfirmButton: false,
-              timer: 3500
-          });
-      }
-      setShowDemoteModal(false);
-    
- const isStep2Incomplete = immediateNextStep?.PROCESS === "Status of the Application" && 
-    !(viewedStepDetails?.LEVEL === "Level 4" && (viewedStepDetails?.LEVEL_STATUS === "Completed" || viewedStepDetails?.LEVEL_STATUS === "Yes"));
+  const handleDemoteConfirm = (newLevel) => {
+    if (newLevel) {
+      // setLevelToSubmit(newLevel);
+      // setFormData(prev => ({ ...prev, subLevelStatus: 'No' }));
+      Swal.fire({
+        icon: 'info',
+        title: 'Level Changed',
+        text: `The task will be reset to ${newLevel}. Click the main 'Submit' button to save this change.`,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3500
+      });
+    }
+    setShowDemoteModal(false);
 
-  // The button is only truly active if the user is viewing the actual immediateNextStep AND conditions are met
-  const canUpdate = immediateNextStep && 
-    viewedStep && 
-    immediateNextStep.PROCESS === viewedStep.PROCESS &&
-    !isStep2Incomplete;};
+    const isStep2Incomplete = immediateNextStep?.PROCESS === "Status of the Application" &&
+      !(viewedStepDetails?.LEVEL === "Level 4" && (viewedStepDetails?.LEVEL_STATUS === "Completed" || viewedStepDetails?.LEVEL_STATUS === "Yes"));
+
+    // The button is only truly active if the user is viewing the actual immediateNextStep AND conditions are met
+    const canUpdate = immediateNextStep &&
+      viewedStep &&
+      immediateNextStep.PROCESS === viewedStep.PROCESS &&
+      !storeData.some(item => item.PROCESS === immediateNextStep.PROCESS && item.UPDATED === "YES");
+  }
   // --- UI Rendering ---
   const renderDocumentHistory = () => {
     if (!viewedStepDetails || !viewedStepDetails.UPLOAD_DOC) {
@@ -428,9 +532,19 @@ const handleConfirmSubmit = async (emails) => {
             <h6 className="text-center mb-3">Process Steps</h6>
             <Nav variant="pills" className="flex-column">
               {steps.map((step, idx) => {
+                // Check if this step is completed in storeData
+                const isCompleted = storeData.some(
+                  item => item.PROCESS === step.PROCESS && item.UPDATED === "YES"
+                );
+
                 let variant = "secondary", statusIcon = "⏸️";
-                if (idx < immediateNextStepIndex) { variant = "success"; statusIcon = "✅"; }
-                else if (idx === immediateNextStepIndex) { variant = "warning"; statusIcon = "⚠️"; }
+                if (isCompleted) {
+                  variant = "success";
+                  statusIcon = "✅";
+                } else if (idx === immediateNextStepIndex) {
+                  variant = "warning";
+                  statusIcon = "⚠️";
+                }
 
                 const isClickable = idx <= immediateNextStepIndex;
 
@@ -439,22 +553,32 @@ const handleConfirmSubmit = async (emails) => {
                     <Nav.Item className="mb-2">
                       <Nav.Link
                         active={viewedStep?.PROCESS === step.PROCESS}
-                        onClick={() => handleStepClick(step, selectedPlant)}
+                        onClick={() => isClickable && handleStepClick(step, selectedPlant)}
                         className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: isClickable ? "pointer" : "not-allowed" }}
+                        disabled={!isClickable}
                       >
                         {statusIcon}<span>{step.PROCESS}</span>
                       </Nav.Link>
                     </Nav.Item>
 
-                    {/* This logic correctly shows sub-levels only when VIEWING the second step */}
-                    {idx === 1 && viewedStep?.PROCESS === step.PROCESS && (
+                    {/* Only show sub-levels for Step 2 when it's NOT completed */}
+                    {idx === 1 && viewedStep?.PROCESS === step.PROCESS && !isCompleted && (
                       <div className="ps-4 mb-2 d-flex flex-wrap gap-1">
                         {SUB_LEVELS.map((level, subIdx) => {
                           let badgeVariant = "secondary";
-                          if (subIdx < activeSubLevelIndex) { badgeVariant = "success"; }
-                          else if (subIdx === activeSubLevelIndex) { badgeVariant = "warning"; }
-                          return (<Badge bg={badgeVariant} key={subIdx} className="shadow-sm">{level}</Badge>);
+
+                          if (subIdx < activeSubLevelIndex) {
+                            badgeVariant = "success";
+                          } else if (subIdx === activeSubLevelIndex) {
+                            badgeVariant = "warning";
+                          }
+
+                          return (
+                            <Badge bg={badgeVariant} key={subIdx} className="shadow-sm">
+                              {level}
+                            </Badge>
+                          );
                         })}
                       </div>
                     )}
@@ -465,117 +589,151 @@ const handleConfirmSubmit = async (emails) => {
           </div>
         </Col>
 
-         <Col
-                  md={6}
-                  className="d-flex flex-column"
-                  style={{ height: "400px", overflowY: "auto" }}
+        <Col
+          md={6}
+          className="d-flex flex-column"
+          style={{ height: "400px", overflowY: "auto" }}
+        >
+          {/* Show ONLY completion message if all steps are completed */}
+          {areAllStepsCompleted() ? (
+            <div className="d-flex align-items-center justify-content-center h-60">
+              <Card className="p-4 shadow-sm text-center" style={{ maxWidth: '600px' }}>
+                <Card.Body>
+                  <FaCheckCircle size={64} className="text-success mb-3" />
+                  <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+                  <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+                  <Alert variant="success">
+                    <Alert.Heading>Project Completion Status</Alert.Heading>
+                    <p>
+                      All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
+                    </p>
+                    <hr />
+                    <p className="mb-0">
+                      The project is now ready for the next phase or final approval.
+                    </p>
+                  </Alert>
+                </Card.Body>
+              </Card>
+            </div>
+          ) : (
+            // Show form only if steps are NOT all completed
+            <Form className="p-3 border rounded bg-light">
+              {viewedStep ? (
+                <h4 className="mb-3 text-primary fw-bold">{viewedStep.PROCESS}</h4>
+              ) : (
+                <h4 className="mb-3 text-muted">Select a Plant to begin</h4>
+              )}
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Plant</Form.Label>
+                    <Form.Select name="loc" value={selectedPlant} onChange={handleChange}>
+                      <option value="">Select Plant to View</option>
+                      {plants.map((p, idx) => (<option key={idx} value={p.loc}>{p.loc}</option>))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                {/* The date fields now populate from viewedStepDetails */}
+                {viewedStep?.PROCESS === 'Your Step 3 Name Here' ? ( // Replace with your actual step 3 name
+                  <>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label>From Date</Form.Label>
+                        <Form.Control type="date" value={viewedStepDetails?.FROM_DT || ""} disabled />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label>To Date</Form.Label>
+                        <Form.Control type="date" value={viewedStepDetails?.TO_DT || ""} disabled />
+                      </Form.Group>
+                    </Col>
+                  </>
+                ) : (
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Application Date</Form.Label>
+                      <Form.Control type="date" value={viewedStepDetails?.APPLY_DT || ""} disabled />
+                    </Form.Group>
+                  </Col>
+                )}
+              </Row>
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Comments</Form.Label>
+                    <Form.Control as="textarea" rows={2} value={viewedStepDetails?.COMMENTS || ""} disabled />
+                  </Form.Group>
+                </Col>
+
+                {/* ✅ NEW: Add Status radio buttons for Step 2 when Level 4 is reached */}
+                {viewedStep?.PROCESS === "Status of the Application" &&
+                  viewedStepDetails?.LEVEL === "Level 4" && (
+
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label>Status</Form.Label>
+                        <div className="d-flex align-items-center gap-3 mt-2">
+                          <Form.Check
+                            type="radio"
+                            label="Yes"
+                            name="levelStatus"
+                            value="Yes"
+                            checked={viewedStepDetails?.LEVEL_STATUS === "Yes" || viewedStepDetails?.LEVEL_STATUS === "Completed"}
+                            disabled
+                            id="status-yes"
+                            className="me-3"
+                          />
+                          <Form.Check
+                            type="radio"
+                            label="No"
+                            name="levelStatus"
+                            value="No"
+                            checked={viewedStepDetails?.LEVEL_STATUS === "No"}
+                            disabled
+                            id="status-no"
+                          />
+                        </div>
+
+                      </Form.Group>
+                    </Col>
+
+                  )}</Row>
+
+              {/* Update button */}
+              <div className="d-grid mt-3">
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id="update-tooltip">
+                      {!canUpdate ?
+                        (isStep2Incomplete ?
+                          "Complete Level 4 to enable update" :
+                          "You can only update the current active step"
+                        ) :
+                        "Click here to update this step as complete."
+                      }
+                    </Tooltip>
+                  }
                 >
-  {/* Show ONLY completion message if all steps are completed */}
-  {areAllStepsCompleted() ? (
-    <div className="d-flex align-items-center justify-content-center h-60">
-      <Card className="p-4 shadow-sm text-center" style={{ maxWidth: '600px' }}>
-        <Card.Body>
-          <FaCheckCircle size={64} className="text-success mb-3" />
-          <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-          <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-          <Alert variant="success">
-            <Alert.Heading>Project Completion Status</Alert.Heading>
-            <p>
-              All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
-            </p>
-            <hr />
-            <p className="mb-0">
-              The project is now ready for the next phase or final approval.
-            </p>
-          </Alert>
-        </Card.Body>
-      </Card>
-    </div>
-  ) : (
-    // Show form only if steps are NOT all completed
-    <Form className="p-3 border rounded bg-light">
-      {viewedStep ? (
-        <h4 className="mb-3 text-primary fw-bold">{viewedStep.PROCESS}</h4>
-      ) : (
-        <h4 className="mb-3 text-muted">Select a Plant to begin</h4>
-      )}
-      <Row className="mb-3">
-        <Col md={6}>
-          <Form.Group>
-            <Form.Label>Plant</Form.Label>
-            <Form.Select name="loc" value={selectedPlant} onChange={handleChange}>
-              <option value="">Select Plant to View</option>
-              {plants.map((p, idx) => (<option key={idx} value={p.loc}>{p.loc}</option>))}
-            </Form.Select>
-          </Form.Group>
+                  <span className="d-grid">
+                    <Button
+                      style={{ backgroundColor: '#0d6efd', borderColor: '#0d6efd' }}
+                      size="md"
+                      onClick={handleEmailSubmit}
+                      disabled={!canUpdate || isSubmitting}
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit"}
+                      {/* Update */}
+                    </Button>
+
+                  </span>
+                </OverlayTrigger>
+              </div>
+            </Form>
+          )}
         </Col>
-        {/* The date fields now populate from viewedStepDetails */}
-        {viewedStep?.PROCESS === 'Your Step 3 Name Here' ? ( // Replace with your actual step 3 name
-          <>
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label>From Date</Form.Label>
-                <Form.Control type="date" value={viewedStepDetails?.FROM_DT || ""} disabled />
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label>To Date</Form.Label>
-                <Form.Control type="date" value={viewedStepDetails?.TO_DT || ""} disabled />
-              </Form.Group>
-            </Col>
-          </>
-        ) : (
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>Application Date</Form.Label>
-              <Form.Control type="date" value={viewedStepDetails?.APPLY_DT || ""} disabled />
-            </Form.Group>
-          </Col>
-        )}
-      </Row>
-      <Row className="mb-3">
-        <Col md={12}>
-          <Form.Group>
-            <Form.Label>Comments</Form.Label>
-            <Form.Control as="textarea" rows={2} value={viewedStepDetails?.COMMENTS || ""} disabled />
-          </Form.Group>
-        </Col>
-      </Row>
-      
-     
-      {/* Update button */}
-<div className="d-grid mt-3">
-  <OverlayTrigger
-    placement="top"
-    overlay={
-      <Tooltip id="update-tooltip">
-        {!canUpdate ? 
-          (isStep2Incomplete ? 
-            "Complete Level 4 to enable update" : 
-            "You can only update the current active step"
-          ) : 
-          "Click here to update this step as complete."
-        }
-      </Tooltip>
-    }
-  >
-    <span className="d-grid">
-      <Button
-        variant={canUpdate ? "success" : "secondary"}
-        size="md"
-        onClick={handleEmailSubmit}
-        disabled={!canUpdate}
-      >
-        Update Status to Complete
-      </Button>
-    </span>
-  </OverlayTrigger>
-</div>
-    </Form>
-  )}
-</Col>
-        
+
         <Col md={3}>
           <Card
             className="border rounded bg-white p-3 d-flex flex-column"
@@ -599,59 +757,59 @@ const handleConfirmSubmit = async (emails) => {
               {renderDocumentHistory()}
             </div>
 
-                <div className="p-2 border-top bg-light text-center">
-                          <Button 
-                            variant="info" 
-                            size="sm" 
-                            onClick={() => {
-                              // 08-12-2025: Parse logs from nextStepDetails
-                              let logs = [];
-                              try {
-                                if (viewedStepDetails?.LOG) {
-                                  logs = JSON.parse(viewedStepDetails?.LOG);
-                                }
-                              } catch (error) {
-                                console.error("Failed to parse logs:", error);
-                              }
-                              setSelectedLogs(logs);
-                              setShowLogsModal(true);
-                            }}
-                          >
-                            View Logs
-                          </Button>
-                        </div>
+            <div className="p-2 border-top bg-light text-center">
+              <Button
+                variant="info"
+                size="sm"
+                onClick={() => {
+                  // 08-12-2025: Parse logs from nextStepDetails
+                  let logs = [];
+                  try {
+                    if (viewedStepDetails?.LOG) {
+                      logs = JSON.parse(viewedStepDetails?.LOG);
+                    }
+                  } catch (error) {
+                    console.error("Failed to parse logs:", error);
+                  }
+                  setSelectedLogs(logs);
+                  setShowLogsModal(true);
+                }}
+              >
+                View Logs
+              </Button>
+            </div>
 
             {/* 💬 Comments (30%) */}
-           
-            
+
+
           </Card>
         </Col>
       </Row>
 
-      
-              <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} size="lg">
-  <Modal.Header closeButton>
-    <Modal.Title>Log History</Modal.Title>
-  </Modal.Header>
-   <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
-           {selectedLogs.length === 0 ? (
-             <p>No comments available</p>
-           ) : (
-             selectedLogs.map((log, i) => (
-               <div key={i}>
-                 <strong>{log?.date}:</strong> {log?.comment}
-                 <hr />
-               </div>
-             ))
-           )}
-         </Modal.Body>
- 
-  <Modal.Footer>
-    <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
-      Close
-    </Button>
-  </Modal.Footer>
-</Modal>
+
+      <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Log History</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
+          {selectedLogs.length === 0 ? (
+            <p>No comments available</p>
+          ) : (
+            selectedLogs.map((log, i) => (
+              <div key={i}>
+                <strong>{log?.date}:</strong> {log?.comment}
+                <hr />
+              </div>
+            ))
+          )}
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <EmailSelectionModal
         show={showEmailModal}
         onHide={() => setShowEmailModal(false)}

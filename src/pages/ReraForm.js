@@ -14,6 +14,7 @@ import { getMasterByLoc, submitReraForm } from "../api/Api";
 import { Context } from "../context/ContextData";
 import "../pages/Water.css"
 import ProjectInfoHeader from "../components/ProjectInfoHeader";
+import Swal from "sweetalert2";
 
 const ReraForm = () => {
   const navigate = useNavigate();
@@ -256,7 +257,8 @@ const ReraForm = () => {
     formPayload.append('prjName', formData.projectDetails);
     formPayload.append('address', formData.address);
     formPayload.append('comments', formData.Comments || '');
-
+formPayload.append("fromDate",'');
+      formPayload.append("toDate", '');
     // Append multiple uploaded docs
     if (AmountPaidDocs && AmountPaidDocs.length > 0) {
       AmountPaidDocs.forEach((file) => {
@@ -267,7 +269,14 @@ const ReraForm = () => {
     try {
       const data = await submitReraForm(formPayload);
       setFormReraData(data);
-
+const successMessage = data?.message || data?.data?.message || "Application submitted successfully!";
+    
+    await Swal.fire({
+      icon: "success",
+      title: successMessage,
+      showConfirmButton: false,
+      timer: 2000,
+    });
       toast.success(data.message || "Application submitted successfully!");
 
       // Reset form
@@ -654,6 +663,9 @@ const ReraForm = () => {
         showLandDocs={false}
         showOthDocs={false}
       />
+
+
+
 
       <ToastContainer
         position="top-right"

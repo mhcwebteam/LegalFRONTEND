@@ -347,7 +347,7 @@ const AirportModifyTable = () => {
       setFormData((prev) => ({
         ...prev,
         applyDate: details.APPLY_DT,
-        comments: details.COMMENTS || "",
+        comments:  "",
         // Populate the new amendment fields
         amendComments: details.AMEND_COMMENTS || "",
         amendDate: details.AMEND_DATE || "",
