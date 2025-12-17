@@ -217,6 +217,8 @@ const ProjectDetails = () => {
     const response = await axios.post(`${API_BASE_URL}/new-plant-store`, formPayload, {
       headers: { "Content-Type": "application/json" },
     });
+
+
     if (response.data.message) {
       Swal.fire({
         icon: "success",
@@ -656,7 +658,7 @@ const ProjectDetails = () => {
       {/* Company & Plant Dialog */}
       <Dialog
         open={companyDialogOpen}
-        onClose={handleCloseCompanyDialog}
+        // onClose={handleCloseCompanyDialog}
         maxWidth="sm"
         fullWidth
         TransitionComponent={Transition}

@@ -75,43 +75,43 @@ const WaterModifyTable = () => {
   const [loc, setLoc] = useState([]);
 
 
-    useEffect(() => {
-      if (steps.length > 0 && storeData.length > 0) {
-        const completedProcesses = storeData
-          .filter((item) => item.UPDATED === "YES")
-          .map((item) => item.PROCESS?.trim().toLowerCase());
-  
-        const allCompleted = steps.every(step => 
-          completedProcesses.includes(step.PROCESS?.trim().toLowerCase())
-        );
-  
-        setAllStepsCompleted(allCompleted);
-      } else {
-        setAllStepsCompleted(false);
-      }
-    }, [steps, storeData]);
+  useEffect(() => {
+    if (steps.length > 0 && storeData.length > 0) {
+      const completedProcesses = storeData
+        .filter((item) => item.UPDATED === "YES")
+        .map((item) => item.PROCESS?.trim().toLowerCase());
 
-    
-      const renderCompletionMessage = () => {
-        return (
-          <div className="text-center py-5">
-            <FaCheckCircle size={64} className="text-success mb-3" />
-            <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-            <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-            <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
-              <Alert.Heading>Project Completion Status</Alert.Heading>
-              <p>
-                All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
-                You can review the completed project details.
-              </p>
-              <hr />
-              <p className="mb-0">
-                The project is now ready for the next phase or final approval.
-              </p>
-            </Alert>
-          </div>
-        );
-      };
+      const allCompleted = steps.every(step =>
+        completedProcesses.includes(step.PROCESS?.trim().toLowerCase())
+      );
+
+      setAllStepsCompleted(allCompleted);
+    } else {
+      setAllStepsCompleted(false);
+    }
+  }, [steps, storeData]);
+
+
+  const renderCompletionMessage = () => {
+    return (
+      <div className="text-center py-5">
+        <FaCheckCircle size={64} className="text-success mb-3" />
+        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+        <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
+          <Alert.Heading>Project Completion Status</Alert.Heading>
+          <p>
+            All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed.
+            You can review the completed project details.
+          </p>
+          <hr />
+          <p className="mb-0">
+            The project is now ready for the next phase or final approval.
+          </p>
+        </Alert>
+      </div>
+    );
+  };
 
   // Open email modal
   const handleEmailSubmit = () => {
@@ -119,7 +119,24 @@ const WaterModifyTable = () => {
     if (!formData.loc) newErrors.loc = "Plant selection is required";
     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
 
-     if (!validateDocuments()) {
+      if (formData.status === "YES" && !formData.comments) {
+    newErrors.comments = "Comments are required";
+  }
+  
+  // Reason is required when status is "NO"
+  if (formData.status === "NO" && !formData.reason) {
+    newErrors.reason = "Reason is required";
+  }
+    
+  //      if (formData.status !== "NO" && !formData.comments) {
+  //   newErrors.comments = "Comments are required";
+  // }
+
+  //        if (formData.status == "YES" && !formData.reason) {
+  //   newErrors.reason = "reason are required";
+  // }
+
+    if (!validateDocuments()) {
       // Errors already set in validateDocuments function
       return false;
     }
@@ -138,7 +155,7 @@ const WaterModifyTable = () => {
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
-    
+
     // Proceed with form submission
     await handleConfirmSubmit(emails);
   };
@@ -221,7 +238,7 @@ const WaterModifyTable = () => {
         applyDate: details?.APPLY_DT,
         status: details?.STATUS || "YES",
         reason: details?.REASON || "",
-        comments:  "",
+        comments: "",
         noOfFlats: details?.NUMBER_OF_FLATS || "",
         KLD: details?.KLD || "",
         amountPaid: details?.AMOUNT_PAID || "",
@@ -262,8 +279,6 @@ const WaterModifyTable = () => {
         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
         .then((res) => {
           setStoreData(res.data);
-
-          console.log(res.data, "result1111111111111111")
           if (res.data.length > 0) {
             setFormData((prev) => ({
               ...prev,
@@ -349,7 +364,7 @@ const WaterModifyTable = () => {
       }));
     }
   };
-    const validateFileType = (file) => {
+  const validateFileType = (file) => {
     // Check file extension
     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     const validExtensions = ['.pdf'];
@@ -407,7 +422,7 @@ const WaterModifyTable = () => {
     linkDocs.forEach(f => payload.append("Plan_Doc[]", f));
     landDocs.forEach(f => payload.append("Title_Doc[]", f));
     othDocs.forEach(f => payload.append("Oth_Doc[]", f));
-     AmountPaidDocs.forEach(f => payload.append("AMOUNT_PAID_DOC[]", f));
+    AmountPaidDocs.forEach(f => payload.append("AMOUNT_PAID_DOC[]", f));
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
@@ -418,7 +433,7 @@ const WaterModifyTable = () => {
     //   payload.append("amountPaid", formData.amountPaid || "");
     //   payload.append("noOfTowers", formData.noOfTowers || 0);
     //   feasibilityDocs.forEach(f => payload.append('FEAS_DOC[]', f));
-     
+
     // }
 
     try {
@@ -507,7 +522,7 @@ const WaterModifyTable = () => {
                 let variant = "secondary";
                 let clickable = false;
                 let statusIcon = "⏸️";
-                    const isCompleted = storeData.some(
+                const isCompleted = storeData.some(
                   (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
                     item.UPDATED === "YES"
                 );
@@ -551,280 +566,287 @@ const WaterModifyTable = () => {
           style={{ height: '350px', overflowY: 'auto' }}
 
         >
-             {allStepsCompleted  ? (
+          {allStepsCompleted ? (
             renderCompletionMessage()
           ) : (
-          <Form className="p-3 border rounded bg-light ">
-            {immediateNextStep && (
-              <h4 className="mb-3 text-warning fw-bold">
-                {immediateNextStep.PROCESS}
-              </h4>
-            )}
-            <Row className="mb-2">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Plant</Form.Label>
-                  <Form.Select
-                    name="loc"
-                    value={formData.loc || ""}
-                    onChange={handleChange}
-                    isInvalid={!!errors.loc}
-                  >
-                    <option value="">Select Plant</option>
-                    {loc.map((ele, index) => (
-                      <option key={index} value={ele.loc}>
-                        {ele.loc}
-                      </option>
-                    ))}
-                  </Form.Select>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.loc}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Apply Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    name="applyDate"
-                    value={formData.applyDate || ""}
-                    onChange={handleChange}
+            <Form className="p-3 border rounded bg-light ">
+              {immediateNextStep && (
+                <h4 className="mb-3 text-warning fw-bold">
+                  {immediateNextStep.PROCESS}
+                </h4>
+              )}
+              <Row className="mb-2">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Plant</Form.Label>
+                    <Form.Select
+                      name="loc"
+                      value={formData.loc || ""}
+                      onChange={handleChange}
+                      isInvalid={!!errors.loc}
+                    >
+                      <option value="">Select Plant</option>
+                      {loc.map((ele, index) => (
+                        <option key={index} value={ele.loc}>
+                          {ele.loc}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.loc}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Apply Date</Form.Label>
+                    <Form.Control
+                      type="date"
+                      name="applyDate"
+                      value={formData.applyDate || ""}
+                      onChange={handleChange}
                       max={new Date().toISOString().split("T")[0]}
-                    isInvalid={!!errors.applyDate}
-                    disabled={!formData.loc || (nextStepDetails && nextStepDetails.APPLY_DT)}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.applyDate}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            </Row>
+                      isInvalid={!!errors.applyDate}
+                      disabled={!formData.loc || (nextStepDetails && nextStepDetails.APPLY_DT)}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.applyDate}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            <>
-              <Row className="mb-3 align-items-end">
-                {!isFirstProcess && (
-                  <>
-                    <Col md={6} className="mb-2">
-                      <Form.Group>
-                        <Form.Label>STATUS</Form.Label>
-                        <div>
-                          <Form.Check
-                            inline
-                            label="Yes"
-                            name="status"
-                            type="radio"
-                            value="YES"
-                            checked={formData.status === "YES"}
-                            disabled={!formData.loc}
-                            onChange={handleChange}
-                          />
-                          <Form.Check
-                            inline
-                            label="No"
-                            name="status"
-                            type="radio"
-                            value="NO"
-                            checked={formData.status === "NO"}
-                            disabled={!formData.loc}
-                            onChange={handleChange}
-                          />
-                        </div>
-                      </Form.Group>
-                    </Col>
-                    {immediateNextStepIndex === 1 && (
+              <>
+                <Row className="mb-3 align-items-end">
+                  {!isFirstProcess && (
+                    <>
                       <Col md={6} className="mb-2">
                         <Form.Group>
-                          <Form.Label>GHMC</Form.Label>
+                          <Form.Label>STATUS</Form.Label>
                           <div>
                             <Form.Check
                               inline
                               label="Yes"
-                              name="Ghmc"
+                              name="status"
                               type="radio"
                               value="YES"
-                              checked={formData.Ghmc === "YES"}
+                              checked={formData.status === "YES"}
                               disabled={!formData.loc}
                               onChange={handleChange}
                             />
                             <Form.Check
                               inline
                               label="No"
-                              name="Ghmc"
+                              name="status"
                               type="radio"
                               value="NO"
-                              checked={formData.Ghmc === "NO"}
+                              checked={formData.status === "NO"}
                               disabled={!formData.loc}
                               onChange={handleChange}
                             />
                           </div>
                         </Form.Group>
                       </Col>
-                    )}
-
-                    {immediateNextStepIndex === 1 && (
-                      <Row className="mb-2">
-                        <Col md={6}>
+                      {immediateNextStepIndex === 1 && (
+                        <Col md={6} className="mb-2">
                           <Form.Group>
-                            <Form.Label>Remaining Paid</Form.Label>
+                            <Form.Label>GHMC</Form.Label>
+                            <div>
+                              <Form.Check
+                                inline
+                                label="Yes"
+                                name="Ghmc"
+                                type="radio"
+                                value="YES"
+                                checked={formData.Ghmc === "YES"}
+                                disabled={!formData.loc}
+                                onChange={handleChange}
+                              />
+                              <Form.Check
+                                inline
+                                label="No"
+                                name="Ghmc"
+                                type="radio"
+                                value="NO"
+                                checked={formData.Ghmc === "NO"}
+                                disabled={!formData.loc}
+                                onChange={handleChange}
+                              />
+                            </div>
+                          </Form.Group>
+                        </Col>
+                      )}
+
+                      {immediateNextStepIndex === 1 && (
+                        <Row className="mb-2">
+                          <Col md={6}>
+                            <Form.Group>
+                              <Form.Label>Remaining Paid</Form.Label>
+                              <Form.Control
+                                type="number"
+                                name="OldAmount"
+                                value={formData.OldAmount || ""}
+                                disabled={!formData.loc}
+                                onChange={handleChange}
+                                isInvalid={!!errors.loc}
+                              />
+                              <Form.Control.Feedback type="invalid">
+                                {errors.OldAmount}
+                              </Form.Control.Feedback>
+                            </Form.Group>
+                          </Col>
+                          <Col md={6}>
+                            <Form.Group>
+                              <Form.Label>Total Amount</Form.Label>
+                              <Form.Control
+                                type="number"
+                                name="TotalAmount"
+                                value={formData.TotalAmount || ""}
+                                onChange={handleChange}
+                                readOnly
+                                isInvalid={!!errors.loc}
+                              />
+                              <Form.Control.Feedback type="invalid">
+                                {errors.TotalAmount}
+                              </Form.Control.Feedback>
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                      )}
+
+                      {immediateNextStepIndex === 3 && (
+                        <Row className="mb-2">
+                          <Form.Group>
+                            <Form.Label>Size Of Connection</Form.Label>
                             <Form.Control
                               type="number"
-                              name="OldAmount"
-                              value={formData.OldAmount || ""}
+                              name="Size"
+                              value={formData.Size || ""}
+                              onChange={handleChange}
+                              isInvalid={!!errors.Size}
                               disabled={!formData.loc}
-                              onChange={handleChange}
-                              isInvalid={!!errors.loc}
                             />
                             <Form.Control.Feedback type="invalid">
-                              {errors.OldAmount}
+                              {errors.Size}
                             </Form.Control.Feedback>
                           </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group>
-                            <Form.Label>Total Amount</Form.Label>
-                            <Form.Control
-                              type="number"
-                              name="TotalAmount"
-                              value={formData.TotalAmount || ""}
-                              onChange={handleChange}
-                              readOnly
-                              isInvalid={!!errors.loc}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.TotalAmount}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                        </Col>
-                      </Row>
-                    )}
-
-                    {immediateNextStepIndex === 3 && (
-                      <Row className="mb-2">
-                        <Form.Group>
-                          <Form.Label>Size Of Connection</Form.Label>
-                          <Form.Control
-                            type="number"
-                            name="Size"
-                            value={formData.Size || ""}
-                            onChange={handleChange}
-                            isInvalid={!!errors.Size}
-                            disabled={!formData.loc}
-                          />
-                          <Form.Control.Feedback type="invalid">
-                            {errors.Size}
-                          </Form.Control.Feedback>
-                        </Form.Group>
-                      </Row>
-                    )}
-                  </>
-                )}
-              </Row>
-            </>
-
-           
-
-            {formData.status === "NO" && (
-              <Row className="mb-2">
-                <Col md={12}>
-                  <Form.Group>
-                    <Form.Label>Reason</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
-                      name="reason"
-                      value={formData.reason || ""}
-                      disabled={!formData.loc}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-            )}
-
-            {isFirstProcess && (
-              <>
-                <Row className="mb-3">
-                  <Col md={4}>
-                    <Form.Group>
-                      <Form.Label>Number of Flats</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="noOfFlats"
-                        value={formData.noOfFlats || ""}
-                        disabled={!formData.loc}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={4}>
-                    <Form.Group>
-                      <Form.Label>KLD</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="KLD"
-                        readOnly
-                        value={formData.KLD || ""}
-                        disabled={!formData.loc}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={4}>
-                    <Form.Group>
-                      <Form.Label>Amount Paid</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="amountPaid"
-                        value={formData.amountPaid || ""}
-                        disabled={!formData.loc}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={4} className="mt-3">
-                    <Form.Group>
-                      <Form.Label>Total Project Area</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="TotalProjectArea"
-                        value={formData.TotalProjectArea || ""}
-                        disabled={!formData.loc}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={4} className="mt-3">
-                    <Form.Group>
-                      <Form.Label>Number Of Towers</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="noOfTowers"
-                        value={formData.noOfTowers}
-                        disabled={!formData.loc}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={4} className="mt-3">
-                    <Form.Group>
-                      <Form.Label>Project Build Area</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="ProjectBuildArea"
-                        value={formData.ProjectBuildArea}
-                        disabled={!formData.loc}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
+                        </Row>
+                      )}
+                    </>
+                  )}
                 </Row>
               </>
-            )}
 
-          
+
+
+              {formData.status === "NO" && (
+                <Row className="mb-2">
+                  <Col md={12}>
+                    <Form.Group>
+                      <Form.Label>Reason*</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        name="reason"
+                        value={formData.reason || ""}
+                        disabled={!formData.loc}
+                        isInvalid={!!errors.reason}
+                        onChange={handleChange}
+                      />
+                       <Form.Control.Feedback type="invalid">
+                                {errors.reason}
+                              </Form.Control.Feedback>
+
+                    </Form.Group>
+
+
+                  </Col>
+                </Row>
+              )}
+
+              {isFirstProcess && (
+                <>
+                  <Row className="mb-3">
+                    <Col md={4}>
+                      <Form.Group>
+                        <Form.Label>Number of Flats</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="noOfFlats"
+                          value={formData.noOfFlats || ""}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                    </Col>
+
+                    <Col md={4}>
+                      <Form.Group>
+                        <Form.Label>KLD</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="KLD"
+                          readOnly
+                          value={formData.KLD || ""}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                    </Col>
+
+                    <Col md={4}>
+                      <Form.Group>
+                        <Form.Label>Amount Paid</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="amountPaid"
+                          value={formData.amountPaid || ""}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={4} className="mt-3">
+                      <Form.Group>
+                        <Form.Label>Total Project Area</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="TotalProjectArea"
+                          value={formData.TotalProjectArea || ""}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={4} className="mt-3">
+                      <Form.Group>
+                        <Form.Label>Number Of Towers</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="noOfTowers"
+                          value={formData.noOfTowers}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={4} className="mt-3">
+                      <Form.Group>
+                        <Form.Label>Project Build Area</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="ProjectBuildArea"
+                          value={formData.ProjectBuildArea}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </>
+              )}
+
+
               <Row className="mb-3">
                 <Col md={6}>
                   <Form.Label>Upload Documents</Form.Label>
@@ -840,56 +862,63 @@ const WaterModifyTable = () => {
                         `(${AmountPaidDocs.length} files)`}
                     </span>
                   </button>
-                      {errors.AmountPaidDocs && (
-                        <p className="error-text text-danger mt-1 mb-0">
-                          {errors.AmountPaidDocs}
-                        </p>
-                      )}
+                  {errors.AmountPaidDocs && (
+                    <p className="error-text text-danger mt-1 mb-0">
+                      {errors.AmountPaidDocs}
+                    </p>
+                  )}
                 </Col>
 
-              
-          
-          {formData.status !== "NO" && (
-    <Col md={6}>
-      <Form.Group>
-        <Form.Label>Comments</Form.Label>
-        <Form.Control
-          as="textarea"
-          rows={2}
-          name="comments"
-          value={formData.comments || ""}
-          disabled={!formData.loc}
-          onChange={handleChange}
-        />
-      </Form.Group>
-    </Col>
-  )}
+
+
+                {formData.status !== "NO" && (
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Comments*</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        name="comments"
+                        value={formData.comments || ""}
+                        disabled={!formData.loc}
+                        onChange={handleChange}
+                      isInvalid={!!errors.comments}
+
+                      />
+
+                                        <Form.Control.Feedback type="invalid">
+                                               {errors.comments}
+                                             </Form.Control.Feedback>
+                    </Form.Group>
              
+                  </Col>
+                )}
+
               </Row>
-          
 
-         
 
-            <div className="d-grid">
-              <Button
-                variant={submitted ? "success" : "primary"}
-                size="md"
-                onClick={handleEmailSubmit}
-                className="w-100 fw-semibold"
-                disabled={!formData.loc || isSubmitting || submitted}
-              >
-                {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
-              </Button>
-            </div>
-          </Form>
 
-             )}
+
+              <div className="d-grid">
+                <Button
+                  variant={submitted ? "success" : "primary"}
+                  size="md"
+                  onClick={handleEmailSubmit}
+                  className="w-100 fw-semibold"
+                  disabled={!formData.loc || isSubmitting || submitted}
+                >
+                  {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
+                </Button>
+              </div>
+            </Form>
+
+          )}
         </Col>
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousWaterUploadedDocs firstStep={firstStep}   type = "modify" 
-           />
+            <PreviousWaterUploadedDocs firstStep={firstStep} type="modify"
+            />
           </div>
         </Col>
       </Row>

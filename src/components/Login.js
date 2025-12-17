@@ -232,14 +232,7 @@ export default function Login() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              <div className="forgot-password">
-                <button
-                  type="button"
-                  onClick={() => alert("Forgot password functionality")}
-                >
-                  Forgot password?
-                </button>
-              </div>
+        
             </div>
 
             {/* Submit Button */}
@@ -265,14 +258,7 @@ export default function Login() {
           </div>
 
           {/* Sign Up Link */}
-          <div className="signup-section">
-            <p>
-              Don't have an account?{" "}
-              <button type="button" onClick={() => navigate("/signup")}>
-                Sign Up
-              </button>
-            </p>
-          </div>
+       
         </div>
 
         {/* Footer Text */}

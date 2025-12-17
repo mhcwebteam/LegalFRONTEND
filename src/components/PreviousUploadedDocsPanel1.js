@@ -232,7 +232,7 @@ const paidDoc = parseDocs("AMOUNT_PAID_DOC_NAME", "AMOUNT_PAID_DOC_PATH");
           />
 
                  <DocumentList
-            title="paid Documents"
+            title=" Upload paid Documents"
             docs={paidDoc}
             docType="paid"
             onDelete={handleDelete}
@@ -267,7 +267,7 @@ const paidDoc = parseDocs("AMOUNT_PAID_DOC_NAME", "AMOUNT_PAID_DOC_PATH");
   ) : (
     selectedLogs.map((log, i) => (
       <div key={i}>
-        <strong>{log?.date}:</strong> {log?.comment}
+        <strong>{log?.date}:</strong> {log?.comment} {log?.REASON}
         <hr />
       </div>
     ))

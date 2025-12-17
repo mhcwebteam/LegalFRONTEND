@@ -131,7 +131,6 @@ import Create from './pages/Create';
 import Update from './pages/Update';
 import Modify from './pages/Modify';
 import Amendment from './pages/Amendment';
-import View from './pages/View';
 import PollutionForm from './pages/PollutionForm';
 import Airport from './pages/Airport'; 
 import TaxReturns from './pages/TaxReturns';
@@ -145,6 +144,7 @@ import Ghmc from './pages/Ghmc';
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import EditMasterDetails from './pages/EditMasterDetails';
+import Report from './pages/Report';
 
 function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -220,7 +220,7 @@ function App() {
               <Route path="/modify" element={<Modify />} />
               <Route path="/amendment" element={<Amendment />} />
               <Route path="/taxreturns" element={<TaxReturns />} />
-              <Route path="/view" element={<View />} />
+              <Route path="/report" element={<Report />} />
               <Route path="/create/pollution" element={<PollutionForm />} />
               <Route path="/create/airport" element={<Airport />} />
               <Route path="/create/water" element={<WaterForm />} />

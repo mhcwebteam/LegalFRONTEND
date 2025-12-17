@@ -1067,7 +1067,7 @@ const WaterForm = () => {
     formPayload.append('amountPaid', formData.amountPaid);
     formPayload.append('KLD', formData.KLD);
     formPayload.append('FeasibilityDoc', formData.feasibilityDoc);
-    formPayload.append('AmountPaidDoc', formData.AmountPaidDoc);
+    formPayload.append('AMOUNT_PAID_DOC[]', formData.AmountPaidDoc);
 
     // Only append valid PDF files
     planDocs.forEach(f => {
@@ -1092,7 +1092,7 @@ const WaterForm = () => {
     });
     AmountPaidDocs.forEach(f => {
       if (validateFileType(f)) {
-        formPayload.append('amountPaidDocs[]', f);
+        formPayload.append('AMOUNT_PAID_DOC[]', f);
       }
     });
 

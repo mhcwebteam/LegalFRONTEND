@@ -10,7 +10,7 @@ const menuItems = [
   { label: 'Update', icon: '✏️', path: '/update' },
   { label: 'Amendment', icon: '📝', path: '/amendment' },
   { label: 'Tax Return', icon: '💰', path: '/taxreturns' },
-  { label: 'View', icon: '👁️', path: '/view' },
+  { label: 'Report', icon: '👁️', path: '/report' },
 ];
 
 const Sidebar = ({ isMobile, isOpen, closeSidebar, setIsHovered, isHovered }) => {

@@ -18,6 +18,8 @@ const AmendModal = ({
   emailAmendRecipients,
 }) => {
 
+  console.log("📋 AmendModal received data:", amendData);
+  console.log("🔍 Process nameeeeeeeeeeeee:", amendData.process);
 
   console.log("ammmmmmmmmm", amendData);
 
@@ -81,7 +83,18 @@ const AmendModal = ({
     if (!amendData.amendDate) {
       newErrors.amendDate = "Please enter Amendment Date";
     }
-
+    //-------------------------------------------------------------------------------------------------------------
+    //added validation on 15-12-2025 by rajakumari.m
+    const isReceivedDateProcess = 
+    amendData.process === "Received TOR" || 
+    amendData.process === "EC (Environmetal Clearance)" || 
+    amendData.process === "Received CFE" || 
+    amendData.process === "Application for CFE";
+    
+  if (isReceivedDateProcess && !amendData.receivedDate) {
+    newErrors.receivedDate = "Please enter Received Date"; // Fixed error message
+  }
+//----------------------------------------------------------------------------------------------------------------------
     if (!amendData.comments.trim()) {
       newErrors.comments = "Please enter Comments";
     }
@@ -169,6 +182,7 @@ const formatDate = (date) => {
           </Form.Label>
               <Form.Control type="text" value={formatDate(amendData?.applyDate)} readOnly />
             </Form.Group>
+ 
 
             {/* AMENDMENT DATE */}
             <Form.Group className="mb-3">
@@ -222,6 +236,36 @@ const formatDate = (date) => {
                 <option value="No">No</option>
               </Form.Select>
             </Form.Group>
+{/* ------------------------------------------------------------------------------------------------------------------------------------*/}  
+        {/* added on 15-12-2025 by rajakumari.m  */}     
+            {/* RECEIVED DATE - Show only for specific processes */}
+{/* RECEIVED DATE - Show only for specific processes */}
+{/* RECEIVED DATE - Show only for specific processes */}
+{(amendData.process === "Received TOR" || 
+  amendData.process === "EC (Environmetal Clearance)" || 
+  amendData.process === "Received CFE" || 
+  amendData.process === "Application for CFE") && (
+  <Form.Group className="mb-3">
+    <Form.Label>Received Date<span style={{ color: "red" }}>*</span></Form.Label>
+    <Form.Control
+      type="date"
+      value={amendData.receivedDate || ""}
+      max={new Date().toISOString().split("T")[0]} 
+      onChange={(e) =>
+        setAmendData((prev) => ({
+          ...prev,
+          receivedDate: e.target.value,
+        }))
+      }
+    />
+    {errors.receivedDate && (
+      <div className="text-danger" style={{ fontSize: "14px" }}>
+        {errors.receivedDate}
+      </div>
+    )}
+  </Form.Group>
+)}
+ {/* ------------------------------------------------------------------------------------------------------------------------------------*/}  
 
             {/* Conditional Radio Button for "Returns Submit" in Amend Modal */}
             {amendData.process ===

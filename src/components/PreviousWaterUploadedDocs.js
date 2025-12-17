@@ -257,7 +257,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
         />
 
         <DocumentList
-          title="Upload Documents"
+          title="Upload Paid Documents"
           docs={amountdocs}
           docType="PAID"
           onDelete={handleDelete}
@@ -301,7 +301,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           ) : (
             selectedLogs.map((log, i) => (
               <div key={i}>
-                <strong>{log?.date}:</strong> {log?.comment}
+                <strong>{log?.date}:</strong> {log?.comment} {log?.REASON}
                 <hr />
               </div>
             ))

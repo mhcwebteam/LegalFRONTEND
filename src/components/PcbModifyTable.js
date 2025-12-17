@@ -73,7 +73,7 @@ const [errors, setErrors] = useState({
   });
 
 
-  console.log(modalData?.process,"hiooiiiiiiiiiiiiiiiiiiiiiiii","Received TOR");
+ 
   const [showAmendModal, setShowAmendModal] = useState(false);
   const [amendData, setAmendData] = useState({
     plant: "",
@@ -86,6 +86,8 @@ const [errors, setErrors] = useState({
     comments: "",
     oldComments: "",
     amendreturnsSubmitted: "",
+
+     receivedDate: "", 
   });
 
 
@@ -372,6 +374,7 @@ useEffect(() => {
         oldComments,
         amendDecision: "Yes",
         amendreturnsSubmitted: amendreturnsubmit,
+         receivedDate: data.RECEIVED_DT || "",
       });
 
       setShowAmendModal(true);
