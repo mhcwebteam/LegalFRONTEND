@@ -98,6 +98,10 @@ const FireModifyTable = () => {
       .catch((err) => console.error("Error fetching FIRE plants:", err));
   }, []);
 
+    useEffect(() => {
+    setHeaderData(null);
+  }, []);
+
   useEffect(() => {
     setStoreData([]);
     setImmediateNextStep(null);

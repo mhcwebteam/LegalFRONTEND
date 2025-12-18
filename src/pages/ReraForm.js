@@ -38,25 +38,25 @@ const ReraForm = () => {
     Comments: '',
   });
 
-  const fetchDataForLoc = async (loc) => {
-    try {
-      const res = await getMasterByLoc(loc);
-      if (res) {
-        setHeaderData(res);
-      }
-    } catch (error) {
-      console.error("Error fetching initial loc data:", error);
-    }
-  };
+  // const fetchDataForLoc = async (loc) => {
+  //   try {
+  //     const res = await getMasterByLoc(loc);
+  //     if (res) {
+  //       setHeaderData(res);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching initial loc data:", error);
+  //   }
+  // };
 
-  useEffect(() => {
-    if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
-      const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
-      if (defaultLoc) {
-        fetchDataForLoc(defaultLoc);
-      }
-    }
-  }, [totalMasterData]);
+  // useEffect(() => {
+  //   if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+  //     const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+  //     if (defaultLoc) {
+  //       fetchDataForLoc(defaultLoc);
+  //     }
+  //   }
+  // }, [totalMasterData]);
 
   useEffect(() => {
     const fetchProcess = async () => {

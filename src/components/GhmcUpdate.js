@@ -76,6 +76,13 @@ const GhmcUpdate = () => {
     open: false,
   });
 
+
+  
+      useEffect(() => {
+        setHeaderData(null);
+      }, []);
+
+      
   // Check if viewing the immediate next step (not a completed step)
   const isViewingNextStep = () => {
     return viewedStep?.PROCESS === immediateNextStep?.PROCESS;

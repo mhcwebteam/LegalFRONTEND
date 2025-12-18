@@ -38,6 +38,11 @@ const AirportUpdateTable = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [processingDt, setProcessingdt] = useState(0);
 
+
+  useEffect(() => {
+  setHeaderData(null);
+}, []);
+
   const renderCompletionMessage = () => {
     return (
       <div className="text-center">

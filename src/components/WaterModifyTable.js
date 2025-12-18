@@ -75,6 +75,11 @@ const WaterModifyTable = () => {
   const [loc, setLoc] = useState([]);
 
 
+       useEffect(() => {
+          setHeaderData(null);
+        }, []);
+
+
   useEffect(() => {
     if (steps.length > 0 && storeData.length > 0) {
       const completedProcesses = storeData

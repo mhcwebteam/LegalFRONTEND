@@ -848,17 +848,17 @@ const WaterForm = () => {
     fetchProcess();
   }, []);
 
-  const fetchDataForLoc = async (loc) => {
-    try {
-      const res = await getMasterByLoc(loc);
+  // const fetchDataForLoc = async (loc) => {
+  //   try {
+  //     const res = await getMasterByLoc(loc);
 
-      if (res) {
-        setHeaderData(res);
-      }
-    } catch (error) {
-      console.error("Error fetching initial loc data:", error);
-    }
-  };
+  //     if (res) {
+  //       setHeaderData(res);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching initial loc data:", error);
+  //   }
+  // };
 
   useEffect(() => {
     const fetchProcess = async () => {
@@ -1098,7 +1098,7 @@ const WaterForm = () => {
 
     try {
       const res = await submitWaterForm(formPayload);
-      console.log("ddddddddddd1111111111111111111",res);
+  
 
       setWaterData(res)
 

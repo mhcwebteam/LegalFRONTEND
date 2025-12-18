@@ -73,6 +73,11 @@ const AirportModifyTable = () => {
     );
   }, [selectedPlant, immediateNextStep, storeData]);
 
+
+  useEffect(() => {
+  setHeaderData(null);
+}, []);
+
   // Check if all steps are completed
   useEffect(() => {
     if (steps.length > 0 && storeData.length > 0) {

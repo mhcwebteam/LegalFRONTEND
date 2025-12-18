@@ -49,6 +49,11 @@ const PcbUpdateTable = () => {
   const [updateType, setUpdateType] = useState(''); // 'regular' or 'amendment'
   const [currentProcessForUpdate, setCurrentProcessForUpdate] = useState(null);
 
+
+    useEffect(() => {
+    setHeaderData(null);
+  }, []);
+
   const {
     totalMasterData = [],
     setHeaderData,

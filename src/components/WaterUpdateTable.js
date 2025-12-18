@@ -82,7 +82,11 @@ const WaterUpdateTable = () => {
   const [isFirstProcess, setIsFirstProcess] = useState(true);
     const [allStepsCompleted, setAllStepsCompleted] = useState(false);
 
+    
 
+     useEffect(() => {
+        setHeaderData(null);
+      }, []);
 
   const handleEmailSubmit = () => {
     const newErrors = {};

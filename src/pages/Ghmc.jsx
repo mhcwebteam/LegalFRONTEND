@@ -3,18 +3,17 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaLeaf, FaWater, FaBuilding, FaCalendarAlt, FaUpload, FaMoneyBill, FaFileAlt } from 'react-icons/fa';
-import { ChevronLeft, FileText, Home, Droplets, MessageSquareMore, CircleDivide, Calculator, Store, FileCheck2, FileCheck, FolderUp, BrickWallFire, Building, Landmark } from "lucide-react";
-import PlantSelect from '../components/PlantSelect';
+import { FaLeaf, FaWater, FaCalendarAlt, FaUpload, FaMoneyBill, FaFileAlt } from 'react-icons/fa';
+import { ChevronLeft, FileText, Home, MessageSquareMore, Store, FileCheck, FolderUp, Building, Landmark } from "lucide-react";
 import ApplyDateInput from '../components/ApplyDateInput';
 import { ToastContainer, toast } from 'react-toastify';
 import ReusableDialog from "../components/ReusableDialog";
 import "../pages/Ghmc.css";
-import { createMaster, getMasterByLoc, submitWaterForm } from "../api/Api"
+import {  getMasterByLoc } from "../api/Api"
 import { Context } from "../context/ContextData"
-import { Button } from "react-bootstrap";
-import { FormControl, MenuItem, Select, TextField } from "@mui/material";
-import { API_BASE_URL, API_BASE_URLS } from "../config/Config";
+
+
+import { API_BASE_URL } from "../config/Config";
 import ProcessField from "../components/ProcessField";
 import ProjectInfoHeader from "../components/ProjectInfoHeader";
 import WaterDocUploadModal from "../components/WaterDocUploadModal";
@@ -22,8 +21,6 @@ import Swal from "sweetalert2";
 
 const Ghmc = () => {
     const navigate = useNavigate();
-    const { totalMasterData, setHeaderData, headerData, setMasterGetData, setMasterData } = useContext(Context);
-    const [showModal, setShowModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -170,23 +167,23 @@ const Ghmc = () => {
         fetchProcess();
     }, []);
 
-    useEffect(() => {
-        if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
-            const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
-            fetchDataForLoc(defaultLoc);
-        }
-    }, [totalMasterData]);
+    // useEffect(() => {
+    //     if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+    //         const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+    //         fetchDataForLoc(defaultLoc);
+    //     }
+    // }, [totalMasterData]);
 
-    const fetchDataForLoc = async (loc) => {
-        try {
-            const res = await getMasterByLoc(loc);
-            if (res) {
-                setHeaderData(res);
-            }
-        } catch (error) {
-            console.error("Error fetching initial loc data:", error);
-        }
-    };
+    // const fetchDataForLoc = async (loc) => {
+    //     try {
+    //         const res = await getMasterByLoc(loc);
+    //         if (res) {
+    //             setHeaderData(res);
+    //         }
+    //     } catch (error) {
+    //         console.error("Error fetching initial loc data:", error);
+    //     }
+    // };
 
     // ✅ Complete validation in handleSubmit
     const handleSubmit = async (e) => {

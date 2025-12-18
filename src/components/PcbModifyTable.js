@@ -86,10 +86,12 @@ const [errors, setErrors] = useState({
     comments: "",
     oldComments: "",
     amendreturnsSubmitted: "",
-
      receivedDate: "", 
   });
 
+     useEffect(() => {
+        setHeaderData(null);
+      }, []);
 
   // ---------------------- EMAIL (Amend) HANDLERS ----------------------
 const [emailAmendRecipients, setEmailAmendRecipients] = useState([]);
@@ -700,6 +702,10 @@ const formatDate = (dateString) => {
   }
 };
 
+
+  useEffect(() => {
+  setHeaderData(null);
+}, []);
 
 
 const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {

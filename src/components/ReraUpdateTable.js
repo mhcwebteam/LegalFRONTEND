@@ -54,6 +54,11 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   return steps.every((step) => completedSteps.includes(step.PROCESS?.trim()));
 };
 
+
+     useEffect(() => {
+        setHeaderData(null);
+      }, []);
+
   const renderCompletionMessage = () => {
     return (
       <Alert variant="success" className="mb-3">

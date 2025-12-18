@@ -104,16 +104,16 @@ const PollutionForm = () => {
         }
     }, [formData.loc]);
 
-    const fetchDataForLoc = async (loc) => {
-        try {
-            const res = await getMasterByLoc(loc);
-            if (res) {
-                setHeaderData(res);
-            }
-        } catch (error) {
-            console.error("Error fetching initial loc data:", error);
-        }
-    };
+    // const fetchDataForLoc = async (loc) => {
+    //     try {
+    //         const res = await getMasterByLoc(loc);
+    //         if (res) {
+    //             setHeaderData(res);
+    //         }
+    //     } catch (error) {
+    //         console.error("Error fetching initial loc data:", error);
+    //     }
+    // };
 
     const checkIfPlantExists = async (plant) => {
         try {

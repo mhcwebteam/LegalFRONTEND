@@ -46,7 +46,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   // State to track if Level 4 is completed
   const [isLevel4Completed, setIsLevel4Completed] = useState(false);
   
-  console.log("selected LLLLLLLLLLLL",selectedLogs);
+
 
   const {
     storeData,
@@ -56,6 +56,11 @@ const [isSubmitting, setIsSubmitting] = useState(false);
     headerData,
     setRespModifyData,
   } = useContext(Context);
+
+
+       useEffect(() => {
+          setHeaderData(null);
+        }, []);
 
   useEffect(() => {
     if (steps.length > 0 && storeData.length > 0) {
@@ -67,7 +72,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         completedProcesses.includes(step.PROCESS?.trim())
       );
 
-      console.log("aaaaaaaaaaaaaaaaa",storeData)
+   
 
       setAllStepsCompleted(allCompleted);
     } else {
