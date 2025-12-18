@@ -84,6 +84,7 @@ const PcbForm = ({ mode, showStatus, editableAll }) => {
     formData.append('process', process);
     formData.append('applyDate', applyDate);
     formData.append('document', selectedFile);
+  
 
     try {
       await axios.post(`${API_BASE_URL}/pollution-submit`, formData, {

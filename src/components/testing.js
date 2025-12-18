@@ -1,157 +1,960 @@
-
-
-
-
-import React, { useEffect, useState, useContext } from "react";
-import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import React, { useEffect, useState, useMemo, useContext } from "react";
+import { FaCheckCircle, FaFileAlt } from "react-icons/fa";
+import {
+  Nav,
+  Form,
+  Button,
+  Row,
+  Col,Alert,
+  Badge,
+  Modal,
+  Card,
+} from "react-bootstrap";
 import axios from "axios";
-import { API_BASE_URL } from "../config/Config";
-import { FaCheckCircle, FaUpload } from "react-icons/fa";
-import { Context } from "../context/ContextData";
-import ReusableDialog from "./ReusableDialog";
+import Swal from "sweetalert2";
+import { API_BASE_URL, API_DOC_URL } from "../config/Config";
+import FormHeader from "./Header";
+import ReraDocUploadModal from "./ReraDocUploadModal";
 import ProjectInfoHeader from "./ProjectInfoHeader";
-import WaterDocUploadModal from "./WaterDocUploadModal";
-import PreviousGhmcDocs from "./PreviousGhmcDocs";
+import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
 import EmailSelectionModal from "./EmailModal";
-import { toast } from "react-toastify";
 
-const GhmcModify = () => {
+const FireModifyTable = () => {
   const {
     storeData,
     setStoreData,
-    totalMasterData,
+    respModifyData,
+    setRespModifyData,
     setHeaderData,
     headerData,
-    setRespModifyData,
   } = useContext(Context);
 
   const [steps, setSteps] = useState([]);
-  const [activeStep, setActiveStep] = useState(0);
+  const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
-  const [nextStepDetails, setNextStepDetails] = useState(null);
-  const [immediateNextStep, setImmediateNextStep] = useState(null);
-  const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
+  // const [storeData, setStoreData] = useState([]);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
-  const [organizationType, setOrganizationType] = useState("");
-
-  const [isViewingSpecificStep, setIsViewingSpecificStep] = useState(false);
-  const [viewedStep, setViewedStep] = useState(null);
-  const [viewedStepDetails, setViewedStepDetails] = useState(null);
-  const [currentProcess, setCurrentProcess] = useState("");
+  const [allStepsCompleted, setAllStepsCompleted] = useState(false);
 
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
-    Comments: "",
-    process: "",
-    organisation: "",
-    project_name: "",
-    location: "",
-    status: "",
-    noOfTowers: "",
-    TotalProjectArea: "",
-    ProjectBuildArea: "",
-    ProjectName: "",
-    noOfFlats: "",
-    KLD: "",
-    OldAmount: "",
-    TotalAmount: "",
-    Size: "",
-    Ghmc: "",
+    document: null,
+    comments: "",
+    prjName: "",
+    address: "",
+    feePaid: "",
+    feeAmount: "",
+    acknowledgeName: "",
+     // Add default for step 2
+  stepStatus_1: "YES"
   });
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [selectedLogs, setSelectedLogs] = useState([]);
+  
+ 
 
-  const [feasibilityDocs, setFeasibilityDocs] = useState([]);
-  const [AmountPaidDocs, setAmountPaidDocs] = useState([]);
-  const [linkDocs, setLinkDocs] = useState([]);
-  const [landDocs, setLandDocs] = useState([]);
-  const [othDocs, setOthDocs] = useState([]);
 
-  const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
-  const [amountPaidDocModal, setAmountPaidDocModal] = useState(false);
+  const [immediateNextStep, setImmediateNextStep] = useState(null);
+  const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
+  const [nextStepDetails, setNextStepDetails] = useState(null);
+
+  const [projectInfo, setProjectInfo] = useState({ prjName: "", address: "" });
+
+  const [newDocs, setNewDocs] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  const [isFirstProcess, setIsFirstProcess] = useState(true);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [loc, setLoc] = useState([]);
-  const [dialogConfig, setDialogConfig] = useState({
-    title: "",
-    message: "",
-    confirmText: "OK",
-    open: false,
-  });
+  const [showAcknowledgeModal, setShowAcknowledgeModal] = useState(false);
+  const [acknowledgeDocs, setAcknowledgeDocs] = useState([]);
+  // State to hold validation errors for display
+  const [errors, setErrors] = useState({}); // Added for displaying validation errors
+  const [provisionalNOCCompleted, setProvisionalNOCCompleted] = useState(false);
 
-  // Check if all steps completed
-  const areAllStepsCompleted = () => {
-    if (!steps.length || !storeData.length) return false;
+  const [currentProcess, setCurrentProcess] = useState("");
+  const [latestLogs, setLatestLogs] = useState([]);
+  // You MUST adjust these indices based on the actual number of "Provisional NOC" steps
+  const PROVISIONAL_NOC_STEP_INDICES = useMemo(() => [0, 1, 2, 3, 4], []);
 
-    const completedSteps = storeData
-      .filter((item) => item.UPDATED === "YES")
-      .map((item) => item.PROCESS);
+  const OC_PROCESS_STEP_RANGE = useMemo(() => [5, 6, 7, 8, 9, 10], []);
 
-    return steps.every((step) => completedSteps.includes(step.PROCESS));
+  // For Provisional NOC steps (1–4)
+  const provisionalRadioLabels = {
+    1: "Site Inspection Status",
+    2: "Queries Received?",
+    3: "Committee Approved?",
+    4: "Provisional Status?",
   };
 
-  // Validate file type - PDF only
-  const validateFileType = (file) => {
-    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    const validExtensions = ['.pdf'];
-    const validMimeTypes = ['application/pdf'];
-
-    const isValidExtension = validExtensions.includes(fileExtension);
-    const isValidMimeType = !file.type || validMimeTypes.includes(file.type);
-
-    return isValidExtension && isValidMimeType;
+  const ocRadioLabels = {
+    6: "Site Inspection Status?",
+    7: "Queries Received?",
+    8: "Committee Approved?",
+    9: "OC Status?",
+    //   10: "OC Completion Confirmed?",
   };
 
-  // Validate documents
-  const validateDocuments = () => {
-    let isValid = true;
+  useEffect(() => {
+    axios
+      .get(`${API_BASE_URL}/fire-process`)
+      .then((res) => setSteps(res.data))
+      .catch((err) => console.error("Error fetching FIRE processes:", err));
+  }, []);
+
+  useEffect(() => {
+    axios
+      .get(`${API_BASE_URL}/fire-plants`)
+      .then((res) => setPlants(res.data))
+      .catch((err) => console.error("Error fetching FIRE plants:", err));
+  }, []);
+
+  useEffect(() => {
+    setStoreData([]);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null);
+    setProjectInfo({ prjName: "", address: "" });
+    setFormData({
+      loc: selectedPlant,
+      applyDate: "",
+      comments: "",
+      prjName: "",
+      address: "",
+      feePaid: "",
+      feeAmount: "",
+      acknowledgeName: "",
+      // Add defaults for all radio button steps
+  stepStatus_1: "YES",  // Site Inspection Status
+  stepStatus_2: "YES",  // Queries Received?
+  stepStatus_3: "YES",  // Committee Approved?
+  stepStatus_4: "YES",  // Provisional Status?
+  stepStatus_6: "YES",  // Site Inspection Status? (OC)
+  stepStatus_7: "YES",  // Queries Received? (OC)
+  stepStatus_8: "YES",  // Committee Approved? (OC)
+  stepStatus_9: "YES",  // OC Status?
+    });
+    setNewDocs([]);
+    setAcknowledgeDocs([]);
+    setErrors({});
+    setProvisionalNOCCompleted(false);
+
+    console.log("PROVISIONAL_NOC_STEP_INDICES:", PROVISIONAL_NOC_STEP_INDICES);
+    console.log("OC_PROCESS_STEP_RANGE:", OC_PROCESS_STEP_RANGE); // Keep this for clarity in renderProcessColumn
+    console.log("Steps array:", steps);
+
+    if (selectedPlant && steps.length > 0) {
+      axios
+        .get(`${API_BASE_URL}/fire-data?plant=${selectedPlant}`)
+        .then((res) => {
+          const fetchedData = res.data;
+          setStoreData(fetchedData);
+          console.log("Fetched Data (full):", fetchedData);
+
+          if (fetchedData && fetchedData.length > 0) {
+            const firstRecord = fetchedData[0];
+            const info = {
+              prjName: firstRecord.PROJECT_NAME || "",
+              address: firstRecord.ADDRESS || "",
+            };
+            setProjectInfo(info);
+            // Only set form data for project name and address if it's the very first step
+            // Otherwise, keep the projectInfo as read-only based on the first record
+            if (
+              PROVISIONAL_NOC_STEP_INDICES[0] === 0 &&
+              !fetchedData.some(
+                (item) =>
+                  item.PROCESS === steps[0]?.PROCESS && item.UPDATED === "YES"
+              )
+            ) {
+              setFormData((prev) => ({ ...prev, ...info }));
+            } else {
+              setFormData((prev) => ({
+                ...prev,
+                prjName: info.prjName,
+                address: info.address,
+              }));
+            }
+          }
+
+          // --- Determine Provisional NOC Completion ---
+          const provisionalNOCStepsCompleted =
+            PROVISIONAL_NOC_STEP_INDICES.every(
+              (index) =>
+                steps[index] && // Ensure step exists
+                fetchedData.some(
+                  (item) =>
+                    item.PROCESS === steps[index].PROCESS &&
+                    item.UPDATED === "YES"
+                )
+            );
+          setProvisionalNOCCompleted(provisionalNOCStepsCompleted);
+          console.log(
+            "provisionalNOCStepsCompleted:",
+            provisionalNOCStepsCompleted
+          );
+
+          let nextStepFound = null;
+          let nextStepIdx = -1; // This will be the 0-based index for the *conceptual* combined steps (0-9 if 5+5)
+          let currentStepType = null; // NEW: To store the step type
+
+          // --- MODIFIED LOGIC FOR FINDING IMMEDIATE NEXT STEP ---
+          if (!provisionalNOCStepsCompleted) {
+            // PHASE 1: Provisional NOC is NOT complete. Find the next incomplete Provisional NOC step.
+            for (const idx of PROVISIONAL_NOC_STEP_INDICES) {
+              // Loops 0,1,2,3,4
+              if (
+                steps[idx] && // Ensure step exists (it will, as steps has 5 items)
+                !fetchedData.some(
+                  (item) =>
+                    item.PROCESS === steps[idx].PROCESS &&
+                    item.UPDATED === "YES" // Check for Provisional completion
+                )
+              ) {
+                nextStepFound = steps[idx];
+                nextStepIdx = idx; // The index directly corresponds to the steps array for PNOC
+                currentStepType = "ProvisionalNOC"; // NEW: Set step type
+                break; // Found the first incomplete Provisional NOC step
+              }
+            }
+          } else {
+            // PHASE 2: Provisional NOC IS complete. Now, find the next incomplete OC step.
+            // Loop through the SAME steps array indices, but check the OC_UPDATED flag.
+            for (const idx of PROVISIONAL_NOC_STEP_INDICES) {
+              // Loops 0,1,2,3,4 again
+              if (
+                steps[idx] && // Ensure step exists
+                !fetchedData.some(
+                  (item) =>
+                    item.PROCESS === steps[idx].PROCESS &&
+                    item.OC_UPDATED === "YES" // Check for OC completion
+                )
+              ) {
+                nextStepFound = steps[idx];
+                // IMPORTANT: Adjust nextStepIdx to be a conceptual index for OC process.
+                // This makes OC's step 0 (actual steps[0]) appear as combined step 5 in UI.
+                nextStepIdx = idx + PROVISIONAL_NOC_STEP_INDICES.length;
+                currentStepType = "OCPROCESS"; // NEW: Set step type
+                break; // Found the first incomplete OC step
+              }
+            }
+          }
+
+          setImmediateNextStep(nextStepFound);
+          setImmediateNextStepIndex(nextStepIdx);
+
+
+
+          setCurrentProcess(currentStepType);
+
+          if (nextStepFound) {
+            // Use the correct PROCESS name for the API call, which is from nextStepFound.PROCESS
+            const apiUrl = `${API_BASE_URL}/fire-step-details/${encodeURIComponent(
+              selectedPlant
+            )}/${encodeURIComponent(
+              nextStepFound.PROCESS
+            )}/${encodeURIComponent(currentStepType)}`; // NEW: Add stepType query parameter
+            return axios.get(apiUrl);
+          } else {
+            // All steps (both Provisional and OC) completed
+            // Check if ALL OC steps are also marked as complete
+            const allOCStepsCompleted = PROVISIONAL_NOC_STEP_INDICES.every(
+              (index) =>
+                steps[index] &&
+                fetchedData.some(
+                  (item) =>
+                    item.PROCESS === steps[index].PROCESS &&
+                    item.OC_UPDATED === "YES"
+                )
+            );
+
+            if (provisionalNOCStepsCompleted && allOCStepsCompleted) {
+              setImmediateNextStepIndex(
+                PROVISIONAL_NOC_STEP_INDICES.length * 2
+              ); // Represents all 10 conceptual steps are done
+            } else {
+              // Fallback for an unexpected state, e.g., if provisional complete but OC not started/found.
+              // This branch should ideally be unreachable if the logic is perfect and data is consistent.
+              setImmediateNextStepIndex(-1); // Or some other indicator for "no active step"
+            }
+            return Promise.resolve(null);
+          }
+        })
+        .then((detailsRes) => {
+          if (detailsRes && detailsRes.data) {
+            const details = detailsRes.data;
+            setNextStepDetails(details);
+            console.log("NExtstep Detials:", details);
+            setLatestLogs(details);
+
+          let stepStatus = details.STATUS || "";
+    
+    // Check if this step should have radio buttons (steps 1-4 for Provisional, 6-9 for OC)
+    const shouldHaveRadioButtons = 
+      (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || // Steps 1-4
+      (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9); // Steps 6-9
+    
+    // If this step should have radio buttons and no status is set, default to "YES"
+    if (shouldHaveRadioButtons && !stepStatus) {
+      stepStatus = "YES";
+      console.log(`Setting default YES for step ${immediateNextStepIndex}`);
+    }
+
+            // Load form data from fetched details for the current step
+            setFormData((prev) => ({
+              ...prev,
+              applyDate: details.APPLY_DT || "",
+              comments: details.COMMENTS || "",
+              logs: details.LOG || "",
+              feePaid: details.FEE_PAID || "", // Load existing fee data
+              feeAmount: details.FEE_AMOUNT || "",
+              acknowledgeName: details.ACKNOWLEDGE_NAME || "",
+              // ADD THIS LINE to set stepStatus for step 2
+      [`stepStatus_${immediateNextStepIndex}`]: stepStatus
+            }));
+            // Parse existing acknowledge docs if any (for display, not re-upload)
+            if (details.ACK_DOC) {
+              try {
+                // This part remains the same for parsing existing docs
+              } catch (e) {
+                console.error(
+                  "Failed to parse existing acknowledge docs for details:",
+                  e
+                );
+              }
+            }
+          } else {
+            // Clear form fields if no details for the next step or all steps are complete
+            setNextStepDetails(null);
+            setFormData((prev) => ({
+              ...prev,
+              applyDate: "",
+              comments: "",
+              logs: "",
+              feePaid: "",
+              feeAmount: "",
+              acknowledgeName: "",
+            }));
+          }
+        })
+        .catch((err) =>
+          console.error("Error during data fetching process:", err)
+        );
+    }
+  }, [selectedPlant, steps, PROVISIONAL_NOC_STEP_INDICES]); // Remove OC_PROCESS_STEP_RANGE from dependencies as it's not used here for step finding
+useEffect(() => {
+  console.log("Step index changed:", immediateNextStepIndex);
+  
+  // Check if this step should have radio buttons
+  const shouldHaveRadioButtons = 
+    (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || // Steps 1-4
+    (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9); // Steps 6-9
+  
+  // When step changes to one that should have radio buttons, set default to "YES" if not already set
+  if (shouldHaveRadioButtons) {
+    console.log(`Step ${immediateNextStepIndex} should have radio buttons`);
+    
+    // Check if we already have a value for this step
+    const currentStatus = formData[`stepStatus_${immediateNextStepIndex}`];
+    
+    if (!currentStatus) {
+      console.log(`Setting default YES for step ${immediateNextStepIndex}`);
+      setFormData(prev => ({
+        ...prev,
+        [`stepStatus_${immediateNextStepIndex}`]: "YES"
+      }));
+    }
+  }
+}, [immediateNextStepIndex]);
+  useEffect(() => {
+    if (
+      nextStepDetails &&
+      typeof nextStepDetails === "object" &&
+      Object.keys(nextStepDetails).length > 0
+    ) {
+      const details = nextStepDetails;
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: details.APPLY_DT,
+        comments: details.COMMENTS || "",
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, applyDate: "", comments: "" }));
+    }
+  }, [nextStepDetails]);
+
+
+
+    const getCurrentStepLogs = () => {
+
+  
+  const currentStepRecord = storeData.find(
+    (item) => 
+      item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() &&
+      item.STEPTYPE === currentProcess
+  );
+  
+    
+    if (!currentStepRecord?.LOG) {
+      return [];
+    }
+    
+    try {
+
+      return JSON.parse(currentStepRecord.LOG);
+    } catch (error) {
+      console.error("Failed to parse logs:", error);
+      return [];
+    }
+  };
+
+
+  const handleChange = async (e) => {
+    const { name, value } = e.target;
+
+    console.log(name, value, "Field changed");
+
+
+    if (name === "loc") {
+      setSelectedPlant(value);
+      setFormData((prev) => ({
+        ...prev,
+        loc: value,
+      }));
+
+      // 🧹 If location is empty, clear dependent fields
+      if (!value || value.trim() === "") {
+        setHeaderData({});
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+          totalPrjArea: "",
+          noOfNocs: "",
+        }));
+        return;
+      }
+
+      try {
+        // 🌐 Fetch master data for selected location
+        const res = await getMasterByLoc(value);
+
+        if (res && Object.keys(res).length > 0) {
+          console.log("✅ Master data fetched:", res);
+
+          // 🧩 Update header data (used by ProjectInfoHeader)
+          setHeaderData(res);
+
+          // (Optional) update form fields based on res if needed
+          setFormData((prev) => ({
+            ...prev,
+            // Example if you want to fill auto fields:
+            // totalPrjArea: res.totalArea || "",
+            // noOfNocs: res.nocCount || "",
+          }));
+        } else {
+          console.warn("⚠️ No master data found for location:", value);
+          setHeaderData({});
+          setFormData((prev) => ({
+            ...prev,
+            applyDate: "",
+            totalPrjArea: "",
+            noOfNocs: "",
+          }));
+        }
+      } catch (err) {
+        console.error("❌ Error fetching master by loc:", err);
+        setHeaderData({});
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+          totalPrjArea: "",
+          noOfNocs: "",
+        }));
+      }
+
+      return;
+    }
+
+    // 🧾 Handle other input fields normally
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+
+const handleEmailSubmit = () => {
+  const newErrors = {};
+  
+  if (!formData.loc) newErrors.loc = "Plant selection is required";
+  if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+  if (!formData.comments) newErrors.comments = "Please enter comments";
+
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    
+    // Just set errors without scrolling
+    return;
+  }
+
+  setErrors({});
+  setShowEmailModal(true);
+};
+  const handleEmailSelectionSubmit = async (emails) => {
+    setSelectedEmails(emails);
+    setShowEmailModal(false);
+
+    // Proceed with form submission
+    await handleConfirmSubmit(emails);
+  };
+  const handleConfirmSubmit = async (emails) => {
     const newErrors = {};
+    setErrors({}); // Clear previous errors
 
-    if (feasibilityDocs.length > 0) {
-      const invalidFiles = feasibilityDocs.filter(file => !validateFileType(file));
-      if (invalidFiles.length > 0) {
-        newErrors.feasibilityDocs = "Only PDF files are allowed";
-        isValid = false;
+    if (!formData.loc || !immediateNextStep) {
+      Swal.fire(
+        "Validation Error",
+        "Please select a Plant and ensure a process step is active.",
+        "error"
+      );
+      return;
+    }
+
+    // --- Validation based on current step type ---
+    const isProvisionalNOCStep = PROVISIONAL_NOC_STEP_INDICES.includes(
+      immediateNextStepIndex
+    );
+    const isOCProcessStep = OC_PROCESS_STEP_RANGE.includes(
+      immediateNextStepIndex
+    );
+
+    // if (isProvisionalNOCStep) {
+    //   if (!formData.applyDate) {
+    //     newErrors.applyDate =
+    //       "Please provide an Apply/Inspection Date for this step.";
+    //   }
+    // }
+
+    // if (isOCProcessStep) {
+    //   if (!formData.feePaid)
+    //     newErrors.feePaid = "Please specify if fee is paid.";
+    //   if (formData.feePaid === "YES" && !formData.feeAmount)
+    //     newErrors.feeAmount = "Fee amount is required when fee is paid.";
+    //   if (!formData.acknowledgeName)
+    //     newErrors.acknowledgeName = "Acknowledge name is required.";
+    //   if (acknowledgeDocs.length === 0) {
+    //     newErrors.acknowledgeDocs =
+    //       "Please upload at least one acknowledgement receipt.";
+    //   }
+    // }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const errorMessages = Object.values(newErrors).join("<br>");
+      Swal.fire("Validation Error", errorMessages, "error");
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append("loc", formData.loc);
+    payload.append("process", immediateNextStep.PROCESS);
+    payload.append("comments", formData.comments || "");
+    payload.append("applyDate", formData.applyDate || ""); // Always append if present
+    emails.forEach((email, i) => {
+      payload.append(`emails[${i}]`, email);
+    });
+      payload.append("steptype", currentProcess);
+    // Project Name and Address fields are only editable for the very first step (index PROVISIONAL_NOC_STEP_INDICES[0])
+    if (immediateNextStepIndex === PROVISIONAL_NOC_STEP_INDICES[0]) {
+      payload.append("prjName", formData.prjName || "");
+      payload.append("address", formData.address || "");
+    } else {
+      // For subsequent steps, send the projectInfo from state as it's read-only in UI
+      payload.append("prjName", projectInfo.prjName || "");
+      payload.append("address", projectInfo.address || "");
+    }
+
+    if (immediateNextStepIndex >= 1) {
+
+    
+
+      payload.append(
+        "stepStatus",
+        formData[`stepStatus_${immediateNextStepIndex}`] || ""
+      );
+    }
+
+    // General application documents
+    newDocs.forEach((file) => payload.append("New_Doc[]", file));
+
+    // Acknowledge documents and fee details (only for OC Process steps)
+    if (isOCProcessStep) {
+      payload.append("feePaid", formData.feePaid || "");
+      payload.append("feeAmount", formData.feeAmount || "");
+      payload.append("acknowledgeName", formData.acknowledgeName || "");
+      acknowledgeDocs.forEach((file) =>
+        payload.append("Acknowledge_Doc[]", file)
+      );
+    }
+
+
+    for (const [key, value] of payload.entries()) {
+      console.log(`${key}:`, value);
+    }
+  
+    let existingRecordStatusField = null;
+
+    console.log("ghhhhhhhhhhhhhhhh",storeData,"immediateNextStep.PROCESS?",immediateNextStep.PROCESS);
+    const currentStepRecord = storeData.find(
+      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() && item.STEPTYPE === currentProcess
+    );
+
+
+    if (isProvisionalNOCStep) {
+      existingRecordStatusField = currentStepRecord?.UPDATED;
+    } else if (isOCProcessStep) {
+      existingRecordStatusField = currentStepRecord?.OC_UPDATED; // *** Use OC_UPDATED here ***
+    }
+
+    console.log("➡️ ExistingRecord :", existingRecordStatusField);
+    // const apiUrl =
+    //   existingRecordStatusField === "YES"
+    //   //  ? `${API_BASE_URL}/fire-modify`
+    //     : `${API_BASE_URL}/fire-submit`;
+   
+    const apiUrl = currentStepRecord
+  ? `${API_BASE_URL}/fire-modify`
+  : `${API_BASE_URL}/fire-submit`;
+
+        // console.log("➡️ Triggering API:", apiUrl);
+    try {
+       await axios.post(apiUrl, payload);
+      await Swal.fire({
+        icon: "success",
+        title: existingRecordStatusField === "YES" ? "Updated!" : "Submitted!",
+        text: "Your data has been saved successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      // After successful submission, re-fetch data for the current plant to update the UI
+      setSelectedPlant(formData.loc); // Trigger useEffect to re-fetch data
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "", // Clear fields that change per step
+        comments: "",
+        feePaid: "",
+        feeAmount: "",
+        acknowledgeName: "",
+      }));
+      setNewDocs([]); // Clear uploaded general docs
+      setAcknowledgeDocs([]); // Clear uploaded acknowledge docs
+      setErrors({}); // Clear errors
+    } catch (error) {
+      console.error("Submission failed:", error);
+      Swal.fire(
+        "Submission Failed",
+        "Please check the console for details.",
+        "error"
+      );
+    }
+  };
+
+  const renderDocumentHistory = () => {
+    if (
+      !nextStepDetails ||
+      typeof nextStepDetails !== "object" ||
+      Object.keys(nextStepDetails).length === 0
+    ) {
+      return (
+        <p className="text-muted mb-0">No previous documents for this step.</p>
+      );
+    }
+
+    let generalDocuments = [];
+    let acknowledgementReceipts = [];
+
+    // Parse general uploaded documents (assuming UPLOAD_DOC in details is for New_Doc[])
+    if (nextStepDetails.UPLOAD_DOC) {
+      try {
+        const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
+        generalDocuments = parsedDocs.map((doc) => ({
+          name: doc.file_name,
+          url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
+        }));
+      } catch (error) {
+        console.error("Failed to parse UPLOAD_DOC JSON:", error);
       }
     }
 
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.applyDate) newErrors.applyDate = "Date is required";
-    if (!formData.Comments) newErrors.Comments = "Please enter comments";
-
-    if (!validateDocuments()) {
-      return false;
+    // Parse acknowledgement receipts (from ACK_DOC)
+    if (nextStepDetails.ACK_DOC) {
+      try {
+        const parsedAcknowledgeDocs = JSON.parse(nextStepDetails.ACK_DOC);
+        acknowledgementReceipts = parsedAcknowledgeDocs.map((doc) => ({
+          name: doc.file_name,
+          url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
+        }));
+      } catch (error) {
+        console.error("Failed to parse ACK_DOC JSON:", error);
+      }
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isOCProcessStep = OC_PROCESS_STEP_RANGE.includes(
+      immediateNextStepIndex
+    );
+
+ 
+
+
+
+    const handleDeleteDocument = async (docType, fileName, index) => {
+
+      console.log("deletedddddd",docType, "file",fileName,"index",index);
+  try {
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Delete Document?',
+      text: `Are you sure you want to delete ${fileName}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Make API call to delete from server
+    const response = await axios.delete(`${API_BASE_URL}/fire-docu-delete`, {
+      data: {
+        loc: formData.loc,
+        process: immediateNextStep?.PROCESS || "",
+        steptype: currentProcess,
+        doc_type: docType, // "New_Doc" or "Acknowledge_Doc"
+        file_name: fileName,
+      },
+    });
+
+    if (response.status === 200) {
+      // Remove from local state
+      if (docType === "New_Doc") {
+        const updatedDocs = newDocs.filter((_, i) => i !== index);
+        setNewDocs(updatedDocs);
+      } else if (docType === "Acknowledge_Doc") {
+        const updatedDocs = acknowledgeDocs.filter((_, i) => i !== index);
+        setAcknowledgeDocs(updatedDocs);
+      }
+
+      // Show success message
+      Swal.fire('Deleted!', 'Document has been deleted.', 'success');
+      
+      // Optionally: Refresh document history
+ 
+    }
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    Swal.fire('Error!', 'Failed to delete document.', 'error');
+  }
+};
+
+    
+   const currentStepLogs = getCurrentStepLogs();
+
+  
+    return (
+      <div className="d-flex flex-column" style={{ height: "100%" }}>
+     <Card style={{ padding: "1px", height: "80%", overflow: "auto" }}>
+        <h6 className="text-primary p-2">General Uploaded Documents</h6>
+        {generalDocuments.length > 0 ? (
+          <ul className="list-unstyled">
+            {generalDocuments.map((doc, idx) => (
+              <li key={`gen-doc-${idx}`} className="mb-1 p-1 d-flex justify-content-between align-items-center">
+                <div>
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-decoration-none"
+                  >
+                    <FaFileAlt className="me-2" />
+                    {doc.name}
+                  </a>
+                </div>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => handleDeleteDocument("New_Doc", doc.name, idx)}
+                  title="Delete document"
+                >
+                  <i className="fas fa-trash-alt"></i>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted mb-0">
+            No general documents were uploaded for this step.
+          </p>
+        )}
+
+        {isOCProcessStep && (
+          <>
+            <h6 className="text-primary mt-3">Acknowledgement Receipts</h6>
+            {acknowledgementReceipts.length > 0 ? (
+              <ul className="list-unstyled">
+                {acknowledgementReceipts.map((doc, idx) => (
+                  <li key={`ack-doc-${idx}`} className="mb-1 d-flex justify-content-between align-items-center">
+                    <div>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-decoration-none"
+                      >
+                        <FaFileAlt className="me-2" />
+                        {doc.name}
+                      </a>
+                    </div>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDeleteDocument("Acknowledge_Doc", doc.name, idx)}
+                      title="Delete receipt"
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted mb-0">
+                No acknowledgement receipts available for this step.
+              </p>
+            )}
+          </>
+        )}
+      </Card>
+
+
+           <div className="p-2 border-top bg-light text-center">
+                  <Button
+                    variant="info"
+                    size="sm"
+                    onClick={() => {
+                   
+                      const logs = getCurrentStepLogs();
+                      setSelectedLogs(logs);
+                      setShowLogsModal(true);
+                    }}
+                    disabled={currentStepLogs.length === 0}
+                  >
+                    {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
+                  </Button>
+                </div>
+
+      
+      </div>
+    );
   };
 
-  // Render completion message
+  const renderProcessColumn = (columnTitle, isOCPhase) => {
+    // Added isOCPhase boolean
+    return (
+      <Col xs={6}>
+        <h6 className="text-center mb-2">{columnTitle}</h6>
+        <Nav variant="pills" className="flex-column">
+          {steps.map((step, idx) => {
+            let variant = "secondary",
+              clickable = false,
+              statusIcon = "⏸️";
+
+            // Now, we use the isOCPhase flag passed to the function
+            let isCompleted = false;
+            let currentConceptualIndex; // This will be the index that aligns with immediateNextStepIndex
+
+            if (isOCPhase) {
+              isCompleted = storeData.some(
+                (item) =>
+                  item.PROCESS === step.PROCESS && item.OC_UPDATED === "YES"
+              );
+              // For OC phase, the conceptual index is offset
+              currentConceptualIndex =
+                idx + PROVISIONAL_NOC_STEP_INDICES.length;
+            } else {
+              // Provisional NOC Phase
+              isCompleted = storeData.some(
+                (item) =>
+                  item.PROCESS === step.PROCESS && item.UPDATED === "YES"
+              );
+              currentConceptualIndex = idx; // For Provisional, it's the direct index
+            }
+
+            // Check if this step (in its current phase) is the immediate next step
+            const isActive = currentConceptualIndex === immediateNextStepIndex;
+
+            if (isCompleted) {
+              variant = "success";
+              statusIcon = "✅";
+            } else if (isActive) {
+              variant = "warning";
+              statusIcon = "⚠️";
+            }
+
+            // Lock OC Process steps if Provisional NOC is not completed
+            if (isOCPhase && !provisionalNOCCompleted) {
+              clickable = false; // Override clickability
+              variant = "secondary"; // Set to locked style
+              statusIcon = "🔒";
+            } else {
+              // For Provisional NOC steps or unlocked OC Process steps, determine clickability
+              // A step is clickable if it's already completed (for review) or if it's the current active step.
+              if (currentConceptualIndex < immediateNextStepIndex) {
+                clickable = true; // Completed steps in this phase are clickable
+              } else if (currentConceptualIndex === immediateNextStepIndex) {
+                clickable = true; // Current active step in this phase is clickable
+              } else {
+                clickable = false; // Future steps in this phase are not clickable
+              }
+            }
+
+            return (
+              <Nav.Item
+                className="mb-2"
+                key={`${isOCPhase ? "oc-" : "pnoc-"}${step.PROCESS}`}
+              >
+                {" "}
+                {/* Add key prefix for uniqueness */}
+                <Nav.Link
+                  eventKey={currentConceptualIndex} // Use the conceptual index for eventKey
+                  disabled={!clickable} // Disable based on `clickable`
+                  className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+                  style={{ cursor: clickable ? "pointer" : "not-allowed" }}
+                >
+                  {statusIcon}
+                  <span>{step.PROCESS}</span>
+                </Nav.Link>
+              </Nav.Item>
+            );
+          })}
+        </Nav>
+      </Col>
+    );
+  };
+
+
   const renderCompletionMessage = () => {
     return (
-      <div className="text-center p-5">
-        <FaCheckCircle size={80} className="text-success mb-4" />
-        <h2 className="text-success mb-3 fw-bold">Congratulations! 🎉</h2>
+      <div className="text-center py-5">
+        <FaCheckCircle size={64} className="text-success mb-3" />
+        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
         <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-        <Alert variant="success" className="mx-auto" style={{ maxWidth: '600px' }}>
+        <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
           <Alert.Heading>Project Completion Status</Alert.Heading>
-          <p className="mb-2">
-            All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed.
+          <p>
+            All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
+            You can review the completed project details.
           </p>
           <hr />
           <p className="mb-0">
@@ -162,848 +965,283 @@ const GhmcModify = () => {
     );
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
 
-    if (!validateForm()) {
-      if (errors.feasibilityDocs) {
-        toast.error('Please upload only PDF files');
-      } else {
-        toast.error('Please fill all required fields');
-      }
-      return;
-    }
-
-    setShowEmailModal(true);
-  };
-
-  const handleEmailSelectionSubmit = async (emails) => {
-    setSelectedEmails(emails);
-    setShowEmailModal(false);
-
-    // Reset submission status before new submission
-    setSubmitted(false);
-
-    await handleConfirmSubmit(emails);
-  };
-
-  // Reset form when plant changes
-  useEffect(() => {
-    if (selectedPlant) {
-      setSubmitted(false);
-      setIsViewingSpecificStep(false);
-      setViewedStep(null);
-      setViewedStepDetails(null);
-      setCurrentProcess("");
-
-      // Clear form data except plant
-      setFormData(prev => ({
-        ...prev,
-        applyDate: "",
-        Comments: "",
-        noOfFlats: "",
-        KLD: "",
-        OldAmount: "",
-        TotalAmount: "",
-        Size: "",
-        Ghmc: "",
-      }));
-
-      // Clear documents
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-    }
-  }, [selectedPlant]);
-
-  useEffect(() => {
-    setIsFirstProcess(immediateNextStepIndex === 0);
-  }, [immediateNextStepIndex]);
-
-  // Fetch plants
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/GHMC-plants`)
-      .then((res) => {
-        setLoc(res.data);
-      })
-      .catch((err) => console.error("Error fetching locations:", err));
-  }, []);
-
-  // Fetch processes
- useEffect(() => {
-    if (!selectedPlant) return;
-
-    console.log("Fetching GHMC processes for plant:", selectedPlant);
-
-    axios
-      .get(`${API_BASE_URL}/GHMC-process`, {
-        params: { plant: selectedPlant },
-      })
-      .then((res) => {
-        console.log("Response from GHMC-process:", res.data);
-        setSteps(res.data || []);
-        if (res.data && res.data.length > 0) setActiveStep(0);
-      })
-      .catch((err) => console.error("Error fetching processes:", err));
-  }, [selectedPlant]);
-
-  // Fetch processes for specific plant
-  useEffect(() => {
-    if (!selectedPlant) return;
-
-    console.log("Fetching GHMC processes for plant:", selectedPlant);
-
-    axios
-      .get(`${API_BASE_URL}/GHMC-process`, {
-        params: { plant: selectedPlant },
-      })
-      .then((res) => {
-        console.log("Response from GHMC-process:", res.data);
-        setSteps(res.data || []);
-        if (res.data && res.data.length > 0) setActiveStep(0);
-      })
-      .catch((err) => console.error("Error fetching processes:", err));
-  }, [selectedPlant]);
-
-  // Compute next step
-  useEffect(() => {
-    if (steps.length > 0 && Array.isArray(storeData)) {
-      const completed = storeData
-        .filter((i) => i.UPDATED === "YES")
-        .map((i) => i.PROCESS);
-      const next = steps.find((s) => !completed.includes(s.PROCESS));
-      if (next) {
-        setImmediateNextStep(next);
-        setImmediateNextStepIndex(steps.indexOf(next));
-        if (selectedPlant && next) {
-          handleStepClick(next, selectedPlant);
-        }
-      } else {
-        setImmediateNextStep(null);
-        setImmediateNextStepIndex(-1);
-        setViewedStep(null);
-        setViewedStepDetails(null);
-        setIsViewingSpecificStep(false);
-      }
-    } else {
-      setImmediateNextStep(null);
-      setImmediateNextStepIndex(-1);
-      setViewedStep(null);
-      setViewedStepDetails(null);
-      setIsViewingSpecificStep(false);
-    }
-  }, [steps, storeData, selectedPlant]);
-
-  // Fetch plant data
-  useEffect(() => {
-    if (!selectedPlant) {
-      console.log("⚠️ No plant selected yet.");
-      return;
-    }
-
-    const fetchPlantData = async () => {
-
-
-      try {
-        const ghmcRes = await axios.get(
-          `${API_BASE_URL}/GHMC-data?plant=${selectedPlant}`
-        );
-        const ghmcData = ghmcRes.data || [];
-           if (ghmcData.data.length > 0) {
-
-            setFormData((prev) => ({
-              ...prev,
-              loc: selectedPlant,
-               
-            }));
-            setSubmitted(false);
-          }
-
-        setStoreData(ghmcData);
-        const plantRecord = ghmcData?.find(
-          (item) => item.loc === selectedPlant
-        );
-
-        if (plantRecord && plantRecord.Organization) {
-          setOrganizationType(plantRecord.Organization);
-        } else {
-          setOrganizationType(plantRecord?.Organization || "GHMC");
-        }
-
-        if (ghmcData.length > 0) {
-          console.log("✅ GHMC records found. Using first step for project info.");
-
-          const firstStep = ghmcData[0];
-          console.log("First step data:", firstStep);
-
-          setFormData((prev) => ({
-            ...prev,
-            loc: selectedPlant,
-            organisation: firstStep.Organization || "",
-            noOfTowers: firstStep.noOfTowers || "",
-            location: firstStep.LOCATION || "",
-            status: firstStep.STATUS || "",
-          }));
-        } else {
-          console.log("⚠️ No GHMC data found — falling back to master API...");
-
-          const masterRes = await getMasterByLoc(selectedPlant);
-          console.log("📚 Master data from getMasterByLoc:", masterRes);
-
-          if (masterRes) {
-            setHeaderData(masterRes);
-            setFormData((prev) => ({
-              ...prev,
-              loc: selectedPlant,
-              organisation: masterRes.Organization || "",
-              project_name: masterRes.PROJECT_NAME || "",
-              location: masterRes.LOCATION || "",
-              status: masterRes.STATUS || "",
-            }));
-          }
-        }
-      } catch (err) {
-        console.error("❌ Error fetching GHMC/master data:", err);
-      }
-    };
-
-    fetchPlantData();
-  }, [selectedPlant]);
-
-  // Parse JSON arrays safely
-  function parseJsonArraySafe(value) {
-    if (!value) return [];
-    try {
-      if (Array.isArray(value)) return value;
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      if (typeof value === "string")
-        return value
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-      return [];
-    }
-  }
-
-  // Combine document arrays
-  const combineAndParseDocArrays = (data, namesKey, pathsKey) => {
-    const names = parseJsonArraySafe(data[namesKey]);
-    const paths = parseJsonArraySafe(data[pathsKey]);
-    const combined = [];
-    const minLength = Math.min(names.length, paths.length);
-    for (let i = 0; i < minLength; i++) {
-      if (names[i] && paths[i]) {
-        combined.push({ name: names[i], path: paths[i] });
-      }
-    }
-    return combined;
-  };
-
-  // Fetch step details
-  useEffect(() => {
-    if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
-      const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
-      if (!nextStepName) return;
-
-      axios
-        .get(
-          `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
-            selectedPlant
-          )}/${encodeURIComponent(nextStepName)}`
-        )
-        .then((res) => {
-          const data = res.data || {};
-          console.log("Raw GHMC-step-details response:", data);
-
-          const parsed = {
-            ...data,
-            tower_docs: combineAndParseDocArrays(
-              data, "tower_doc_name", "tower_doc_path"
-            ),
-            feas_docs: combineAndParseDocArrays(
-              data, "feas_doc_name", "feas_doc_path"
-            ),
-            amount_docs: combineAndParseDocArrays(
-              data, "amount_doc_name", "amount_doc_path"
-            ),
-          };
-          console.log("Parsed nextStepDetails for PreviousGhmcDocs:", parsed);
-          setNextStepDetails(parsed);
-        })
-        .catch((err) => {
-          console.error("Error fetching GHMC-step-details:", err);
-          setNextStepDetails(null);
-        });
-    } else {
-      setNextStepDetails(null);
-    }
-  }, [selectedPlant, immediateNextStepIndex, steps]);
-
-  // Update form data from step details
-
-  useEffect(() => {
-    if (nextStepDetails) {
-      let details = nextStepDetails;
-
-
-
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        applyDate: details?.applyDate,
-      
-      }));
-
-    } else {
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        applyDate: "",
-        comments: ""
-      }));
-
-    }
-  }, [nextStepDetails]);
-
-
-  const handleChange = async (e) => {
-    const { name, value } = e.target;
-
-    if (name === "noOfFlats") {
-      const nocs = Math.ceil(Number(value) / 2);
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setFormData((prev) => ({
-        ...prev,
-        noOfFlats: value,
-        KLD: value ? nocs : "",
-      }));
-    } else if (name === "OldAmount") {
-      const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
-      const total = amountPaid + Number(value);
-      console.log(total, "total", amountPaid, value);
-      setFormData((prev) => ({
-        ...prev,
-        OldAmount: value,
-        TotalAmount: value ? total : "",
-      }));
-    } else if (name === "loc") {
-      setFormData((prev) => ({ ...prev, loc: value }));
-      setSelectedPlant(value);
-      setSubmitted(false);
-
-      try {
-        const res = await getMasterByLoc(value);
-        if (res) {
-          setHeaderData(res);
-          setFormData((prev) => ({
-            ...prev,
-            applyDate: res.APPLICATION_DATE || "",
-            noOfTowers: res.NUMBER_OF_TOWERS || "",
-            TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
-            ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
-            ProjectName: res.PROJECT_NAME || "",
-          }));
-        } else {
-          setHeaderData(null);
-          setFormData((prev) => ({
-            ...prev,
-            applyDate: "",
-            noOfTowers: "",
-            TotalProjectArea: "",
-            ProjectBuildArea: "",
-            ProjectName: "",
-          }));
-        }
-      } catch (err) {
-        console.error("Error fetching master by loc:", err);
-        setHeaderData(null);
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: "",
-          noOfTowers: "",
-          TotalProjectArea: "",
-          ProjectBuildArea: "",
-          ProjectName: "",
-        }));
-      }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
-
-  // Handle form submission
-  const handleConfirmSubmit = async (emails) => {
-    setIsSubmitting(true);
-
-    const payload = new FormData();
-
-   
-    payload.append("Organization", formData.organisation || "");
-    payload.append("project_name", formData.project_name || "");
-    payload.append("location", formData.location || "");
-    payload.append("status", formData.status || "");
-
-    payload.append("loc", formData.loc);
-    payload.append("applyDate", formData.applyDate);
-    payload.append("process", immediateNextStep?.PROCESS || "");
-    payload.append("Comments", formData.Comments || "");
-    payload.append("GHMC", formData.Ghmc || "");
-    payload.append("OldAmount", formData.OldAmount || "");
-    payload.append("Size_Of_Connection", formData.Size || "");
-    payload.append("noOfFlats", formData.noOfFlats || "");
-    payload.append("totalProjectArea", formData.TotalProjectArea || "");
-    payload.append("projectBuildArea", formData.ProjectBuildArea || "");
-    payload.append("noOfTowers", formData.noOfTowers || null);
-    payload.append("TotalAmount", formData.TotalAmount || "");
-
-    emails.forEach((email, i) => {
-      payload.append(`emails[${i}]`, email);
-    });
-
-    // ✅ Append uploaded documents
-    feasibilityDocs.forEach((file) => {
-      payload.append("feas_doc_name[]", file);
-    });
-
-    console.log("🧾 Preparing payload for submission...");
-    const payloadDebug = {};
-    payload.forEach((value, key) => {
-      if (value instanceof File) payloadDebug[key] = value.name;
-      else payloadDebug[key] = value;
-    });
-    console.log("📦 Data being sent to API:", payloadDebug);
-
-    try {
-      // ✅ 1️⃣ Determine if record already exists for this step + plant
-      const existingRecord = storeData?.find(
-        (item) =>
-          item.PROCESS?.trim().toLowerCase() ===
-          immediateNextStep?.PROCESS?.trim().toLowerCase() &&
-          item.loc?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
-      );
-
-      let apiUrl = `${API_BASE_URL}/GHMC-submit`;
-      let apiType = "submit";
-
-      if (existingRecord) {
-        apiUrl = `${API_BASE_URL}/GHMC-modify`;
-        apiType = "modify";
-      }
-
-      console.log(`🚀 Using ${apiType.toUpperCase()} API:`, apiUrl);
-
-      // ✅ 2️⃣ Send the form data
-      const res = await axios.post(apiUrl, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      // ✅ 3️⃣ Refresh data after submission
-      const refreshed = await axios.get(
-        `${API_BASE_URL}/GHMC-data?plant=${formData.loc}`
-      );
-
-      setStoreData(refreshed.data || []);
-
-      const master = await getMasterByLoc(formData.loc);
-      if (master) setHeaderData(master);
-
-      // ✅ 4️⃣ Reset form
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "",
-        Comments: "", // Clear Comments after submission
-        noOfFlats: "",
-        KLD: "",
-        amountPaid: "",
-        status: "",
-        reason: "",
-        noOfTowers: "",
-        ProjectBuildArea: "",
-      }));
-
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setNextStepDetails(null);
-        setViewedStep(null);
-      setViewedStepDetails(null);
-      setIsViewingSpecificStep(false);
-      setSubmitted(true);
-
-      setRespModifyData && setRespModifyData(res?.data?.data);
-      setDialogConfig({
-        title: "Success",
-        message: `Form ${apiType}ed successfully!`,
-        confirmText: "OK",
-        open: true,
-      });
-    } catch (err) {
-      console.error("❌ Submission failed:", err);
-      setDialogConfig({
-        title: "Error",
-        message: "Submission failed. Please try again.",
-        confirmText: "OK",
-        open: true,
-      });
-    } finally {
-      setIsSubmitting(false);
-      setConfirmOpen(false);
-    }
-  };
-
-  // Check if process is completed
-  const isProcessCompleted = (processName) => {
-    return storeData?.some(
-      (item) => item.PROCESS === processName && item.UPDATED === "YES"
-    );
-  };
-
-  // Handle step click for viewing
-  const handleStepClick = async (step, plant) => {
-    if (!plant) return;
-    setViewedStep(step);
-    setCurrentProcess(step.PROCESS);
-    setIsViewingSpecificStep(true);
-
-    try {
-      const storedCompletedStep = storeData.find(
-        (item) => item.PROCESS === step.PROCESS && item.UPDATED === "YES"
-      );
-
-      let dataToParse;
-      if (storedCompletedStep) {
-        console.log("📜 Viewing completed process from storeData:", step.PROCESS);
-        dataToParse = storedCompletedStep;
-        setSubmitted(true);
-      } else {
-        console.log("🌐 Fetching live step details for:", step.PROCESS);
-        const res = await axios.get(
-          `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
-            plant
-          )}/${encodeURIComponent(step.PROCESS)}`
-        );
-        dataToParse = res.data || {};
-        setSubmitted(false);
-      }
-
-      const parsed = {
-        ...dataToParse,
-        tower_docs: combineAndParseDocArrays(
-          dataToParse, "tower_doc_name", "tower_doc_path"
-        ),
-        feas_docs: combineAndParseDocArrays(
-          dataToParse, "feas_doc_name", "feas_doc_path"
-        ),
-        amount_docs: combineAndParseDocArrays(
-          dataToParse, "amount_doc_name", "amount_doc_path"
-        ),
-      };
-
-      setFormData((prev) => ({
-        ...prev,
-        applyDate:   "",
-        Comments: "",
-      }));
-
-      setViewedStepDetails(parsed);
-
-    } catch (err) {
-      console.error("❌ Error fetching step details:", err);
-      setViewedStepDetails(null);
-      setSubmitted(false);
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "",
-        Comments: "",
-      }));
-    }
-  };
-
-
-
-     const NumberOfTowers = storeData?.[0]?.noOfTowers;
- 
   return (
     <>
       <ProjectInfoHeader data={headerData} />
       <Row className="align-items-stretch">
-        {/* Left Sidebar */}
-        <Col md={3} className="d-flex">
+        {/* Adjusted to md={4} for more width */}
+        <Col md={4} className="d-flex">
           <div className="border rounded p-3 bg-light flex-fill">
-            <span className="fw-bold m-3">
-              {organizationType ? `${organizationType} Process Steps` : 'Process Steps'}
-            </span>
-            <Nav variant="pills" className="flex-column m-3">
-              {steps.map((step, idx) => {
-                let variant = "secondary";
-                let clickable = false;
-                let statusIcon = "⏸️";
-
-                const isCompleted = storeData.some(
-                  (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
-                    item.UPDATED === "YES"
-                );
-
-                if (isCompleted) {
-                  variant = "success";
-                  clickable = true;
-                  statusIcon = "✅";
-                } else if (idx === immediateNextStepIndex) {
-                  variant = "warning";
-                  clickable = true;
-                  statusIcon = "⚠️";
-                }
-
-                return (
-                  <Nav.Item key={idx} className="mb-2">
-                    <Nav.Link
-                      eventKey={idx}
-                      disabled={!clickable}
-                      onClick={() => {
-                        if (!clickable) return;
-                        setActiveStep(idx);
-                      }}
-                      className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-                      style={{ cursor: clickable ? "pointer" : "not-allowed" }}
-                    >
-                      {statusIcon}
-                      <span>{step.PROCESS}</span>
-                    </Nav.Link>
-                  </Nav.Item>
-                );
-              })}
-            </Nav>
+            <h5 className="text-center mb-3">Process Steps</h5>
+            <Row>
+              {renderProcessColumn("ProvisionalNOC", false)}
+              {renderProcessColumn("OCPROCESS", true)}
+            </Row>
           </div>
         </Col>
 
-        {/* Center Form */}
-        <Col
-          md={6}
-          className="d-flex flex-column"
-          style={{ height: "400px", overflowY: "auto" }}
-        >
-          {areAllStepsCompleted() && !isViewingSpecificStep ? (
-            <div className="p-3 border rounded bg-light d-flex align-items-center justify-content-center" style={{ minHeight: "400px" }}>
-              {renderCompletionMessage()}
-            </div>
-          ) : (
-            <Form className="p-3 border rounded bg-light">
-              <h4 className="mb-3 text-warning fw-bold">
-                {currentProcess || immediateNextStep?.PROCESS}   {NumberOfTowers && <> | Towers Count : <span className="text-dark">{NumberOfTowers}</span></>}
+       {/* The rest of the JSX is correct and unchanged */}
+               <Col md={5} className="d-flex flex-column">
+               {allStepsCompleted  ? (
+                   renderCompletionMessage()
+                 ) : (
+                   <Form className="p-3 border rounded bg-light">
+            {immediateNextStep && (
+              <h4 className="mb-3 text-primary fw-bold">
+                {immediateNextStep.PROCESS}
               </h4>
+            )}
 
-              <Row className="mb-2">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Plant</Form.Label>
-                    <Form.Select
-                      name="loc"
-                      value={formData.loc || ""}
-                      onChange={handleChange}
-                      isInvalid={!!errors.loc}
-                    >
-                      <option value="">Select Plant</option>
-                      {loc.map((ele, index) => (
-                        <option key={index} value={ele.loc}>
-                          {ele.loc}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">
-                      {errors.loc}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Apply Date</Form.Label>
-                    <Form.Control
-                      type="date"
-                      name="applyDate"
-                      max={new Date().toISOString().split("T")[0]}
-                      value={formData.applyDate || ""}
-                      onChange={handleChange}
-                      isInvalid={!!errors.applyDate}
-                   disabled={!formData.loc || (nextStepDetails && nextStepDetails.applyDate)}
-
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.applyDate}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-              </Row>
-
-              <Row className="mb-2">
-
-                 <Col md={6}>
-                  <Form.Label>Upload Document</Form.Label>
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary form-control"
-                    onClick={() => setShowFeasibilityModal(true)}
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Plant</Form.Label>
+                  <Form.Select
+                    name="loc"
+                    value={formData.loc}
+                    onChange={handleChange}
                   >
-                    <FaUpload className="me-2" /> Upload Document
-                    <span className="ms-2 text-muted">
-                      {feasibilityDocs.length > 0 &&
-                        `(${feasibilityDocs.length} selected)`}
-                    </span>
-                  </button>
-                  {errors.feasibilityDocs && (
-                    <p className="error-text text-danger mt-1 mb-0">
-                      {errors.feasibilityDocs}
-                    </p>
-                  )}
-                
-                </Col>
-                <Col md={6}>
-                  <Form.Group controlId="formComments">
-                    <Form.Label>Comments</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      name="Comments"
-                      value={formData.Comments || ""}
-                      onChange={handleChange}
-                      disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)}
-                    />
-                    {errors.Comments && (
-                      <p className="error-text text-danger">{errors.Comments}</p>
-                    )}
-                  </Form.Group>
-                </Col>
-              </Row>
+                    <option value="">Select Plant</option>
+                    {plants.map((p, idx) => (
+                      <option key={idx} value={p.loc}>
+                        {p.loc}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
 
-              <Row className="mb-3">
-               
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>
+                    {immediateNextStepIndex === 1 ? "Inspection Date" : "Apply Date"}
+                  </Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="applyDate"
+                    max={new Date().toISOString().split("T")[0]}
+                    value={formData.applyDate || ""}
+                    onChange={handleChange}
+                    isInvalid={!!errors.applyDate}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.applyDate}
+                  </Form.Control.Feedback>
+                </Form.Group>
+            </Col>
+            </Row>
 
+            {/* {immediateNextStepIndex >= 1 && (
+        `<Form.Group className="mb-3">
+          <Form.Label>{stepRadioLabels[immediateNextStepIndex] || "Status for this step"}</Form.Label>
+          <div>
+            <Form.Check
+              type="radio"
+              label="Yes"
+              name={`stepStatus_${immediateNextStepIndex}`}
+              value="YES"
+              checked={formData[`stepStatus_${immediateNextStepIndex}`] === "YES"}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  [`stepStatus_${immediateNextStepIndex}`]: e.target.value,
+                }))
+              }
+            />
+            <Form.Check
+              type="radio"
+              label="No"
+              name={`stepStatus_${immediateNextStepIndex}`}
+              value="NO"
+              checked={formData[`stepStatus_${immediateNextStepIndex}`] === "NO"}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  [`stepStatus_${immediateNextStepIndex}`]: e.target.value,
+                }))
+              }
+            />
+          </div>
+        </Form.Group>`
+)} */}
+           {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
+  <Form.Group className="mb-3">
+    <Form.Label>
+      {provisionalRadioLabels[immediateNextStepIndex] ||
+        "Status for this step"}
+    </Form.Label>
+    <div>
+      <Form.Check
+        type="radio"
+        label="Yes"
+        name={`stepStatus_${immediateNextStepIndex}`}
+        value="YES"
+        checked={
+          formData[`stepStatus_${immediateNextStepIndex}`] === "YES"
+        }
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            [`stepStatus_${immediateNextStepIndex}`]:
+              e.target.value,
+          }))
+        }
+      />
+      <Form.Check
+        type="radio"
+        label="No"
+        name={`stepStatus_${immediateNextStepIndex}`}
+        value="NO"
+        checked={
+          formData[`stepStatus_${immediateNextStepIndex}`] === "NO"
+        }
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            [`stepStatus_${immediateNextStepIndex}`]:
+              e.target.value,
+          }))
+        }
+      />
+    </div>
+  </Form.Group>
+)}
+            {immediateNextStepIndex >= 6 && (
+              <Form.Group className="mb-3">
+                <Form.Label>
+                  {ocRadioLabels[immediateNextStepIndex] ||
+                    "Status for this step"}
+                </Form.Label>
+                <div>
+                  <Form.Check
+                    type="radio"
+                    label="Yes"
+                    name={`stepStatus_${immediateNextStepIndex}`}
+                    value="YES"
+                    checked={
+                      formData[`stepStatus_${immediateNextStepIndex}`] === "YES"
+                    }
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        [`stepStatus_${immediateNextStepIndex}`]:
+                          e.target.value,
+                      }))
+                    }
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="No"
+                    name={`stepStatus_${immediateNextStepIndex}`}
+                    value="NO"
+                    checked={
+                      formData[`stepStatus_${immediateNextStepIndex}`] === "NO"
+                    }
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        [`stepStatus_${immediateNextStepIndex}`]:
+                          e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </Form.Group>
+            )}
 
-                {isFirstProcess &&
-
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label> Number of Towers </Form.Label>
-                      <Form.Control as="textarea" rows={1} name="noOfTowers" value={formData.noOfTowers || ""} onChange={handleChange} disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)} />
-                    </Form.Group>
-                  </Col>
-
-
-                }
-              </Row>
-
-              <div className="d-grid">
-                {areAllStepsCompleted() && isViewingSpecificStep && (
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    onClick={() => setIsViewingSpecificStep(false)}
-                    className="w-100 fw-semibold mb-2"
-                  >
-                    ← Back to Completion Message
-                  </Button>
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Label>Upload Application Documents</Form.Label>
+                <Button
+                  variant="outline-secondary"
+                  className="form-control"
+                  onClick={() => setShowUploadModal(true)}
+                >
+                  Upload Docs{" "}
+                  {newDocs.length > 0 && `(${newDocs.length} files)`}
+                </Button>
+                {errors.newDocs && (
+                  <div className="text-danger mt-1">{errors.newDocs}</div>
                 )}
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Comments</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={1}
+                    name="comments"
+                    value={formData.comments || ""}
+                    onChange={handleChange}
+                  />
+                      {errors.comments && (
+                          <p className="error-text text-danger">{errors.comments}</p>
+                        )}
+                </Form.Group>
+              </Col>
+            </Row>
+            <div className="d-grid mt-3">
+              <Button variant="primary" size="lg" onClick={handleEmailSubmit}>
+                Submit
+              </Button>
+            </div>
+          </Form>
+                 )}
+               </Col>
 
-            
-                  <Button
-                    variant={submitted ? "success" : "primary"}
-                    size="md"
-                    onClick={handleEmailSubmit}
-                    className="w-100 fw-semibold"
-                    disabled={!formData.loc || isSubmitting || submitted}
-                  >
-                    {isSubmitting
-                      ? "Submitting..."
-                      : submitted
-                        ? "Submitted"
-                        : "Submit"}
-                  </Button>
-            
-                {viewedStep?.PROCESS !== immediateNextStep?.PROCESS &&
-                  isProcessCompleted(viewedStep?.PROCESS) && (
-                    <Button variant="success" size="md" className="w-100 fw-semibold" disabled>
-                      Updated (View Only)
-                    </Button>
-                  )}
-              </div>
-            </Form>
-          )}
-        </Col>
 
-        {/* Right Section: Previous Docs */}
-        <Col md={3} className="d-flex">
-          <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousGhmcDocs docsData={isViewingSpecificStep ? viewedStepDetails : nextStepDetails} type= "modify" />
+        {/* md={3} remains the same, as 4 + 5 + 3 = 12 */}
+        <Col md={3} className="d-flex w-25">
+          <div className="border rounded p-3 bg-white flex-fill d-flex flex-column">
+            <h5 className="mb-3 text-dark">Document History</h5>
+            <div className="flex-grow-1 overflow-auto">
+              {renderDocumentHistory()}
+            </div>
           </div>
         </Col>
       </Row>
 
-      <ReusableDialog
-        open={dialogConfig.open}
-        title={dialogConfig.title}
-        message={dialogConfig.message}
-        onClose={() => setDialogConfig({ ...dialogConfig, open: false })}
-        onConfirm={() => setDialogConfig({ ...dialogConfig, open: false })}
-        confirmText={dialogConfig.confirmText}
-      />
+       <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Logs for {immediateNextStep?.PROCESS}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
+          {selectedLogs.length === 0 ? (
+            <p>No logs available</p>
+          ) : (
+            selectedLogs.map((log, i) => (
+              <div key={i} className="mb-2">
+                <strong>{log?.date || "Unknown Date"}:</strong> {log?.comment || "No comment"}
+                <hr />
+              </div>
+            ))
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <EmailSelectionModal
         show={showEmailModal}
         onHide={() => setShowEmailModal(false)}
         onSubmit={handleEmailSelectionSubmit}
         processName={immediateNextStep?.PROCESS}
-        plantName={formData.loc}
-        applyDate={formData.applyDate}
-        comments={formData.Comments}
+        plantName={formData?.loc}
+        applyDate={formData?.applyDate}
+        comments={formData?.comments}
       />
-
-      <WaterDocUploadModal
-        show={showFeasibilityModal}
-        onClose={() => setShowFeasibilityModal(false)}
-        linkDocs={feasibilityDocs}
-        setLinkDocs={setFeasibilityDocs}
-        title="Upload Feasibility Certificate"
-        showLandDocs={false}
-        showOthDocs={false}
-        validateFileType={validateFileType}
-      />
-
-      <WaterDocUploadModal
-        show={amountPaidDocModal}
-        onClose={() => setAmountPaidDocModal(false)}
-        linkDocs={AmountPaidDocs}
-        setLinkDocs={setAmountPaidDocs}
-        title="Upload Paid Document Certificate"
-        showLandDocs={false}
-        showOthDocs={false}
-        validateFileType={validateFileType}
-      />
-
-      <WaterDocUploadModal
+      <ReraDocUploadModal
         show={showUploadModal}
         onClose={() => setShowUploadModal(false)}
-        linkDocs={linkDocs}
-        setLinkDocs={setLinkDocs}
-        landDocs={landDocs}
-        setLandDocs={setLandDocs}
-        othDocs={othDocs}
-        setOthDocs={setOthDocs}
-        validateFileType={validateFileType}
+        files={newDocs}
+        setFiles={setNewDocs}
       />
     </>
   );
 };
 
-export default GhmcModify;
+export default FireModifyTable;

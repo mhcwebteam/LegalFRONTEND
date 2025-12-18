@@ -76,12 +76,12 @@ useEffect(() => {
   fetchFireProcess();
 }, [API_BASE_URL]); // Add API_BASE_URL to dependency array if it can change
 
-  useEffect(() => {
-    if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
-      const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
-      fetchDataForLoc(defaultLoc);
-    }
-  }, [totalMasterData]);
+  // useEffect(() => {
+  //   if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+  //     const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+  //     fetchDataForLoc(defaultLoc);
+  //   }
+  // }, [totalMasterData]);
 
   const fetchDataForLoc = async (loc) => {
     try {

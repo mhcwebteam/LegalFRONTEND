@@ -238,12 +238,14 @@ const PollutionForm = () => {
             setConfirmOpen(false);
             return;
         }
-
+// const today = new Date().toISOString().split("T")[0];
         const formPayload = new FormData();
         formPayload.append('loc', formData.loc);
         formPayload.append('process', formData.process);
         formPayload.append('applyDate', formData.applyDate);
         formPayload.append('comments', formData.comments);
+    // formPayload.append('receivedDate', today);
+
 
         // ✅ Append only validated PDF files
         newDocs.forEach((file, index) => {

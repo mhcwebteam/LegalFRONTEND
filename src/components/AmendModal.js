@@ -85,15 +85,15 @@ const AmendModal = ({
     }
     //-------------------------------------------------------------------------------------------------------------
     //added validation on 15-12-2025 by rajakumari.m
-    const isReceivedDateProcess = 
-    amendData.process === "Received TOR" || 
-    amendData.process === "EC (Environmetal Clearance)" || 
-    amendData.process === "Received CFE" || 
-    amendData.process === "Application for CFE";
+  //   const isReceivedDateProcess = 
+  //   amendData.process === "Received TOR" || 
+  //   amendData.process === "EC (Environmetal Clearance)" || 
+  //   amendData.process === "Received CFE" || 
+  //   amendData.process === "Application for CFE";
     
-  if (isReceivedDateProcess && !amendData.receivedDate) {
-    newErrors.receivedDate = "Please enter Received Date"; // Fixed error message
-  }
+  // if (isReceivedDateProcess && !amendData.receivedDate) {
+  //   newErrors.receivedDate = "Please enter Received Date"; // Fixed error message
+  // }
 //----------------------------------------------------------------------------------------------------------------------
     if (!amendData.comments.trim()) {
       newErrors.comments = "Please enter Comments";
@@ -177,7 +177,14 @@ const formatDate = (date) => {
             {/* APPLY DATE */}
             <Form.Group className="mb-3">
                     <Form.Label>
-            {amendData.process === "Received TOR" ? "Received Date" : "Apply Date"}
+
+                      {
+  amendData.process === "Received TOR" || 
+amendData.process === "EC (Environmetal Clearance)" || 
+amendData.process === "Application for CFE" || 
+amendData.process === "Received CFE" ? "Received Date" : "Apply Date"
+}
+            {/* {amendData.process === "Received TOR" ? "Received Date" : "Apply Date"} */}
             <span style={{ color: "red" }}>*</span>
           </Form.Label>
               <Form.Control type="text" value={formatDate(amendData?.applyDate)} readOnly />
@@ -241,11 +248,11 @@ const formatDate = (date) => {
             {/* RECEIVED DATE - Show only for specific processes */}
 {/* RECEIVED DATE - Show only for specific processes */}
 {/* RECEIVED DATE - Show only for specific processes */}
-{(amendData.process === "Received TOR" || 
+{/* {(amendData.process === "Received TOR" || 
   amendData.process === "EC (Environmetal Clearance)" || 
   amendData.process === "Received CFE" || 
-  amendData.process === "Application for CFE") && (
-  <Form.Group className="mb-3">
+  amendData.process === "Application for CFE") && ( */}
+  {/* <Form.Group className="mb-3">
     <Form.Label>Received Date<span style={{ color: "red" }}>*</span></Form.Label>
     <Form.Control
       type="date"
@@ -263,8 +270,8 @@ const formatDate = (date) => {
         {errors.receivedDate}
       </div>
     )}
-  </Form.Group>
-)}
+  </Form.Group> */}
+{/* )} */}
  {/* ------------------------------------------------------------------------------------------------------------------------------------*/}  
 
             {/* Conditional Radio Button for "Returns Submit" in Amend Modal */}

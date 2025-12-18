@@ -34,7 +34,7 @@ const ReraUpdateTable = () => {
  const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
 const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
-
+const [isSubmitting, setIsSubmitting] = useState(false);
   // ✅ NEW: 'viewedStep' tracks which step the user is currently looking at (could be an old one).
   const [viewedStep, setViewedStep] = useState(null);
   // ✅ NEW: 'viewedStepDetails' holds the data for the step being looked at.
@@ -255,8 +255,9 @@ const activeSubLevelIndex = useMemo(() => {
   return currentIndex;
 }, [viewedStep, viewedStepDetails]);
 
-  console.log('select plant:', selectedPlant, "apply date:", viewedStepDetails?.APPLY_DT, "comments:", viewedStepDetails?.COMMENTS);
+
 const handleConfirmSubmit = async (emails) => {
+    setIsSubmitting(true);
   if (!selectedPlant || !immediateNextStep) {
     Swal.fire("Error", "No active step is available to update.", "error");
     return;
@@ -264,6 +265,10 @@ const handleConfirmSubmit = async (emails) => {
 
   const payload = new FormData();
   payload.append("loc", selectedPlant);
+  payload.append("applyDate",viewedStepDetails?.APPLY_DT);
+  payload.append("comments",  viewedStepDetails?.COMMENTS);
+
+
    // UPDATED: Check which step we're updating to send appropriate date
   if (immediateNextStep.PROCESS === "Validity of the Certificate") {
     // For step 3, send FROM_DT and TO_DT
@@ -318,6 +323,10 @@ const handleConfirmSubmit = async (emails) => {
     console.error("Update failed:", error);
     Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
   }
+
+  finally {
+    setIsSubmitting(false);
+  }
 };
 // Add this useEffect after your existing useEffect hooks
 useEffect(() => {
@@ -349,111 +358,7 @@ useEffect(() => {
     isLevel4Completed: viewedStepDetails?.LEVEL === "Level 4" && viewedStepDetails?.LEVEL_STATUS === "Completed"
   });
 }, [viewedStep, viewedStepDetails, activeSubLevelIndex]);
-// const handleConfirmSubmit = async (emails) => {
-//   const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
-  
-//   if (!selectedPlant || !immediateNextStep) {
-//     Swal.fire("Error", "No active step is available to update.", "error");
-//     return;
-//   }
 
-//   const payload = new FormData();
-//   payload.append("loc", selectedPlant);
-//   payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
-//   payload.append("process", immediateNextStep.PROCESS);
-
-//   emails.forEach((email, i) => {
-//     payload.append(`emails[${i}]`, email);
-//   });
-
-//   const apiUrl = `${API_BASE_URL}/rera-update`;
-
-//   try {
-//     await axios.post(apiUrl, payload);
-
-//     // Refresh the data after update
-//     const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
-//     const fetchedData = res.data;
-//     setStoreData(fetchedData);
-
-//     // ✅ CRITICAL: Re-fetch the details for the current viewed step
-//     if (selectedPlant && viewedStep) {
-//       const detailsRes = await axios.get(
-//         `${API_BASE_URL}/rera-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(viewedStep.PROCESS)}`
-//       );
-//       if (detailsRes && detailsRes.data) {
-//         setViewedStepDetails(detailsRes.data);
-//       }
-//     }
-
-//     // ✅ Also update the immediate next step after completion
-//     const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
-//     const nextStep = steps.find((step) => !completedProcesses.includes(step.PROCESS));
-
-//     if (nextStep) {
-//       setImmediateNextStep(nextStep);
-//       setImmediateNextStepIndex(steps.indexOf(nextStep));
-//     } else {
-//       // All steps completed
-//       setImmediateNextStep(null);
-//       setImmediateNextStepIndex(steps.length);
-//     }
-
-//     await Swal.fire({
-//       icon: "success",
-//       title: "Status Updated!",
-//       text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
-//       timer: 2000,
-//       showConfirmButton: false
-//     });
-//     setViewedStepDetails("");
-    
-   
-//   } catch (error) {
-//     console.error("Update failed:", error);
-//     Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
-//   }
-// };
-  // const handleConfirmSubmit = async (emails) => {
-  //   const isStep2Incomplete = immediateNextStepIndex === 1 && activeSubLevelIndex < SUB_LEVELS.length;
-    
-  //   if (!selectedPlant || !immediateNextStep) {
-  //     Swal.fire("Error", "No active step is available to update.", "error");
-  //     return;
-  //   }
-
-  //   const payload = new FormData();
-  //   payload.append("loc", selectedPlant);
-  //   payload.append("applyDate", viewedStepDetails?.APPLY_DT || "");
-  //   payload.append("process", immediateNextStep.PROCESS);
-
-  //   emails.forEach((email, i) => {
-  //     payload.append(`emails[${i}]`, email);
-  //   });
-
-  //   const apiUrl = `${API_BASE_URL}/rera-update`;
-
-  //   try {
-  //     await axios.post(apiUrl, payload);
-
-  //     // Refresh the data after update
-  //     const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
-  //     const fetchedData = res.data;
-  //     setStoreData(fetchedData);
-
-  //     await Swal.fire({
-  //       icon: "success",
-  //       title: "Status Updated!",
-  //       text: `Step '${immediateNextStep.PROCESS}' has been marked as complete.`,
-  //       timer: 2000,
-  //       showConfirmButton: false
-  //     });
-   
-  //   } catch (error) {
-  //     console.error("Update failed:", error);
-  //     Swal.fire("Update Failed", "Could not update the status. Please check the console.", "error");
-  //   }
-  // };
 
    const handleDemoteConfirm = (newLevel) => {
       if (newLevel) {
@@ -504,7 +409,7 @@ useEffect(() => {
           paddingRight: "5px",
         }}
       >
-        <h6 className="text-primary">Uploaded Documents</h6>
+        <h6 className="text-primary p-3">Uploaded Documents</h6>
         <ul className="list-unstyled mb-0">
           {documents.map((doc, idx) => (
             <li key={idx} className="mb-1">
@@ -752,9 +657,10 @@ useEffect(() => {
   style={{ backgroundColor: '#0d6efd', borderColor: '#0d6efd' }}
   size="md"
   onClick={handleEmailSubmit}
-  disabled={!canUpdate}
+  disabled={!canUpdate || isSubmitting || !selectedPlant}
+   
 >
-  Update Status to Complete
+    {isSubmitting ? "Updating..." : "Update"}
 </Button>
 
     </span>

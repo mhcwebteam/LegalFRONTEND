@@ -407,6 +407,8 @@ useEffect(() => {
     formData.append("applyDate", modalData.applyDate);
     formData.append("comments", modalData.comments);
 
+  
+
     selectedEmails.forEach((email, i) => {
       formData.append(`emails[${i}]`, email);
     });
@@ -646,7 +648,7 @@ const formatDate = (dateString) => {
   formData.append("comments", comments);
   formData.append("category", category);
   formData.append("amendreturnsSubmitted", amendreturnsSubmitted);
-
+  // formData.append("receivedDate",null);
   selectedFiles.forEach((file) => {
     formData.append("document[]", file);
     formData.append("doc_name[]", file.name);
@@ -715,7 +717,7 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
   payload.append("amendDate", amendDataFromModal.amendDate);
   payload.append("comments", amendDataFromModal.comments);
   payload.append("category", amendDataFromModal.category);
-
+  
   // Emails → convert to JSON
   payload.append(
     "emails",
@@ -1264,7 +1266,12 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
             <Form.Group className="mb-3">
 
           <Form.Label>
-  {modalData.process === "Received TOR" ? "Received Date" : "Apply Date"}
+{
+  modalData.process === "Received TOR" || 
+modalData.process === "EC (Environmetal Clearance)" || 
+modalData.process === "Application for CFE" || 
+modalData.process === "Received CFE" ? "Received Date" : "Apply Date"
+}
   <span style={{ color: "red" }}>*</span>
 </Form.Label>
 

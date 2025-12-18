@@ -88,17 +88,17 @@ const AirportForm = () => {
         }
     };
     
-      useEffect(() => {
+      // useEffect(() => {
         
-        if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
-          const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
+      //   if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
+      //     const defaultLoc = totalMasterData[totalMasterData.length - 1]?.LOC;
     
     
-          if (defaultLoc) {
-            fetchDataForLoc(defaultLoc);
-          }
-        }
-      }, [totalMasterData]);
+      //     if (defaultLoc) {
+      //       fetchDataForLoc(defaultLoc);
+      //     }
+      //   }
+      // }, [totalMasterData]);
 
  
 const checkIfPlantExists = async (plant) => {

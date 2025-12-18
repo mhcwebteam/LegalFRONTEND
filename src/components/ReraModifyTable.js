@@ -39,7 +39,7 @@ const ReraModifyTable = () => {
   // 08-12-2025: Added state for logs modal
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
-
+const [isSubmitting, setIsSubmitting] = useState(false);
   // ADD THIS: PDF validation error state
   const [uploadError, setUploadError] = useState("");
   
@@ -213,7 +213,7 @@ useEffect(() => {
       applyDate: details.APPLY_DT, 
       fromDate: details.FRM_DT || "", 
       toDate: details.TO_DT || "",
-      comments: details.COMMENTS || "",
+      comments:  "",
       // CHANGE THIS LINE: Always default to "Yes" when loading data
       subLevelStatus: "Yes"  // Changed from: details.LEVEL_STATUS === "No" ? "No" : "Yes"
     }));
@@ -451,32 +451,40 @@ const handleDeleteDocument = async (docType, fileName, index) => {
     Swal.fire('Error!', 'Failed to delete document.', 'error');
   }
 };
-  const handleConfirmSubmit = async (emails) => {
-    // --- VALIDATION (No changes needed here, it's correct for the UI) ---
+
+const handleConfirmSubmit = async (emails) => {
+  setIsSubmitting(true);
+  setUploadError(""); // Clear previous upload errors
+  
+  try {
+    // --- VALIDATION ---
     if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
-      Swal.fire("Validation Error", "Please provide both a 'From Date' and a 'To Date' for this step.", "error");
+      await Swal.fire("Validation Error", "Please provide both a 'From Date' and a 'To Date' for this step.", "error");
       return;
     }
+    
     if (immediateNextStepIndex !== 2 && !formData.applyDate) {
-      Swal.fire("Validation Error", "Please provide an 'Apply Date' for this step.", "error");
+      await Swal.fire("Validation Error", "Please provide an 'Apply Date' for this step.", "error");
       return;
     }
+    
     if (!formData.loc || !immediateNextStep) {
-      Swal.fire("Validation Error", "Please select a Plant and ensure a process step is active.", "error");
+      await Swal.fire("Validation Error", "Please select a Plant and ensure a process step is active.", "error");
       return;
     }
+    
     if (newDocs.length > 0) {
       const nonPDFFiles = newDocs.filter(file => 
         file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
       );
       
       if (nonPDFFiles.length > 0) {
-        // Show error message instead of popup
         setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
         return;
       }
     }
     
+    // --- PREPARE PAYLOAD ---
     const payload = new FormData();
     payload.append("loc", formData.loc);
     payload.append("process", immediateNextStep.PROCESS);
@@ -494,23 +502,11 @@ const handleDeleteDocument = async (docType, fileName, index) => {
       payload.append("address", projectInfo.address || "");
     }
     
-    // ✅ START: CORRECTED PAYLOAD LOGIC
-    
-    // Determine which date to use as the primary 'applyDate'.
-    // For step 3, use fromDate. For all other steps, use applyDate.
+    // Determine which date to use as the primary 'applyDate'
     const applyDateToSend = immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
     payload.append("applyDate", applyDateToSend);
-        payload.append("fromDate", formData.fromDate);
-      payload.append("toDate", formData.toDate);
-    // ADDITIONALLY, if it is the third step, also send the specific date range.
-    // if (immediateNextStepIndex === 2) {
-    //   payload.append("fromDate", formData.fromDate);
-    //   payload.append("toDate", formData.toDate);
-    //   console.log("formData.fromDate", formData.fromDate);
-      
-    // }
-    
-    // ✅ END: CORRECTED PAYLOAD LOGIC
+    payload.append("fromDate", formData.fromDate);
+    payload.append("toDate", formData.toDate);
 
     if (immediateNextStepIndex === 1) {
       const taskStatus = formData.subLevelStatus || "No";
@@ -526,28 +522,148 @@ const handleDeleteDocument = async (docType, fileName, index) => {
     }
     console.log("--------------------------");
     
+    // --- SUBMIT TO API ---
     const existingRecord = storeData.find((item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim());
     const apiUrl = existingRecord ? `${API_BASE_URL}/rera-modify` : `${API_BASE_URL}/rera-submit`;
     
-    try {
-      await axios.post(apiUrl, payload);
-      await Swal.fire({ icon: 'success', title: existingRecord ? "Updated!" : "Submitted!", text: "Your data has been saved successfully.", timer: 1500, showConfirmButton: false });
+    await axios.post(apiUrl, payload);
+    
+    await Swal.fire({ 
+      icon: 'success', 
+      title: existingRecord ? "Updated!" : "Submitted!", 
+      text: "Your data has been saved successfully.", 
+      timer: 1500, 
+      showConfirmButton: false 
+    });
+    
+    // --- RESET STATE AFTER SUCCESSFUL SUBMISSION ---
+    setFormData({ 
+      loc: "", 
+      applyDate: "", 
+      fromDate: "", 
+      toDate: "", 
+      comments: "", 
+      prjName: "", 
+      address: "" 
+    });
+    setNewDocs([]);
+    setSelectedPlant("");
+    setStoreData([]);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null);
+    setProjectInfo({ prjName: "", address: "" });
+    setIsLevel4Completed(false);
+    
+  } catch (error) {
+    console.error("Submission failed:", error);
+    await Swal.fire("Submission Failed", "Please check the console for details.", "error");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+  // const handleConfirmSubmit = async (emails) => {
+  //     setIsSubmitting(true);
+  //   // --- VALIDATION (No changes needed here, it's correct for the UI) ---
+  //   if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
+  //     Swal.fire("Validation Error", "Please provide both a 'From Date' and a 'To Date' for this step.", "error");
+  //     return;
+  //   }
+  //   if (immediateNextStepIndex !== 2 && !formData.applyDate) {
+  //     Swal.fire("Validation Error", "Please provide an 'Apply Date' for this step.", "error");
+  //     return;
+  //   }
+  //   if (!formData.loc || !immediateNextStep) {
+  //     Swal.fire("Validation Error", "Please select a Plant and ensure a process step is active.", "error");
+  //     return;
+  //   }
+  //   if (newDocs.length > 0) {
+  //     const nonPDFFiles = newDocs.filter(file => 
+  //       file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
+  //     );
       
-      // Reset state after submission
-      setFormData({ loc: "", applyDate: "", fromDate: "", toDate: "", comments: "", prjName: "", address: "" });
-      setNewDocs([]);
-      setSelectedPlant("");
-      setStoreData([]);
-      setImmediateNextStep(null);
-      setImmediateNextStepIndex(-1);
-      setNextStepDetails(null);
-      setProjectInfo({ prjName: "", address: "" });
-      setIsLevel4Completed(false);
-    } catch (error) {
-      console.error("Submission failed:", error);
-      Swal.fire("Submission Failed", "Please check the console for details.", "error");
-    }
-  };
+  //     if (nonPDFFiles.length > 0) {
+  //       // Show error message instead of popup
+  //       setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
+  //       return;
+  //     }
+  //   }
+  //      setIsSubmitting(false);
+  //   const payload = new FormData();
+  //   payload.append("loc", formData.loc);
+  //   payload.append("process", immediateNextStep.PROCESS);
+  //   payload.append("comments", formData.comments || "");
+
+  //   emails.forEach((email, i) => {
+  //     payload.append(`emails[${i}]`, email);
+  //   });
+
+  //   if (immediateNextStepIndex === 0) {
+  //     payload.append("prjName", formData.prjName || "");
+  //     payload.append("address", formData.address || "");
+  //   } else {
+  //     payload.append("prjName", projectInfo.prjName || "");
+  //     payload.append("address", projectInfo.address || "");
+  //   }
+    
+  //   // ✅ START: CORRECTED PAYLOAD LOGIC
+    
+  //   // Determine which date to use as the primary 'applyDate'.
+  //   // For step 3, use fromDate. For all other steps, use applyDate.
+  //   const applyDateToSend = immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
+  //   payload.append("applyDate", applyDateToSend);
+  //       payload.append("fromDate", formData.fromDate);
+  //     payload.append("toDate", formData.toDate);
+  //   // ADDITIONALLY, if it is the third step, also send the specific date range.
+  //   // if (immediateNextStepIndex === 2) {
+  //   //   payload.append("fromDate", formData.fromDate);
+  //   //   payload.append("toDate", formData.toDate);
+  //   //   console.log("formData.fromDate", formData.fromDate);
+      
+  //   // }
+    
+  //   // ✅ END: CORRECTED PAYLOAD LOGIC
+
+  //   if (immediateNextStepIndex === 1) {
+  //     const taskStatus = formData.subLevelStatus || "No";
+  //     payload.append("pending_task", levelToSubmit);
+  //     payload.append("task_status", taskStatus);
+  //   }
+    
+  //   newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
+    
+  //   console.log("--- Submitting Payload ---");
+  //   for (const [key, value] of payload.entries()) {
+  //     console.log(`${key}:`, value);
+  //   }
+  //   console.log("--------------------------");
+    
+  //   const existingRecord = storeData.find((item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim());
+  //   const apiUrl = existingRecord ? `${API_BASE_URL}/rera-modify` : `${API_BASE_URL}/rera-submit`;
+    
+  //   try {
+  //     await axios.post(apiUrl, payload);
+  //     await Swal.fire({ icon: 'success', title: existingRecord ? "Updated!" : "Submitted!", text: "Your data has been saved successfully.", timer: 1500, showConfirmButton: false });
+      
+  //     // Reset state after submission
+  //     setFormData({ loc: "", applyDate: "", fromDate: "", toDate: "", comments: "", prjName: "", address: "" });
+  //     setNewDocs([]);
+  //     setSelectedPlant("");
+  //     setStoreData([]);
+  //     setImmediateNextStep(null);
+  //     setImmediateNextStepIndex(-1);
+  //     setNextStepDetails(null);
+  //     setProjectInfo({ prjName: "", address: "" });
+  //     setIsLevel4Completed(false);
+  //   } catch (error) {
+  //     console.error("Submission failed:", error);
+  //     Swal.fire("Submission Failed", "Please check the console for details.", "error");
+  //   }
+
+  //   finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
   
   // 08-12-2025: Updated renderDocumentHistory to use ListGroup like GHMC component
    const renderDocumentHistory = () => {
@@ -573,6 +689,7 @@ const handleDeleteDocument = async (docType, fileName, index) => {
 
     return documents.length > 0 ? (
    <ListGroup variant="flush">
+     <h6 className="text-primary">Uploaded Documents</h6>
   {documents.map((doc, idx) => (
     <ListGroup.Item
       key={idx}
@@ -852,11 +969,12 @@ const handleDeleteDocument = async (docType, fileName, index) => {
             <div className="d-grid mt-3">
               <Button 
                 variant="primary" 
-                size="lg" 
+                size="md" 
                 onClick={handleEmailSubmit}
-                disabled={isLevel4Completed}
+                disabled={isLevel4Completed  || isSubmitting || !formData.loc}
+                    
               >
-                Submit
+                {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
             </div>
           </Form>

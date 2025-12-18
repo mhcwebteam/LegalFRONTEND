@@ -237,7 +237,7 @@ const WaterModifyTable = () => {
         ...prevFormData,
         applyDate: details?.APPLY_DT,
         status: details?.STATUS || "YES",
-        reason: details?.REASON || "",
+        reason:  "",
         comments: "",
         noOfFlats: details?.NUMBER_OF_FLATS || "",
         KLD: details?.KLD || "",
