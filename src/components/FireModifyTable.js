@@ -268,6 +268,9 @@ setSetData(details);
               item.STEPTYPE === currentProcess
           );
 
+
+          console.log(":fffffffffffff",details);
+
             setFormData((prev) => ({
               ...prev,
               applyDate: details.APPLY_DT || "",

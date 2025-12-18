@@ -97,6 +97,11 @@ const GhmcModify = () => {
     return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
 
+  useEffect(() => {
+  setHeaderData(null);
+}, []);
+
+
 
    useEffect(() => {
       if (nextStepDetails) {

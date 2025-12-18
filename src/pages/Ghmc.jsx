@@ -11,9 +11,9 @@ import ReusableDialog from "../components/ReusableDialog";
 import "../pages/Ghmc.css";
 import {  getMasterByLoc } from "../api/Api"
 import { Context } from "../context/ContextData"
+import { Button } from "react-bootstrap";
 
-
-import { API_BASE_URL } from "../config/Config";
+import { API_BASE_URL, API_BASE_URLS } from "../config/Config";
 import ProcessField from "../components/ProcessField";
 import ProjectInfoHeader from "../components/ProjectInfoHeader";
 import WaterDocUploadModal from "../components/WaterDocUploadModal";
@@ -21,6 +21,8 @@ import Swal from "sweetalert2";
 
 const Ghmc = () => {
     const navigate = useNavigate();
+    const { totalMasterData, setHeaderData, headerData, setMasterGetData, setMasterData } = useContext(Context);
+    const [showModal, setShowModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const [confirmOpen, setConfirmOpen] = useState(false);
