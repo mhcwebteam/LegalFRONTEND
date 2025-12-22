@@ -62,7 +62,9 @@ const Ghmc = () => {
 
 
 
-
+  useEffect(() => {
+  setHeaderData(null);
+}, []);
 
     useEffect(() => {
         if (formData.noOfTowers && parseInt(formData.noOfTowers) > 0) {

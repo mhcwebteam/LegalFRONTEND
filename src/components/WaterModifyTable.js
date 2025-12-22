@@ -623,7 +623,7 @@ const WaterModifyTable = () => {
 
               <>
                 <Row className="mb-3 align-items-end">
-                  {!isFirstProcess && (
+                  {immediateNextStepIndex === 1 && (
                     <>
                       <Col md={6} className="mb-2">
                         <Form.Group>
@@ -719,7 +719,13 @@ const WaterModifyTable = () => {
                         </Row>
                       )}
 
-                      {immediateNextStepIndex === 3 && (
+                   
+                    </>
+                  )}
+                </Row>
+
+                <Row>
+                     {immediateNextStepIndex === 3 && (
                         <Row className="mb-2">
                           <Form.Group>
                             <Form.Label>Size Of Connection</Form.Label>
@@ -737,8 +743,6 @@ const WaterModifyTable = () => {
                           </Form.Group>
                         </Row>
                       )}
-                    </>
-                  )}
                 </Row>
               </>
 

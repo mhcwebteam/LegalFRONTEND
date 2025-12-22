@@ -58,6 +58,11 @@ const ReraForm = () => {
   //   }
   // }, [totalMasterData]);
 
+
+    useEffect(() => {
+    setHeaderData(null);
+  }, []);
+
   useEffect(() => {
     const fetchProcess = async () => {
       try {

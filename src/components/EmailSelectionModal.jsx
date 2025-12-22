@@ -301,6 +301,41 @@ const EmailSelectionModal = ({
   return (
     <>
       <Modal show={show} onHide={onClose} centered size="xl" dialogClassName="modal-dialog-scrollable">
+        
+         {modalData && (
+              <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#f0f0f0' }}>
+                <Typography variant="subtitle2" className="mb-2 fw-semibold">
+                  Update Details:
+                </Typography>
+                <Typography variant="body2">
+                  {modalData.updateType && (
+                    <>
+                      <strong className="text-muted">Update Type:</strong> {modalData.updateType || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.PROCESS && (
+                    <>
+                      <strong className="text-muted">Process:</strong> {modalData.PROCESS || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.APPLY_DT && (
+                    <>
+                      <strong className="text-muted">Apply Date:</strong> {modalData.APPLY_DT || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.process && (
+                    <>
+                      <strong className="text-muted">Process:</strong> {modalData.process || 'N/A'} <br />
+                    </>
+                  )}
+                  {modalData.category && (
+                    <>
+                      <strong className="text-muted">Amendment Type:</strong> {modalData.category || 'N/A'} <br />
+                    </>
+                  )}
+                </Typography>
+              </Box>
+            )}
         <Modal.Header closeButton>
           <Modal.Title className="d-flex align-items-center gap-2">
             <Mail size={24} className="text-primary" />
@@ -379,41 +414,7 @@ const EmailSelectionModal = ({
               </Box>
             )}
 
-            {/* Optional: Show update details if modalData is provided */}
-            {modalData && (
-              <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#f0f0f0' }}>
-                <Typography variant="subtitle2" className="mb-2 fw-semibold">
-                  Update Details:
-                </Typography>
-                <Typography variant="body2">
-                  {modalData.updateType && (
-                    <>
-                      <strong className="text-muted">Update Type:</strong> {modalData.updateType || 'N/A'} <br />
-                    </>
-                  )}
-                  {modalData.PROCESS && (
-                    <>
-                      <strong className="text-muted">Process:</strong> {modalData.PROCESS || 'N/A'} <br />
-                    </>
-                  )}
-                  {modalData.APPLY_DT && (
-                    <>
-                      <strong className="text-muted">Apply Date:</strong> {modalData.APPLY_DT || 'N/A'} <br />
-                    </>
-                  )}
-                  {modalData.process && (
-                    <>
-                      <strong className="text-muted">Process:</strong> {modalData.process || 'N/A'} <br />
-                    </>
-                  )}
-                  {modalData.category && (
-                    <>
-                      <strong className="text-muted">Amendment Type:</strong> {modalData.category || 'N/A'} <br />
-                    </>
-                  )}
-                </Typography>
-              </Box>
-            )}
+          
           </Box>
         </Modal.Body>
         <Modal.Footer>

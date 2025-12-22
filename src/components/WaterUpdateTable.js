@@ -325,9 +325,12 @@ const WaterUpdateTable = () => {
       return renderNextStepForm();
     }
 
-    const process = selectedProcessDetails;
-    const fields = [];
 
+    const fields = [];
+  const process = selectedProcessDetails;
+    const processName = process.PROCESS?.toLowerCase()?.trim();
+  const isSecondStep = processName === "applied for water release";
+  const shouldHideComments = isSecondStep && process.STATUS === "NO";
     // Always show basic info
     fields.push(
       <Row key="basic" className="mb-2">
@@ -352,11 +355,33 @@ const WaterUpdateTable = () => {
             />
           </Form.Group>
         </Col>
+         
+      </Row>
+
+  
+    );
+   if (!shouldHideComments && hasFieldData(process.COMMENTS)) {
+    fields.push(
+      <Row key="comments" className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Comments</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={process.COMMENTS || ""}
+              readOnly
+              disabled
+            />
+          </Form.Group>
+        </Col>
       </Row>
     );
+  }
+  
 
     // Determine which fields to show based on the specific process
-    const processName = process.PROCESS?.toLowerCase()?.trim();
+  
     console.log("Process Name:", processName, "Process Data:", process);
 
     // Application Filling process fields
@@ -447,30 +472,63 @@ const WaterUpdateTable = () => {
           </Row>
         );
       }
-
+ 
       // Show comments for Application Filling if available
-      if (hasFieldData(process.COMMENTS)) {
-        fields.push(
-          <Row key="application-comments" className="mb-3">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>Comments</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={process.COMMENTS || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        );
-      }
+      // if (hasFieldData(process.COMMENTS)) {
+      //   fields.push(
+      //     <Row key="application-comments" className="mb-3">
+      //       <Col md={12}>
+      //         <Form.Group>
+      //           <Form.Label>Comments</Form.Label>
+      //           <Form.Control
+      //             as="textarea"
+      //             rows={2}
+      //             value={process.COMMENTS || ""}
+      //             readOnly
+      //             disabled
+      //           />
+      //         </Form.Group>
+      //       </Col>
+      //     </Row>
+      //   );
+      // }
     }
     // Applied For Water Release process fields  
     else if (processName === "applied for water release") {
       console.log("Showing Applied for Water Release fields");
+
+      if(hasFieldData(process.STATUS)) {
+        fields.push(
+           <Row key="size" className="mb-2">
+      <Form.Group>
+        <Form.Label>STATUS</Form.Label>
+        <div>
+          <Form.Check
+            inline
+            label="Yes"
+            name="status"
+            type="radio"
+            value="YES"
+            checked={formData.status === "YES"}
+         disabled
+          />
+
+          <Form.Check
+            inline
+            label="No"
+            name="status"
+            type="radio"
+            value="NO"
+            checked={formData.status === "NO"}
+          disabled
+          />
+        </div>
+      </Form.Group>
+  
+  
+</Row>
+        )
+      }
 
       if (hasFieldData(process.OLD_AMOUNT) || hasFieldData(process.TOTAL_AMOUNT)) {
         fields.push(
@@ -635,8 +693,14 @@ const WaterUpdateTable = () => {
             </Form.Control.Feedback>
           </Form.Group>
         </Col>
+
+
+
+   
       </Row>
     );
+
+
 
     // Process-specific fields based on step
     if (!isFirstProcess) {
@@ -676,7 +740,11 @@ const WaterUpdateTable = () => {
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
+
+
+
           </Row>
+
         );
       }
 
@@ -700,7 +768,48 @@ const WaterUpdateTable = () => {
           </Row>
         );
       }
+ 
+
+
     }
+
+
+
+if(immediateNextStepIndex === 1) {
+ fields.push(
+              <Row key="size" className="mb-2">
+      <Form.Group>
+        <Form.Label>STATUS</Form.Label>
+        <div>
+          <Form.Check
+            inline
+            label="Yes"
+            name="status"
+            type="radio"
+            value="YES"
+            checked={formData.status === "YES"}
+         disabled
+          />
+
+          <Form.Check
+            inline
+            label="No"
+            name="status"
+            type="radio"
+            value="NO"
+            checked={formData.status === "NO"}
+          disabled
+          />
+        </div>
+      </Form.Group>
+  
+  
+</Row>
+    )
+}
+   
+
+   
 
     // Status-based fields
     if (formData.status === "YES") {
@@ -789,7 +898,7 @@ const WaterUpdateTable = () => {
               />
             </Form.Group>
           </Col>
-          <Col md={4}>
+          <Col md={4} className="mt-3">
             <Form.Group>
               <Form.Label>Total Project Area</Form.Label>
               <Form.Control
@@ -831,6 +940,11 @@ const WaterUpdateTable = () => {
         </Row>
       );
     }
+
+
+  
+
+
 
     return fields;
   };

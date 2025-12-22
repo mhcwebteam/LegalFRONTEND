@@ -98,6 +98,11 @@ const PollutionForm = () => {
     //     }
     // }, [totalMasterData]);
 
+
+      useEffect(() => {
+      setHeaderData(null);
+    }, []);
+
     useEffect(() => {
         if (formData.loc !== '') {
             checkIfPlantExists(formData.loc);

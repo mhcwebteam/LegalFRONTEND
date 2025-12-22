@@ -896,6 +896,11 @@ useEffect(() => {
   //   }
   // };
 
+
+    useEffect(() => {
+    setHeaderData(null);
+  }, []);
+
   useEffect(() => {
     const fetchProcess = async () => {
       try {

@@ -705,7 +705,10 @@ const AirportUpdateTable = () => {
         );
       }
 
-      if (hasFieldData(process.COMMENTS)) {
+   
+    }
+    
+   if (hasFieldData(process.COMMENTS)) {
         fields.push(
           <Row key="application-comments" className="mb-3">
             <Col md={12}>
@@ -723,8 +726,6 @@ const AirportUpdateTable = () => {
           </Row>
         );
       }
-    }
-
     if (processName === "noc received or not") {
       fields.push(
         <Form.Group key="status-group">
