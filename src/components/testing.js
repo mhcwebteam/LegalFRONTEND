@@ -1,1247 +1,1130 @@
-import React, { useEffect, useState, useMemo, useContext } from "react";
-import { FaCheckCircle, FaFileAlt } from "react-icons/fa";
-import {
-  Nav,
-  Form,
-  Button,
-  Row,
-  Col,Alert,
-  Badge,
-  Modal,
-  Card,
-} from "react-bootstrap";
-import axios from "axios";
-import Swal from "sweetalert2";
-import { API_BASE_URL, API_DOC_URL } from "../config/Config";
-import FormHeader from "./Header";
-import ReraDocUploadModal from "./ReraDocUploadModal";
-import ProjectInfoHeader from "./ProjectInfoHeader";
-import { Context } from "../context/ContextData";
+import React, { useState, useEffect, useContext } from 'react';
+import { Container } from 'react-bootstrap';
+import axios from 'axios';
+import { API_BASE_URL, API_DOC_URL } from '../config/Config';
+import { OverlayTrigger, Tooltip, Modal, Button } from 'react-bootstrap';
+
+import PlantSelector from '../components/PlantSelector';
+import PcbTabs from '../components/PcbTabs';
+import '../pages/Update.css';
+import '../components/PcbTabs.css';
+import DocumentModal from '../components/DocumentModal';
+import CardWithHeader from '../components/CardWithHeader';
+import Swal from 'sweetalert2';
 import { getMasterByLoc } from "../api/Api";
-import EmailSelectionModal from "./EmailModal";
+import ProjectInfoHeader from './ProjectInfoHeader';
+import { Context } from '../context/ContextData';
+import EmailSelectionModal from './EmailSelectionModal';
 
-const FireModifyTable = () => {
-  const {
-    storeData,
-    setStoreData,
-    respModifyData,
-    setRespModifyData,
-    setHeaderData,
-    headerData,
-  } = useContext(Context);
-
-  const [steps, setSteps] = useState([]);
+const PcbUpdateTable = () => {
+  const [key, setKey] = useState('Pollution Control Board');
   const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState("");
-  // const [storeData, setStoreData] = useState([]);
+  const [selectedPlant, setSelectedPlant] = useState('');
+  const [pcbProcesses, setPcbProcesses] = useState([]);
+  const [storeData, setStoreData] = useState([]);
+  const [showDocModal, setShowDocModal] = useState(false);
+  const [modalDocs, setModalDocs] = useState([]);
+  const [modalTitle, setModalTitle] = useState('');
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [amendModalDocs, setAmendModalDocs] = useState([]);
+  const [showAmendDocModal, setShowAmendDocModal] = useState(false);
+  const [amendDocTitle, setAmendDocTitle] = useState('');
+  const [selectedProcess, setSelectedProcess] = useState(null);
+  const [selectedEmails, setSelectedEmails] = useState([]);
+  const [amendmentRecords, setAmendmentRecords] = useState([]);
+  const [amendCategories, setAmendCategories] = useState([]);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
-  const [selectedEmails, setSelectedEmails] = useState([]);
-  const [allStepsCompleted, setAllStepsCompleted] = useState(false);
+  const [inputData, setInputData] = useState({});
+  const [status, setStatus] = useState('');
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [currentLogs, setCurrentLogs] = useState([]);
+  const [amendLogs, setAmendLogs] = useState([]);
+  const [logModalTitle, setLogModalTitle] = useState('');
+  const [selectedAmendProcess, setSelectedAmendProcess] = useState("");
+  const [selectedAmendCategory, setSelectedAmendCategory] = useState("");
 
-  const [formData, setFormData] = useState({
-    loc: "",
-    applyDate: "",
-    document: null,
-    comments: "",
-    prjName: "",
-    address: "",
-    feePaid: "",
-    feeAmount: "",
-    acknowledgeName: "",
-     // Add default for step 2
-  stepStatus_1: "YES"
-  });
-  const [showLogsModal, setShowLogsModal] = useState(false);
-  const [selectedLogs, setSelectedLogs] = useState([]);
-  
- 
+  // New state to track update type and process
+  const [updateType, setUpdateType] = useState(''); // 'regular' or 'amendment'
+  const [currentProcessForUpdate, setCurrentProcessForUpdate] = useState(null);
 
 
-  const [immediateNextStep, setImmediateNextStep] = useState(null);
-  const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
-  const [nextStepDetails, setNextStepDetails] = useState(null);
-
-  const [projectInfo, setProjectInfo] = useState({ prjName: "", address: "" });
-
-  const [newDocs, setNewDocs] = useState([]);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-
-  const [showAcknowledgeModal, setShowAcknowledgeModal] = useState(false);
-  const [acknowledgeDocs, setAcknowledgeDocs] = useState([]);
-  // State to hold validation errors for display
-  const [errors, setErrors] = useState({}); // Added for displaying validation errors
-  const [provisionalNOCCompleted, setProvisionalNOCCompleted] = useState(false);
-
-  const [currentProcess, setCurrentProcess] = useState("");
-  const [latestLogs, setLatestLogs] = useState([]);
-  // You MUST adjust these indices based on the actual number of "Provisional NOC" steps
-  const PROVISIONAL_NOC_STEP_INDICES = useMemo(() => [0, 1, 2, 3, 4], []);
-
-  const OC_PROCESS_STEP_RANGE = useMemo(() => [5, 6, 7, 8, 9, 10], []);
-
-  // For Provisional NOC steps (1–4)
-  const provisionalRadioLabels = {
-    1: "Site Inspection Status",
-    2: "Queries Received?",
-    3: "Committee Approved?",
-    4: "Provisional Status?",
-  };
-
-  const ocRadioLabels = {
-    6: "Site Inspection Status?",
-    7: "Queries Received?",
-    8: "Committee Approved?",
-    9: "OC Status?",
-    //   10: "OC Completion Confirmed?",
-  };
-
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/fire-process`)
-      .then((res) => setSteps(res.data))
-      .catch((err) => console.error("Error fetching FIRE processes:", err));
+    useEffect(() => {
+    setHeaderData(null);
   }, []);
 
+  const {
+    totalMasterData = [],
+    setHeaderData,
+    headerData
+  } = useContext(Context);
+
   useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/fire-plants`)
-      .then((res) => setPlants(res.data))
-      .catch((err) => console.error("Error fetching FIRE plants:", err));
+    axios.get(`${API_BASE_URL}/pcb-processes`).then(res => setPcbProcesses(res.data));
+    axios.get(`${API_BASE_URL}/plants`).then(res => setPlants(res.data));
   }, []);
 
-  useEffect(() => {
-    setStoreData([]);
-    setImmediateNextStep(null);
-    setImmediateNextStepIndex(-1);
-    setNextStepDetails(null);
-    setProjectInfo({ prjName: "", address: "" });
-    setFormData({
-      loc: selectedPlant,
-      applyDate: "",
-      comments: "",
-      prjName: "",
-      address: "",
-      feePaid: "",
-      feeAmount: "",
-      acknowledgeName: "",
-      // Add defaults for all radio button steps
-  stepStatus_1: "YES",  // Site Inspection Status
-  stepStatus_2: "YES",  // Queries Received?
-  stepStatus_3: "YES",  // Committee Approved?
-  stepStatus_4: "YES",  // Provisional Status?
-  stepStatus_6: "YES",  // Site Inspection Status? (OC)
-  stepStatus_7: "YES",  // Queries Received? (OC)
-  stepStatus_8: "YES",  // Committee Approved? (OC)
-  stepStatus_9: "YES",  // OC Status?
-    });
-    setNewDocs([]);
-    setAcknowledgeDocs([]);
-    setErrors({});
-    setProvisionalNOCCompleted(false);
+  const handlePlantChange = async (e) => {
+    const plant = e.target.value;
+    setSelectedPlant(plant);
+    const res = await getMasterByLoc(plant);
+    setHeaderData(res);
 
-    console.log("PROVISIONAL_NOC_STEP_INDICES:", PROVISIONAL_NOC_STEP_INDICES);
-    console.log("OC_PROCESS_STEP_RANGE:", OC_PROCESS_STEP_RANGE); // Keep this for clarity in renderProcessColumn
-    console.log("Steps array:", steps);
-
-    if (selectedPlant && steps.length > 0) {
-      axios
-        .get(`${API_BASE_URL}/fire-data?plant=${selectedPlant}`)
+    if (plant) {
+      axios.get(`${API_BASE_URL}/pcb-store/${plant}`)
         .then((res) => {
-          const fetchedData = res.data;
-          setStoreData(fetchedData);
-          console.log("Fetched Data (full):", fetchedData);
-
-          if (fetchedData && fetchedData.length > 0) {
-            const firstRecord = fetchedData[0];
-            const info = {
-              prjName: firstRecord.PROJECT_NAME || "",
-              address: firstRecord.ADDRESS || "",
-            };
-            setProjectInfo(info);
-            // Only set form data for project name and address if it's the very first step
-            // Otherwise, keep the projectInfo as read-only based on the first record
-            if (
-              PROVISIONAL_NOC_STEP_INDICES[0] === 0 &&
-              !fetchedData.some(
-                (item) =>
-                  item.PROCESS === steps[0]?.PROCESS && item.UPDATED === "YES"
-              )
-            ) {
-              setFormData((prev) => ({ ...prev, ...info }));
-            } else {
-              setFormData((prev) => ({
-                ...prev,
-                prjName: info.prjName,
-                address: info.address,
-              }));
-            }
-          }
-
-          // --- Determine Provisional NOC Completion ---
-          const provisionalNOCStepsCompleted =
-            PROVISIONAL_NOC_STEP_INDICES.every(
-              (index) =>
-                steps[index] && // Ensure step exists
-                fetchedData.some(
-                  (item) =>
-                    item.PROCESS === steps[index].PROCESS &&
-                    item.UPDATED === "YES"
-                )
-            );
-          setProvisionalNOCCompleted(provisionalNOCStepsCompleted);
-          console.log(
-            "provisionalNOCStepsCompleted:",
-            provisionalNOCStepsCompleted
-          );
-
-          let nextStepFound = null;
-          let nextStepIdx = -1; // This will be the 0-based index for the *conceptual* combined steps (0-9 if 5+5)
-          let currentStepType = null; // NEW: To store the step type
-
-          // --- MODIFIED LOGIC FOR FINDING IMMEDIATE NEXT STEP ---
-          if (!provisionalNOCStepsCompleted) {
-            // PHASE 1: Provisional NOC is NOT complete. Find the next incomplete Provisional NOC step.
-            for (const idx of PROVISIONAL_NOC_STEP_INDICES) {
-              // Loops 0,1,2,3,4
-              if (
-                steps[idx] && // Ensure step exists (it will, as steps has 5 items)
-                !fetchedData.some(
-                  (item) =>
-                    item.PROCESS === steps[idx].PROCESS &&
-                    item.UPDATED === "YES" // Check for Provisional completion
-                )
-              ) {
-                nextStepFound = steps[idx];
-                nextStepIdx = idx; // The index directly corresponds to the steps array for PNOC
-                currentStepType = "ProvisionalNOC"; // NEW: Set step type
-                break; // Found the first incomplete Provisional NOC step
-              }
-            }
-          } else {
-            // PHASE 2: Provisional NOC IS complete. Now, find the next incomplete OC step.
-            // Loop through the SAME steps array indices, but check the OC_UPDATED flag.
-            for (const idx of PROVISIONAL_NOC_STEP_INDICES) {
-              // Loops 0,1,2,3,4 again
-              if (
-                steps[idx] && // Ensure step exists
-                !fetchedData.some(
-                  (item) =>
-                    item.PROCESS === steps[idx].PROCESS &&
-                    item.OC_UPDATED === "YES" // Check for OC completion
-                )
-              ) {
-                nextStepFound = steps[idx];
-                // IMPORTANT: Adjust nextStepIdx to be a conceptual index for OC process.
-                // This makes OC's step 0 (actual steps[0]) appear as combined step 5 in UI.
-                nextStepIdx = idx + PROVISIONAL_NOC_STEP_INDICES.length;
-                currentStepType = "OCPROCESS"; // NEW: Set step type
-                break; // Found the first incomplete OC step
-              }
-            }
-          }
-
-          setImmediateNextStep(nextStepFound);
-          setImmediateNextStepIndex(nextStepIdx);
-
-
-
-          setCurrentProcess(currentStepType);
-
-          if (nextStepFound) {
-            // Use the correct PROCESS name for the API call, which is from nextStepFound.PROCESS
-            const apiUrl = `${API_BASE_URL}/fire-step-details/${encodeURIComponent(
-              selectedPlant
-            )}/${encodeURIComponent(
-              nextStepFound.PROCESS
-            )}/${encodeURIComponent(currentStepType)}`; // NEW: Add stepType query parameter
-            return axios.get(apiUrl);
-          } else {
-            // All steps (both Provisional and OC) completed
-            // Check if ALL OC steps are also marked as complete
-            const allOCStepsCompleted = PROVISIONAL_NOC_STEP_INDICES.every(
-              (index) =>
-                steps[index] &&
-                fetchedData.some(
-                  (item) =>
-                    item.PROCESS === steps[index].PROCESS &&
-                    item.OC_UPDATED === "YES"
-                )
-            );
-
-            if (provisionalNOCStepsCompleted && allOCStepsCompleted) {
-              setImmediateNextStepIndex(
-                PROVISIONAL_NOC_STEP_INDICES.length * 2
-              ); // Represents all 10 conceptual steps are done
-            } else {
-              // Fallback for an unexpected state, e.g., if provisional complete but OC not started/found.
-              // This branch should ideally be unreachable if the logic is perfect and data is consistent.
-              setImmediateNextStepIndex(-1); // Or some other indicator for "no active step"
-            }
-            return Promise.resolve(null);
-          }
-        })
-        .then((detailsRes) => {
-          if (detailsRes && detailsRes.data) {
-            const details = detailsRes.data;
-            setNextStepDetails(details);
-            console.log("NExtstep Detials:", details);
-            setLatestLogs(details);
-
-          let stepStatus = details.STATUS || "";
-    
-    // Check if this step should have radio buttons (steps 1-4 for Provisional, 6-9 for OC)
-    const shouldHaveRadioButtons = 
-      (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || // Steps 1-4
-      (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9); // Steps 6-9
-    
-    // If this step should have radio buttons and no status is set, default to "YES"
-    if (shouldHaveRadioButtons && !stepStatus) {
-      stepStatus = "YES";
-      console.log(`Setting default YES for step ${immediateNextStepIndex}`);
-    }
-
-            // Load form data from fetched details for the current step
-            setFormData((prev) => ({
-              ...prev,
-              applyDate: details.APPLY_DT || "",
-              comments: details.COMMENTS || "",
-              logs: details.LOG || "",
-              feePaid: details.FEE_PAID || "", // Load existing fee data
-              feeAmount: details.FEE_AMOUNT || "",
-              acknowledgeName: details.ACKNOWLEDGE_NAME || "",
-              // ADD THIS LINE to set stepStatus for step 2
-      [`stepStatus_${immediateNextStepIndex}`]: stepStatus
-            }));
-            // Parse existing acknowledge docs if any (for display, not re-upload)
-            if (details.ACK_DOC) {
+          const processedData = res.data.map(item => {
+            if (item.LOG && typeof item.LOG === 'string') {
               try {
-                // This part remains the same for parsing existing docs
+                item.parsedLogs = JSON.parse(item.LOG);
               } catch (e) {
-                console.error(
-                  "Failed to parse existing acknowledge docs for details:",
-                  e
-                );
+                console.error('Error parsing LOG JSON for process:', item.PROCESS, e);
+                item.parsedLogs = [{ date: new Date().toLocaleString(), comment: 'Error parsing logs.' }];
               }
+            } else {
+              item.parsedLogs = [];
             }
-          } else {
-            // Clear form fields if no details for the next step or all steps are complete
-            setNextStepDetails(null);
-            setFormData((prev) => ({
-              ...prev,
-              applyDate: "",
-              comments: "",
-              logs: "",
-              feePaid: "",
-              feeAmount: "",
-              acknowledgeName: "",
-            }));
-          }
+            return item;
+          });
+
+          setStoreData(processedData);
         })
-        .catch((err) =>
-          console.error("Error during data fetching process:", err)
-        );
+        .catch((err) => console.error(err));
+    } else {
+      setStoreData([]);
     }
-  }, [selectedPlant, steps, PROVISIONAL_NOC_STEP_INDICES]); // Remove OC_PROCESS_STEP_RANGE from dependencies as it's not used here for step finding
-useEffect(() => {
-  console.log("Step index changed:", immediateNextStepIndex);
-  
-  // Check if this step should have radio buttons
-  const shouldHaveRadioButtons = 
-    (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || // Steps 1-4
-    (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9); // Steps 6-9
-  
-  // When step changes to one that should have radio buttons, set default to "YES" if not already set
-  if (shouldHaveRadioButtons) {
-    console.log(`Step ${immediateNextStepIndex} should have radio buttons`);
-    
-    // Check if we already have a value for this step
-    const currentStatus = formData[`stepStatus_${immediateNextStepIndex}`];
-    
-    if (!currentStatus) {
-      console.log(`Setting default YES for step ${immediateNextStepIndex}`);
-      setFormData(prev => ({
-        ...prev,
-        [`stepStatus_${immediateNextStepIndex}`]: "YES"
-      }));
-    }
-  }
-}, [immediateNextStepIndex]);
+    setInputData({});
+  };
+
   useEffect(() => {
-    if (
-      nextStepDetails &&
-      typeof nextStepDetails === "object" &&
-      Object.keys(nextStepDetails).length > 0
-    ) {
-      const details = nextStepDetails;
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: details.APPLY_DT,
-        comments: details.COMMENTS || "",
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, applyDate: "", comments: "" }));
+    if (selectedPlant && key) {
+      axios.get(`${API_BASE_URL}/amendments/${selectedPlant}/${key}`)
+        .then(res => {
+          const records = res.data.data || [];
+          setAmendmentRecords(records);
+
+          const processRecord = records.find(r => r.PROCESS === key);
+          setStatus(processRecord?.STATUS || '');
+
+          const createdRecords = records.filter(r => r.STATUS === 'created');
+          const categories = [...new Set(createdRecords.map(r => r.CATEGORY))];
+          setAmendCategories(categories);
+        })
+        .catch(err => {
+          console.error('❌ Failed to check amendment status:', err);
+          setAmendmentRecords([]);
+          setAmendCategories([]);
+          setStatus('');
+        });
     }
-  }, [nextStepDetails]);
+  }, [selectedPlant, key]);
 
-
-
-    const getCurrentStepLogs = () => {
-
-  
-  const currentStepRecord = storeData.find(
-    (item) => 
-      item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() &&
-      item.STEPTYPE === currentProcess
-  );
-  
-    
-    if (!currentStepRecord?.LOG) {
-      return [];
-    }
-    
+  // Function to show email modal for ANY update
+  const showEmailModalForUpdate = async (type, processInfo, amendCategory = '') => {
     try {
+      // Fetch email recipients
+      const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
+      setEmailRecipients(response.data);
 
-      return JSON.parse(currentStepRecord.LOG);
+      // Set current process for update
+      setCurrentProcessForUpdate(processInfo);
+      setUpdateType(type);
+
+      if (type === 'amendment') {
+        setSelectedAmendProcess(processInfo.PROCESS);
+        setSelectedAmendCategory(amendCategory);
+      } else {
+        setSelectedProcess(processInfo);
+      }
+
+      // Set email subject and message
+      if (type === 'regular') {
+        setEmailSubject(`Process Update: ${processInfo.PROCESS}`);
+        setEmailMessage(
+          `Dear Team,\n\nPlease find the update for the process: ${processInfo.PROCESS}\n\nPlant: ${selectedPlant}\nApply Date: ${formatDate(processInfo.APPLY_DT)}\n\nComments: ${processInfo.COMMENTS}\n\nBest Regards`
+        );
+      } else if (type === 'amendment') {
+        setEmailSubject(`Amendment Update: ${processInfo.PROCESS} - ${amendCategory}`);
+        setEmailMessage(
+          `Dear Team,\n\nPlease find the amendment update for:\n\nProcess: ${processInfo.PROCESS}\nAmendment Type: ${amendCategory}\nPlant: ${selectedPlant}\nApply Date: ${formatDate(processInfo.APPLY_DT)}\n\nBest Regards`
+        );
+      }
+
+      // Reset selected emails
+      setSelectedEmails([]);
+
+      // Show modal
+      setShowEmailModal(true);
+
     } catch (error) {
-      console.error("Failed to parse logs:", error);
-      return [];
+      console.error("❌ Failed to fetch email recipients:", error);
+
+      // Still show modal even if email fetch fails
+      setShowEmailModal(true);
     }
   };
 
-
-  const handleChange = async (e) => {
-    const { name, value } = e.target;
-
-    console.log(name, value, "Field changed");
-
-
-    if (name === "loc") {
-      setSelectedPlant(value);
-      setFormData((prev) => ({
-        ...prev,
-        loc: value,
-      }));
-
-      // 🧹 If location is empty, clear dependent fields
-      if (!value || value.trim() === "") {
-        setHeaderData({});
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: "",
-          totalPrjArea: "",
-          noOfNocs: "",
-        }));
-        return;
-      }
-
-      try {
-        // 🌐 Fetch master data for selected location
-        const res = await getMasterByLoc(value);
-
-        if (res && Object.keys(res).length > 0) {
-          console.log("✅ Master data fetched:", res);
-
-          // 🧩 Update header data (used by ProjectInfoHeader)
-          setHeaderData(res);
-
-          // (Optional) update form fields based on res if needed
-          setFormData((prev) => ({
-            ...prev,
-            // Example if you want to fill auto fields:
-            // totalPrjArea: res.totalArea || "",
-            // noOfNocs: res.nocCount || "",
-          }));
-        } else {
-          console.warn("⚠️ No master data found for location:", value);
-          setHeaderData({});
-          setFormData((prev) => ({
-            ...prev,
-            applyDate: "",
-            totalPrjArea: "",
-            noOfNocs: "",
-          }));
-        }
-      } catch (err) {
-        console.error("❌ Error fetching master by loc:", err);
-        setHeaderData({});
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: "",
-          totalPrjArea: "",
-          noOfNocs: "",
-        }));
-      }
-
-      return;
+  // Unified handler for sending emails
+  const handleUnifiedSendEmail = async (selectedEmails) => {
+    if (updateType === 'regular') {
+      await handleSendEmail(selectedEmails);
+    } else if (updateType === 'amendment') {
+      await handleAmendmentEmail(selectedEmails);
     }
 
-    // 🧾 Handle other input fields normally
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    // Reset states
+    setUpdateType('');
+    setCurrentProcessForUpdate(null);
   };
 
+  const handleSendEmail = async (selectedEmails) => {
+    const storeInfo = currentProcessForUpdate || storeData.find(item => item.PROCESS === selectedProcess?.PROCESS);
 
-const handleEmailSubmit = () => {
-  const newErrors = {};
-  
-  if (!formData.loc) newErrors.loc = "Plant selection is required";
-  if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
-  if (!formData.comments) newErrors.comments = "Please enter comments";
-
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    
-    // Just set errors without scrolling
-    return;
-  }
-
-  setErrors({});
-  setShowEmailModal(true);
-};
-  const handleEmailSelectionSubmit = async (emails) => {
-    setSelectedEmails(emails);
-    setShowEmailModal(false);
-
-    // Proceed with form submission
-    await handleConfirmSubmit(emails);
-  };
-  const handleConfirmSubmit = async (emails) => {
-    const newErrors = {};
-    setErrors({}); // Clear previous errors
-
-    if (!formData.loc || !immediateNextStep) {
-      Swal.fire(
-        "Validation Error",
-        "Please select a Plant and ensure a process step is active.",
-        "error"
-      );
-      return;
-    }
-
-    // --- Validation based on current step type ---
-    const isProvisionalNOCStep = PROVISIONAL_NOC_STEP_INDICES.includes(
-      immediateNextStepIndex
-    );
-    const isOCProcessStep = OC_PROCESS_STEP_RANGE.includes(
-      immediateNextStepIndex
-    );
-
-    // if (isProvisionalNOCStep) {
-    //   if (!formData.applyDate) {
-    //     newErrors.applyDate =
-    //       "Please provide an Apply/Inspection Date for this step.";
-    //   }
-    // }
-
-    // if (isOCProcessStep) {
-    //   if (!formData.feePaid)
-    //     newErrors.feePaid = "Please specify if fee is paid.";
-    //   if (formData.feePaid === "YES" && !formData.feeAmount)
-    //     newErrors.feeAmount = "Fee amount is required when fee is paid.";
-    //   if (!formData.acknowledgeName)
-    //     newErrors.acknowledgeName = "Acknowledge name is required.";
-    //   if (acknowledgeDocs.length === 0) {
-    //     newErrors.acknowledgeDocs =
-    //       "Please upload at least one acknowledgement receipt.";
-    //   }
-    // }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      const errorMessages = Object.values(newErrors).join("<br>");
-      Swal.fire("Validation Error", errorMessages, "error");
-      return;
-    }
-
-    const payload = new FormData();
-    payload.append("loc", formData.loc);
-    payload.append("process", immediateNextStep.PROCESS);
-    payload.append("comments", formData.comments || "");
-    payload.append("applyDate", formData.applyDate || ""); // Always append if present
-    emails.forEach((email, i) => {
-      payload.append(`emails[${i}]`, email);
-    });
-      payload.append("steptype", currentProcess);
-    // Project Name and Address fields are only editable for the very first step (index PROVISIONAL_NOC_STEP_INDICES[0])
-    if (immediateNextStepIndex === PROVISIONAL_NOC_STEP_INDICES[0]) {
-      payload.append("prjName", formData.prjName || "");
-      payload.append("address", formData.address || "");
-    } else {
-      // For subsequent steps, send the projectInfo from state as it's read-only in UI
-      payload.append("prjName", projectInfo.prjName || "");
-      payload.append("address", projectInfo.address || "");
-    }
-
-    if (immediateNextStepIndex >= 1) {
-
-    
-
-      payload.append(
-        "stepStatus",
-        formData[`stepStatus_${immediateNextStepIndex}`] || ""
-      );
-    }
-
-    // General application documents
-    newDocs.forEach((file) => payload.append("New_Doc[]", file));
-
-    // Acknowledge documents and fee details (only for OC Process steps)
-    if (isOCProcessStep) {
-      payload.append("feePaid", formData.feePaid || "");
-      payload.append("feeAmount", formData.feeAmount || "");
-      payload.append("acknowledgeName", formData.acknowledgeName || "");
-      acknowledgeDocs.forEach((file) =>
-        payload.append("Acknowledge_Doc[]", file)
-      );
-    }
-
-
-    for (const [key, value] of payload.entries()) {
-      console.log(`${key}:`, value);
-    }
-  
-    let existingRecordStatusField = null;
-
-    console.log("ghhhhhhhhhhhhhhhh",storeData,"immediateNextStep.PROCESS?",immediateNextStep.PROCESS);
-    const currentStepRecord = storeData.find(
-      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() && item.STEPTYPE === currentProcess
-    );
-
-
-    if (isProvisionalNOCStep) {
-      existingRecordStatusField = currentStepRecord?.UPDATED;
-    } else if (isOCProcessStep) {
-      existingRecordStatusField = currentStepRecord?.OC_UPDATED; // *** Use OC_UPDATED here ***
-    }
-
-    console.log("➡️ ExistingRecord :", existingRecordStatusField);
-    // const apiUrl =
-    //   existingRecordStatusField === "YES"
-    //   //  ? `${API_BASE_URL}/fire-modify`
-    //     : `${API_BASE_URL}/fire-submit`;
-   
-    const apiUrl = currentStepRecord
-  ? `${API_BASE_URL}/fire-modify`
-  : `${API_BASE_URL}/fire-submit`;
-
-        // console.log("➡️ Triggering API:", apiUrl);
-    try {
-       await axios.post(apiUrl, payload);
+    if (!storeInfo?.APPLY_DT || !storeInfo?.DOC_PATH || !storeInfo?.COMMENTS) {
       await Swal.fire({
-        icon: "success",
-        title: existingRecordStatusField === "YES" ? "Updated!" : "Submitted!",
-        text: "Your data has been saved successfully.",
-        timer: 1500,
-        showConfirmButton: false,
+        icon: 'warning',
+        title: 'Missing Fields',
+        text: 'Please ensure Apply Date, Document, and Comments are all available before updating.'
+      });
+      return;
+    }
+
+    try {
+      Swal.fire({
+        title: 'Updating...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
       });
 
-      // After successful submission, re-fetch data for the current plant to update the UI
-      setSelectedPlant(formData.loc); // Trigger useEffect to re-fetch data
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "", // Clear fields that change per step
-        comments: "",
-        feePaid: "",
-        feeAmount: "",
-        acknowledgeName: "",
-      }));
-      setNewDocs([]); // Clear uploaded general docs
-      setAcknowledgeDocs([]); // Clear uploaded acknowledge docs
-      setErrors({}); // Clear errors
+      await axios.post(`${API_BASE_URL}/pollution-update`, {
+        loc: selectedPlant,
+        process: storeInfo.PROCESS,
+        applyDate: storeInfo.APPLY_DT,
+        documentPath: storeInfo.DOC_PATH,
+        comments: storeInfo.COMMENTS,
+        emails: selectedEmails
+      });
+
+      Swal.close();
+      setHeaderData("");
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Update Successful',
+        text: `${storeInfo.PROCESS} has been updated successfully.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      // Re-fetch and re-process store data to get updated logs
+      const response = await axios.get(`${API_BASE_URL}/pcb-store/${selectedPlant}`);
+      const processedData = response.data.map(item => {
+        if (item.LOG && typeof item.LOG === 'string') {
+          try {
+            item.parsedLogs = JSON.parse(item.LOG);
+          } catch (e) {
+            console.error('Error parsing LOG JSON for process:', item.PROCESS, e);
+            item.parsedLogs = [{ date: new Date().toLocaleString(), comment: 'Error parsing logs.' }];
+          }
+        } else {
+          item.parsedLogs = [];
+        }
+        return item;
+      });
+      setStoreData(processedData);
+
     } catch (error) {
-      console.error("Submission failed:", error);
-      Swal.fire(
-        "Submission Failed",
-        "Please check the console for details.",
-        "error"
-      );
+      console.error('Update failed:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: 'Something went wrong while updating. Please try again.'
+      });
     }
   };
 
-  const renderDocumentHistory = () => {
-    if (
-      !nextStepDetails ||
-      typeof nextStepDetails !== "object" ||
-      Object.keys(nextStepDetails).length === 0
-    ) {
-      return (
-        <p className="text-muted mb-0">No previous documents for this step.</p>
-      );
+  const handleAmendmentEmail = async (selectedEmails) => {
+    const storeInfo = currentProcessForUpdate || storeData.find(item => item.PROCESS === selectedAmendProcess);
+    const docPathKey = `${selectedAmendCategory}_DOC_PATH`;
+    const commentsKey = `${selectedAmendCategory}_COMMENTS`;
+    const endpoint = `${API_BASE_URL}/amendment-update`;
+
+    try {
+      Swal.fire({
+        title: 'Updating Amendment...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      await axios.post(endpoint, {
+        loc: selectedPlant,
+        process: storeInfo.PROCESS,
+        category: selectedAmendCategory,
+        applyDate: formatDate(storeInfo.APPLY_DT),
+        documentPath: storeInfo[docPathKey],
+        comments: storeInfo[commentsKey] || '',
+        emails: selectedEmails
+      });
+
+      Swal.close();
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Amendment update completed successfully!',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      const res = await axios.get(`${API_BASE_URL}/pcb-store/${selectedPlant}`);
+      const processedData = res.data.map(item => {
+        if (item.LOG && typeof item.LOG === 'string') {
+          try {
+            item.parsedLogs = JSON.parse(item.LOG);
+          } catch (e) {
+            console.error('Error parsing LOG JSON for process:', item.PROCESS, e);
+            item.parsedLogs = [{ date: new Date().toLocaleString(), comment: 'Error parsing logs.' }];
+          }
+        } else {
+          item.parsedLogs = [];
+        }
+        return item;
+      });
+      setStoreData(processedData);
+    } catch (err) {
+      console.error('Amendment update failed:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: 'An error occurred while updating the amendment.'
+      });
     }
+  };
 
-    let generalDocuments = [];
-    let acknowledgementReceipts = [];
+  let lastAmendedIndexMap = {};
 
-    // Parse general uploaded documents (assuming UPLOAD_DOC in details is for New_Doc[])
-    if (nextStepDetails.UPLOAD_DOC) {
-      try {
-        const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-        generalDocuments = parsedDocs.map((doc) => ({
-          name: doc.file_name,
-          url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-        }));
-      } catch (error) {
-        console.error("Failed to parse UPLOAD_DOC JSON:", error);
+  amendCategories.forEach(category => {
+    let lastIndex = -1;
+    pcbProcesses.forEach((row, index) => {
+      const storeInfo = storeData.find(item => item.PROCESS === row.PROCESS);
+      let amendStatus = '';
+
+      if (category === 'AMEND1') {
+        amendStatus = storeInfo?.AMEND1_STATUS || '';
+      } else if (category === 'AMEND2') {
+        amendStatus = storeInfo?.AMEND2_STATUS || '';
+      } else if (category === 'AMEND3') {
+        amendStatus = storeInfo?.AMEND3_STATUS || '';
+      } else if (category === 'AMEND4') {
+        amendStatus = storeInfo?.AMEND4_STATUS || '';
+      } else if (category === 'AMEND5') {
+        amendStatus = storeInfo?.AMEND5_STATUS || '';
       }
-    }
 
-    // Parse acknowledgement receipts (from ACK_DOC)
-    if (nextStepDetails.ACK_DOC) {
-      try {
-        const parsedAcknowledgeDocs = JSON.parse(nextStepDetails.ACK_DOC);
-        acknowledgementReceipts = parsedAcknowledgeDocs.map((doc) => ({
-          name: doc.file_name,
-          url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-        }));
-      } catch (error) {
-        console.error("Failed to parse ACK_DOC JSON:", error);
+      if (amendStatus === 'YES') {
+        lastIndex = index;
       }
-    }
-
-    const isOCProcessStep = OC_PROCESS_STEP_RANGE.includes(
-      immediateNextStepIndex
-    );
-
- 
-
-
-
-    const handleDeleteDocument = async (docType, fileName, index) => {
-
-      console.log("deletedddddd",docType, "file",fileName,"index",index);
-  try {
-    // Show confirmation dialog
-    const result = await Swal.fire({
-      title: 'Delete Document?',
-      text: `Are you sure you want to delete ${fileName}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!'
     });
+    lastAmendedIndexMap[category] = lastIndex;
+  });
 
-    if (!result.isConfirmed) return;
-
-    // Make API call to delete from server
-    const response = await axios.delete(`${API_BASE_URL}/fire-docu-delete`, {
-      data: {
-        loc: formData.loc,
-        process: immediateNextStep?.PROCESS || "",
-        steptype: currentProcess,
-        doc_type: docType, // "New_Doc" or "Acknowledge_Doc"
-        file_name: fileName,
-      },
-    });
-
-    if (response.status === 200) {
-      // Remove from local state
-      if (docType === "New_Doc") {
-        const updatedDocs = newDocs.filter((_, i) => i !== index);
-        setNewDocs(updatedDocs);
-      } else if (docType === "Acknowledge_Doc") {
-        const updatedDocs = acknowledgeDocs.filter((_, i) => i !== index);
-        setAcknowledgeDocs(updatedDocs);
-      }
-
-      // Show success message
-      Swal.fire('Deleted!', 'Document has been deleted.', 'success');
-      
-      // Optionally: Refresh document history
- 
+  let currentTimelineMode = 'action';
+  if (status === 'created') {
+    if (amendCategories.includes('AMEND2')) {
+      currentTimelineMode = 'AMEND2';
+    } else if (amendCategories.includes('AMEND1')) {
+      currentTimelineMode = 'AMEND1';
+    } else if (amendCategories.includes('AMEND3')) {
+      currentTimelineMode = 'AMEND3';
+    } else if (amendCategories.includes('AMEND4')) {
+      currentTimelineMode = 'AMEND4';
+    } else if (amendCategories.includes('AMEND5')) {
+      currentTimelineMode = 'AMEND5';
     }
-  } catch (error) {
-    console.error('Error deleting document:', error);
-    Swal.fire('Error!', 'Failed to delete document.', 'error');
   }
+
+  const updatedIndexes = pcbProcesses
+    .map((row, idx) => {
+      const storeInfo = storeData.find(item => item.PROCESS === row.PROCESS);
+      return storeInfo?.UPDATED === 'YES' ? idx : null;
+    })
+    .filter(idx => idx !== null);
+
+  const lastUpdatedIndex = updatedIndexes.length > 0 ? Math.max(...updatedIndexes) : -1;
+
+  let lastIndexForTimeline = -1;
+  if (currentTimelineMode === 'action') {
+    lastIndexForTimeline = lastUpdatedIndex;
+  } else {
+    lastIndexForTimeline = lastAmendedIndexMap[currentTimelineMode] ?? -1;
+  }
+
+  const isAmendExists = amendmentRecords.length > 0;
+
+
+  const formatDate = (date) => {
+  if (!date) return "";
+
+  // Split date & time safely
+  const [fullDate, time] = date.split(" ");
+
+  const [y, m, d] = fullDate.split("-");
+
+  // If no time → return only date
+  return time ? `${d}-${m}-${y} ${time}` : `${d}-${m}-${y}`;
 };
-
-    
-   const currentStepLogs = getCurrentStepLogs();
-
-  
-    return (
-      <div className="d-flex flex-column" style={{ height: "100%" }}>
-     <Card style={{ padding: "1px", height: "80%", overflow: "auto" }}>
-        <h6 className="text-primary p-2">General Uploaded Documents</h6>
-        {generalDocuments.length > 0 ? (
-          <ul className="list-unstyled">
-            {generalDocuments.map((doc, idx) => (
-              <li key={`gen-doc-${idx}`} className="mb-1 p-1 d-flex justify-content-between align-items-center">
-                <div>
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-decoration-none"
-                  >
-                    <FaFileAlt className="me-2" />
-                    {doc.name}
-                  </a>
-                </div>
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => handleDeleteDocument("New_Doc", doc.name, idx)}
-                  title="Delete document"
-                >
-                  <i className="fas fa-trash-alt"></i>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted mb-0">
-            No general documents were uploaded for this step.
-          </p>
-        )}
-
-        {isOCProcessStep && (
-          <>
-            <h6 className="text-primary mt-3">Acknowledgement Receipts</h6>
-            {acknowledgementReceipts.length > 0 ? (
-              <ul className="list-unstyled">
-                {acknowledgementReceipts.map((doc, idx) => (
-                  <li key={`ack-doc-${idx}`} className="mb-1 d-flex justify-content-between align-items-center">
-                    <div>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-decoration-none"
-                      >
-                        <FaFileAlt className="me-2" />
-                        {doc.name}
-                      </a>
-                    </div>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => handleDeleteDocument("Acknowledge_Doc", doc.name, idx)}
-                      title="Delete receipt"
-                    >
-                      <i className="fas fa-trash-alt"></i>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted mb-0">
-                No acknowledgement receipts available for this step.
-              </p>
-            )}
-          </>
-        )}
-      </Card>
-
-
-           <div className="p-2 border-top bg-light text-center">
-                  <Button
-                    variant="info"
-                    size="sm"
-                    onClick={() => {
-                   
-                      const logs = getCurrentStepLogs();
-                      setSelectedLogs(logs);
-                      setShowLogsModal(true);
-                    }}
-                    disabled={currentStepLogs.length === 0}
-                  >
-                    {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
-                  </Button>
-                </div>
-
-      
-      </div>
-    );
-  };
-
-  const renderProcessColumn = (columnTitle, isOCPhase) => {
-    // Added isOCPhase boolean
-    return (
-      <Col xs={6}>
-        <h6 className="text-center mb-2">{columnTitle}</h6>
-        <Nav variant="pills" className="flex-column">
-          {steps.map((step, idx) => {
-            let variant = "secondary",
-              clickable = false,
-              statusIcon = "⏸️";
-
-            // Now, we use the isOCPhase flag passed to the function
-            let isCompleted = false;
-            let currentConceptualIndex; // This will be the index that aligns with immediateNextStepIndex
-
-            if (isOCPhase) {
-              isCompleted = storeData.some(
-                (item) =>
-                  item.PROCESS === step.PROCESS && item.OC_UPDATED === "YES"
-              );
-              // For OC phase, the conceptual index is offset
-              currentConceptualIndex =
-                idx + PROVISIONAL_NOC_STEP_INDICES.length;
-            } else {
-              // Provisional NOC Phase
-              isCompleted = storeData.some(
-                (item) =>
-                  item.PROCESS === step.PROCESS && item.UPDATED === "YES"
-              );
-              currentConceptualIndex = idx; // For Provisional, it's the direct index
-            }
-
-            // Check if this step (in its current phase) is the immediate next step
-            const isActive = currentConceptualIndex === immediateNextStepIndex;
-
-            if (isCompleted) {
-              variant = "success";
-              statusIcon = "✅";
-            } else if (isActive) {
-              variant = "warning";
-              statusIcon = "⚠️";
-            }
-
-            // Lock OC Process steps if Provisional NOC is not completed
-            if (isOCPhase && !provisionalNOCCompleted) {
-              clickable = false; // Override clickability
-              variant = "secondary"; // Set to locked style
-              statusIcon = "🔒";
-            } else {
-              // For Provisional NOC steps or unlocked OC Process steps, determine clickability
-              // A step is clickable if it's already completed (for review) or if it's the current active step.
-              if (currentConceptualIndex < immediateNextStepIndex) {
-                clickable = true; // Completed steps in this phase are clickable
-              } else if (currentConceptualIndex === immediateNextStepIndex) {
-                clickable = true; // Current active step in this phase is clickable
-              } else {
-                clickable = false; // Future steps in this phase are not clickable
-              }
-            }
-
-            return (
-              <Nav.Item
-                className="mb-2"
-                key={`${isOCPhase ? "oc-" : "pnoc-"}${step.PROCESS}`}
-              >
-                {" "}
-                {/* Add key prefix for uniqueness */}
-                <Nav.Link
-                  eventKey={currentConceptualIndex} // Use the conceptual index for eventKey
-                  disabled={!clickable} // Disable based on `clickable`
-                  className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-                  style={{ cursor: clickable ? "pointer" : "not-allowed" }}
-                >
-                  {statusIcon}
-                  <span>{step.PROCESS}</span>
-                </Nav.Link>
-              </Nav.Item>
-            );
-          })}
-        </Nav>
-      </Col>
-    );
-  };
-
-
-  const renderCompletionMessage = () => {
-    return (
-      <div className="text-center py-5">
-        <FaCheckCircle size={64} className="text-success mb-3" />
-        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-        <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
-          <Alert.Heading>Project Completion Status</Alert.Heading>
-          <p>
-            All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
-            You can review the completed project details.
-          </p>
-          <hr />
-          <p className="mb-0">
-            The project is now ready for the next phase or final approval.
-          </p>
-        </Alert>
-      </div>
-    );
-  };
 
 
   return (
     <>
-      <ProjectInfoHeader data={headerData} />
-      <Row className="align-items-stretch">
-        {/* Adjusted to md={4} for more width */}
-        <Col md={4} className="d-flex">
-          <div className="border rounded p-3 bg-light flex-fill">
-            <h5 className="text-center mb-3">Process Steps</h5>
-            <Row>
-              {renderProcessColumn("ProvisionalNOC", false)}
-              {renderProcessColumn("OCPROCESS", true)}
-            </Row>
-          </div>
-        </Col>
-
-       {/* The rest of the JSX is correct and unchanged */}
-               <Col md={5} className="d-flex flex-column">
-               {allStepsCompleted  ? (
-                   renderCompletionMessage()
-                 ) : (
-                   <Form className="p-3 border rounded bg-light">
-            {immediateNextStep && (
-              <h4 className="mb-3 text-primary fw-bold">
-                {immediateNextStep.PROCESS}
-              </h4>
-            )}
-
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Plant</Form.Label>
-                  <Form.Select
-                    name="loc"
-                    value={formData.loc}
-                    onChange={handleChange}
-                  >
-                    <option value="">Select Plant</option>
-                    {plants.map((p, idx) => (
-                      <option key={idx} value={p.loc}>
-                        {p.loc}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>
-                    {immediateNextStepIndex === 1 ? "Inspection Date" : "Apply Date"}
-                  </Form.Label>
-                  <Form.Control
-                    type="date"
-                    name="applyDate"
-                    max={new Date().toISOString().split("T")[0]}
-                    value={formData.applyDate || ""}
-                    onChange={handleChange}
-                    isInvalid={!!errors.applyDate}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.applyDate}
-                  </Form.Control.Feedback>
-                </Form.Group>
-            </Col>
-            </Row>
-
-            {/* {immediateNextStepIndex >= 1 && (
-        `<Form.Group className="mb-3">
-          <Form.Label>{stepRadioLabels[immediateNextStepIndex] || "Status for this step"}</Form.Label>
-          <div>
-            <Form.Check
-              type="radio"
-              label="Yes"
-              name={`stepStatus_${immediateNextStepIndex}`}
-              value="YES"
-              checked={formData[`stepStatus_${immediateNextStepIndex}`] === "YES"}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  [`stepStatus_${immediateNextStepIndex}`]: e.target.value,
-                }))
-              }
-            />
-            <Form.Check
-              type="radio"
-              label="No"
-              name={`stepStatus_${immediateNextStepIndex}`}
-              value="NO"
-              checked={formData[`stepStatus_${immediateNextStepIndex}`] === "NO"}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  [`stepStatus_${immediateNextStepIndex}`]: e.target.value,
-                }))
-              }
-            />
-          </div>
-        </Form.Group>`
-)} */}
-           {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
-  <Form.Group className="mb-3">
-    <Form.Label>
-      {provisionalRadioLabels[immediateNextStepIndex] ||
-        "Status for this step"}
-    </Form.Label>
-    <div>
-      <Form.Check
-        type="radio"
-        label="Yes"
-        name={`stepStatus_${immediateNextStepIndex}`}
-        value="YES"
-        checked={
-          formData[`stepStatus_${immediateNextStepIndex}`] === "YES"
-        }
-        onChange={(e) =>
-          setFormData((prev) => ({
-            ...prev,
-            [`stepStatus_${immediateNextStepIndex}`]:
-              e.target.value,
-          }))
-        }
+      <PlantSelector
+        plants={plants}
+        selectedPlant={selectedPlant}
+        onChange={handlePlantChange}
+        customMarginTop="-10px"
       />
-      <Form.Check
-        type="radio"
-        label="No"
-        name={`stepStatus_${immediateNextStepIndex}`}
-        value="NO"
-        checked={
-          formData[`stepStatus_${immediateNextStepIndex}`] === "NO"
-        }
-        onChange={(e) =>
-          setFormData((prev) => ({
-            ...prev,
-            [`stepStatus_${immediateNextStepIndex}`]:
-              e.target.value,
-          }))
-        }
-      />
-    </div>
-  </Form.Group>
-)}
-            {immediateNextStepIndex >= 6 && (
-              <Form.Group className="mb-3">
-                <Form.Label>
-                  {ocRadioLabels[immediateNextStepIndex] ||
-                    "Status for this step"}
-                </Form.Label>
-                <div>
-                  <Form.Check
-                    type="radio"
-                    label="Yes"
-                    name={`stepStatus_${immediateNextStepIndex}`}
-                    value="YES"
-                    checked={
-                      formData[`stepStatus_${immediateNextStepIndex}`] === "YES"
-                    }
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [`stepStatus_${immediateNextStepIndex}`]:
-                          e.target.value,
-                      }))
-                    }
-                  />
-                  <Form.Check
-                    type="radio"
-                    label="No"
-                    name={`stepStatus_${immediateNextStepIndex}`}
-                    value="NO"
-                    checked={
-                      formData[`stepStatus_${immediateNextStepIndex}`] === "NO"
-                    }
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [`stepStatus_${immediateNextStepIndex}`]:
-                          e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </Form.Group>
-            )}
+      <div className='mt-1'>
+        <ProjectInfoHeader data={headerData} />
+      </div>
 
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Label>Upload Application Documents</Form.Label>
-                <Button
-                  variant="outline-secondary"
-                  className="form-control"
-                  onClick={() => setShowUploadModal(true)}
-                >
-                  Upload Docs{" "}
-                  {newDocs.length > 0 && `(${newDocs.length} files)`}
-                </Button>
-                {errors.newDocs && (
-                  <div className="text-danger mt-1">{errors.newDocs}</div>
-                )}
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Comments</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={1}
-                    name="comments"
-                    value={formData.comments || ""}
-                    onChange={handleChange}
-                  />
-                      {errors.comments && (
-                          <p className="error-text text-danger">{errors.comments}</p>
+      {!selectedPlant ? (
+        <div className="alert alert-info mt-4" style={{
+          backgroundColor: '#d1ecf1',
+          borderColor: '#bee5eb',
+          color: '#0c5460',
+          borderRadius: '8px'
+        }}>
+          Please select a plant to view data.
+        </div>
+      ) : (
+        <div
+          className="custom-tbl"
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginTop: '5px',
+            height: 'calc(100vh - 350px)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+          <div className="table-scroll-wrapper custom-tbl" style={{ width: '100%', overflowX: 'auto' }} >
+            <table className="table table-hover table-sm" style={{ marginBottom: '0px' }}>
+          <thead className="custom-thead">
+                <tr>
+                  <th style={{ width: '30px' }}></th>
+                  <th>S.NO</th>
+                  <th>PROCESS</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>APPLY DATE</th>
+                  <th>DOCUMENT</th>
+                  <th>LOGS</th>
+                  <th>ACTION</th>
+
+                  {/* Amendment columns - two columns per category */}
+                  {amendCategories?.map(cat => (
+                    <React.Fragment key={cat}>
+                      <th style={{ whiteSpace: 'nowrap' }}>{cat} DOC</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>{cat} LOGS</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>{cat} ACTION</th>
+                    </React.Fragment>
+                  ))}
+
+                  {/* Individual amendment log columns - only show if they have data */}
+                  {/* {storeData.some(item => item.AMEND1_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD1 LOGS</th>}
+                  {storeData.some(item => item.AMEND2_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD2 LOGS</th>}
+                  {storeData.some(item => item.AMEND3_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD3 LOGS</th>}
+                  {storeData.some(item => item.AMEND4_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD4 LOGS</th>}
+                  {storeData.some(item => item.AMEND5_COMMENTS) && <th style={{ whiteSpace: 'nowrap' }}>AMD5 LOGS</th>} */}
+                </tr>
+              </thead>
+              <tbody>
+                {pcbProcesses.map((row, index) => {
+                  const storeInfo = storeData.find(item => item.PROCESS === row.PROCESS);
+                  let isUpdated = false;
+                  let isNextStep = false;
+
+                  if (currentTimelineMode === 'action') {
+                    isUpdated = storeInfo?.UPDATED === 'YES';
+                    isNextStep = index === lastUpdatedIndex + 1;
+                  } else if (currentTimelineMode === 'AMEND1') {
+                    isUpdated = storeInfo?.AMEND1_STATUS === 'YES';
+                    isNextStep = index === lastAmendedIndexMap['AMEND1'] + 1;
+                  } else if (currentTimelineMode === 'AMEND2') {
+                    isUpdated = storeInfo?.AMEND2_STATUS === 'YES';
+                    isNextStep = index === lastAmendedIndexMap['AMEND2'] + 1;
+                  } else if (currentTimelineMode === 'AMEND3') {
+                    isUpdated = storeInfo?.AMEND3_STATUS === 'YES';
+                    isNextStep = index === lastAmendedIndexMap['AMEND3'] + 1;
+                  } else if (currentTimelineMode === 'AMEND4') {
+                    isUpdated = storeInfo?.AMEND4_STATUS === 'YES';
+                    isNextStep = index === lastAmendedIndexMap['AMEND4'] + 1;
+                  } else if (currentTimelineMode === 'AMEND5') {
+                    isUpdated = storeInfo?.AMEND5_STATUS === 'YES';
+                    isNextStep = index === lastAmendedIndexMap['AMEND5'] + 1;
+                  }
+
+                  let dotColor = 'grey';
+                  let lineColor = 'grey';
+                  if (isUpdated) {
+                    dotColor = 'green';
+                    lineColor = 'green';
+                  } else if (isNextStep) {
+                    dotColor = 'red';
+                    lineColor = 'red';
+                  }
+
+                  return (
+                    <tr key={row.PROCESS}>
+                      <td className="timeline-cell">
+                        <span className={`dot ${dotColor}`}></span>
+                        {index !== pcbProcesses.length - 1 && (
+                          <div className={`line ${lineColor}`}></div>
                         )}
-                </Form.Group>
-              </Col>
-            </Row>
-            <div className="d-grid mt-3">
-              <Button variant="primary" size="lg" onClick={handleEmailSubmit}>
-                Submit
-              </Button>
-            </div>
-          </Form>
-                 )}
-               </Col>
+                      </td>
 
+                      <td>{row.SNO}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}><em>{row.PROCESS}</em></td>
 
-        {/* md={3} remains the same, as 4 + 5 + 3 = 12 */}
-        <Col md={3} className="d-flex w-25">
-          <div className="border rounded p-3 bg-white flex-fill d-flex flex-column">
-            <h5 className="mb-3 text-dark">Document History</h5>
-            <div className="flex-grow-1 overflow-auto">
-              {renderDocumentHistory()}
-            </div>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {formatDate(storeInfo?.APPLY_DT)}
+                      </td>
+
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {storeInfo?.DOC_PATH ? (
+                          <button
+                            className="btn btn-outline-primary btn-sm"
+                            title="View Document"
+                            onClick={() => {
+                              if (!storeInfo?.DOC_PATH) {
+                                alert('No documents available for this process');
+                                return;
+                              }
+
+                              let docs = [];
+                              let names = [];
+
+                              try {
+                                docs = JSON.parse(storeInfo.DOC_PATH || '[]');
+                                names = JSON.parse(storeInfo.DOC_NAME || '[]');
+                              } catch (e) {
+                                console.error('Error parsing DOC_PATH/DOC_NAME:', e);
+                              }
+
+                              const files = docs?.map((docPath, idx) => ({
+                                DOC_PATH: docPath,
+                                DOC_NAME: names[idx] || `Document ${idx + 1}`,
+                              }));
+
+                              setModalDocs(files);
+                              setModalTitle(row.PROCESS);
+                              setShowDocModal(true);
+                            }}
+                          >
+                            <i className="fas fa-file-alt"></i>
+                          </button>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {storeInfo?.LOG ? (
+                          <OverlayTrigger
+                            // placement="top"
+                            overlay={
+                              <Tooltip id={`tooltip-logs-${row.PROCESS}`} className="custom-tooltip">
+                                View Logs
+                              </Tooltip>
+                            }
+                          >
+                            <button
+                              className="btn btn-outline-info btn-sm"
+                              onClick={() => {
+                                setLogModalTitle(`${row.PROCESS} Logs`);
+                                setCurrentLogs(storeInfo.parsedLogs || []);
+                                setShowLogModal(true);
+                              }}
+                            >
+                              <i className="fas fa-history"></i>
+                            </button>
+                          </OverlayTrigger>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+
+                      <td>
+                        {isAmendExists ? (
+                          isUpdated ? (
+                            <button className="btn btn-success btn-sm" disabled>
+                              Updated
+                            </button>
+                          ) : (
+                            <button className="btn btn-secondary btn-sm" disabled>
+                              Pending
+                            </button>
+                          )
+                        ) : (
+                          isNextStep ? (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={async () => {
+                                if (
+                                  !storeInfo?.APPLY_DT ||
+                                  !storeInfo?.DOC_PATH ||
+                                  !storeInfo?.COMMENTS
+                                ) {
+                                  await Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Missing Fields',
+                                    text: 'Please ensure Apply Date, Document, and Comments are all available before updating.',
+                                  });
+                                  return;
+                                }
+
+                                // Show email modal for regular update
+                                showEmailModalForUpdate('regular', storeInfo);
+                              }}
+                            >
+                              Update
+                            </button>
+                          ) : (
+                            <button className="btn btn-success btn-sm" disabled>
+                              {isUpdated ? 'Updated' : 'Pending'}
+                            </button>
+                          )
+                        )}
+                      </td>
+
+                     {/* Amendment columns - grouped as DOC, LOGS, ACTION */}
+                      {amendCategories?.map(cat => {
+                        const docPathKey = `${cat}_DOC_PATH`;
+                        const docNameKey = `${cat}_DOC_NAME`;
+                        const statusKey = `${cat}_STATUS`;
+                        const commentsKey = `${cat}_COMMENTS`;
+
+                        const hasDocs = storeInfo?.[docPathKey];
+                        const isAmendUpdated = storeInfo?.[statusKey] === 'YES';
+                        const hasComments = storeInfo?.[commentsKey];
+
+                        return (
+                          <React.Fragment key={cat}>
+                            {/* DOC Column */}
+                            <td>
+                              {hasDocs ? (
+                                <OverlayTrigger
+                                  placement="top"
+                                  overlay={
+                                    <Tooltip id="custom-tooltip" className="custom-tooltip">
+                                      View Amendment Documents
+                                    </Tooltip>
+                                  }
+                                >
+                                  <button
+                                    className="btn btn-outline-primary btn-sm"
+                                    onClick={() => {
+                                      let docs = [];
+                                      let names = [];
+
+                                      try {
+                                        docs = JSON.parse(storeInfo[docPathKey] || '[]');
+                                        names = JSON.parse(storeInfo[docNameKey] || '[]');
+                                      } catch (e) {
+                                        console.error('Error parsing amendment docs:', e);
+                                      }
+
+                                      const files = docs.map((docPath, idx) => ({
+                                        DOC_PATH: docPath,
+                                        DOC_NAME: names[idx] || `Amend Document ${idx + 1}`,
+                                      }));
+
+                                      setAmendModalDocs(files);
+                                      setAmendDocTitle(`${row.PROCESS} - ${cat} Amendment`);
+                                      setShowAmendDocModal(true);
+                                    }}
+                                  >
+                                    <i className="fas fa-file-alt wiggle-icon"></i>
+                                  </button>
+                                </OverlayTrigger>
+                              ) : '-'}
+                            </td>
+
+                            {/* LOGS Column */}
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              {hasComments ? (
+                                <OverlayTrigger
+                                  placement="top"
+                                  overlay={
+                                    <Tooltip id={`tooltip-${cat}-logs-${row.PROCESS}`} className="custom-tooltip">
+                                      View {cat} Comments
+                                    </Tooltip>
+                                  }
+                                >
+                                  <button
+                                    className="btn btn-outline-info btn-sm"
+                                    onClick={() => {
+                                      const amendLogs = [];
+                                      const comments = storeInfo?.[commentsKey];
+
+                                      if (comments) {
+                                        try {
+                                          const parsedComments = JSON.parse(comments);
+                                          if (Array.isArray(parsedComments)) {
+                                            parsedComments.forEach(log => {
+                                              amendLogs.push({
+                                                date: log.date || storeInfo?.[`${cat}_APPLY_DT`] || 'N/A',
+                                                comment: log.comment || 'No comment',
+                                                type: cat
+                                              });
+                                            });
+                                          } else if (typeof parsedComments === 'string') {
+                                            amendLogs.push({
+                                              date: storeInfo?.[`${cat}_APPLY_DT`] || 'N/A',
+                                              comment: parsedComments,
+                                              type: cat
+                                            });
+                                          }
+                                        } catch (e) {
+                                          amendLogs.push({
+                                            date: storeInfo?.[`${cat}_APPLY_DT`] || 'N/A',
+                                            comment: comments,
+                                            type: cat
+                                          });
+                                        }
+                                      }
+
+                                      if (amendLogs.length > 0) {
+                                        setLogModalTitle(`${row.PROCESS} - ${cat} Comments`);
+                                        setCurrentLogs(amendLogs);
+                                        setShowLogModal(true);
+                                      }
+                                    }}
+                                  >
+                                    <i className="fas fa-history"></i>
+                                  </button>
+                                </OverlayTrigger>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
+
+                            {/* ACTION Column */}
+                            <td>
+                              {isAmendUpdated ? (
+                                <button className="btn btn-success btn-sm" disabled>
+                                  Updated
+                                </button>
+                              ) : hasDocs ? (
+                                <button
+                                  className="btn btn-warning btn-sm"
+                                  onClick={() => {
+                                    // Show email modal for amendment update
+                                    showEmailModalForUpdate('amendment', storeInfo, cat);
+                                  }}
+                                >
+                                  Update
+                                </button>
+                              ) : (
+                                <button className="btn btn-secondary btn-sm" disabled>
+                                  Pending
+                                </button>
+                              )}
+                            </td>
+                          </React.Fragment>
+                        );
+                      })}
+
+                      {/* AMD1 Logs Column */}
+                      {/* {storeData.some(item => item.AMEND1_COMMENTS) && (
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {storeInfo?.AMEND1_COMMENTS ? (
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`tooltip-amend1-logs-${row.PROCESS}`} className="btn btn-outline-info btn-sm">
+                                  View Amendment 1 Comments
+                                </Tooltip>
+                              }
+                            >
+                              <button
+                                className="btn btn-outline-info btn-sm"
+                                onClick={() => {
+                                  const amendLogs = [];
+                                  const comments = storeInfo?.AMEND1_COMMENTS;
+
+                                  if (comments) {
+                                    try {
+                                      const parsedComments = JSON.parse(comments);
+                                      if (Array.isArray(parsedComments)) {
+                                        parsedComments.forEach(log => {
+                                          amendLogs.push({
+                                            date: log.date || storeInfo?.AMEND1_APPLY_DT || 'N/A',
+                                            comment: log.comment || 'No comment',
+                                            type: 'Amendment 1'
+                                          });
+                                        });
+                                      } else if (typeof parsedComments === 'string') {
+                                        amendLogs.push({
+                                          date: storeInfo?.AMEND1_APPLY_DT || 'N/A',
+                                          comment: parsedComments,
+                                          type: 'Amendment 1'
+                                        });
+                                      }
+                                    } catch (e) {
+                                      amendLogs.push({
+                                        date: storeInfo?.AMEND1_APPLY_DT || 'N/A',
+                                        comment: comments,
+                                        type: 'Amendment 1'
+                                      });
+                                    }
+                                  }
+
+                                  if (amendLogs.length > 0) {
+                                    setLogModalTitle(`${row.PROCESS} - Amendment 1 Comments`);
+                                    setCurrentLogs(amendLogs);
+                                    setShowLogModal(true);
+                                  }
+                                }}
+                              >
+                                <i className="fas fa-history"></i>
+                              </button>
+                            </OverlayTrigger>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )} */}
+
+                      {/* AMD2 Logs Column */}
+                      {/* {storeData.some(item => item.AMEND2_COMMENTS) && (
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {storeInfo?.AMEND2_COMMENTS ? (
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`tooltip-amend2-logs-${row.PROCESS}`} className="custom-tooltip">
+                                  View Amendment 2 Comments
+                                </Tooltip>
+                              }
+                            >
+                              <button
+                                className="btn btn-outline-info btn-sm"
+                                onClick={() => {
+                                  const amendLogs = [];
+                                  const comments = storeInfo?.AMEND2_COMMENTS;
+
+                                  if (comments) {
+                                    try {
+                                      const parsedComments = JSON.parse(comments);
+                                      if (Array.isArray(parsedComments)) {
+                                        parsedComments.forEach(log => {
+                                          amendLogs.push({
+                                            date: log.date || storeInfo?.AMEND2_APPLY_DT || 'N/A',
+                                            comment: log.comment || 'No comment',
+                                            type: 'Amendment 2'
+                                          });
+                                        });
+                                      } else if (typeof parsedComments === 'string') {
+                                        amendLogs.push({
+                                          date: storeInfo?.AMEND2_APPLY_DT || 'N/A',
+                                          comment: parsedComments,
+                                          type: 'Amendment 2'
+                                        });
+                                      }
+                                    } catch (e) {
+                                      amendLogs.push({
+                                        date: storeInfo?.AMEND2_APPLY_DT || 'N/A',
+                                        comment: comments,
+                                        type: 'Amendment 2'
+                                      });
+                                    }
+                                  }
+
+                                  if (amendLogs.length > 0) {
+                                    setLogModalTitle(`${row.PROCESS} - Amendment 2 Comments`);
+                                    setCurrentLogs(amendLogs);
+                                    setShowLogModal(true);
+                                  }
+                                }}
+                              >
+                                <i className="fas fa-history"></i>
+                              </button>
+                            </OverlayTrigger>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )} */}
+
+                      {/* AMD3 Logs Column */}
+                      {/* {storeData.some(item => item.AMEND3_COMMENTS) && (
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {storeInfo?.AMEND3_COMMENTS ? (
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`tooltip-amend3-logs-${row.PROCESS}`} className="custom-tooltip">
+                                  View Amendment 3 Comments
+                                </Tooltip>
+                              }
+                            >
+                              <button
+                                className="btn btn-outline-info btn-sm"
+                                onClick={() => {
+                                  const amendLogs = [];
+                                  const comments = storeInfo?.AMEND3_COMMENTS;
+
+                                  if (comments) {
+                                    try {
+                                      const parsedComments = JSON.parse(comments);
+                                      if (Array.isArray(parsedComments)) {
+                                        parsedComments.forEach(log => {
+                                          amendLogs.push({
+                                            date: log.date || storeInfo?.AMEND3_APPLY_DT || 'N/A',
+                                            comment: log.comment || 'No comment',
+                                            type: 'Amendment 3'
+                                          });
+                                        });
+                                      } else if (typeof parsedComments === 'string') {
+                                        amendLogs.push({
+                                          date: storeInfo?.AMEND3_APPLY_DT || 'N/A',
+                                          comment: parsedComments,
+                                          type: 'Amendment 3'
+                                        });
+                                      }
+                                    } catch (e) {
+                                      amendLogs.push({
+                                        date: storeInfo?.AMEND3_APPLY_DT || 'N/A',
+                                        comment: comments,
+                                        type: 'Amendment 3'
+                                      });
+                                    }
+                                  }
+
+                                  if (amendLogs.length > 0) {
+                                    setLogModalTitle(`${row.PROCESS} - Amendment 3 Comments`);
+                                    setCurrentLogs(amendLogs);
+                                    setShowLogModal(true);
+                                  }
+                                }}
+                              >
+                                <i className="fas fa-history"></i>
+                              </button>
+                            </OverlayTrigger>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )} */}
+
+                      {/* AMD4 Logs Column */}
+                      {/* {storeData.some(item => item.AMEND4_COMMENTS) && (
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {storeInfo?.AMEND4_COMMENTS ? (
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`tooltip-amend4-logs-${row.PROCESS}`} className="custom-tooltip">
+                                  View Amendment 4 Comments
+                                </Tooltip>
+                              }
+                            >
+                              <button
+                                className="btn btn-outline-info btn-sm"
+                                onClick={() => {
+                                  const amendLogs = [];
+                                  const comments = storeInfo?.AMEND4_COMMENTS;
+
+                                  if (comments) {
+                                    try {
+                                      const parsedComments = JSON.parse(comments);
+                                      if (Array.isArray(parsedComments)) {
+                                        parsedComments.forEach(log => {
+                                          amendLogs.push({
+                                            date: log.date || storeInfo?.AMEND4_APPLY_DT || 'N/A',
+                                            comment: log.comment || 'No comment',
+                                            type: 'Amendment 4'
+                                          });
+                                        });
+                                      } else if (typeof parsedComments === 'string') {
+                                        amendLogs.push({
+                                          date: storeInfo?.AMEND4_APPLY_DT || 'N/A',
+                                          comment: parsedComments,
+                                          type: 'Amendment 4'
+                                        });
+                                      }
+                                    } catch (e) {
+                                      amendLogs.push({
+                                        date: storeInfo?.AMEND4_APPLY_DT || 'N/A',
+                                        comment: comments,
+                                        type: 'Amendment 4'
+                                      });
+                                    }
+                                  }
+
+                                  if (amendLogs.length > 0) {
+                                    setLogModalTitle(`${row.PROCESS} - Amendment 4 Comments`);
+                                    setCurrentLogs(amendLogs);
+                                    setShowLogModal(true);
+                                  }
+                                }}
+                              >
+                                <i className="fas fa-history"></i>
+                              </button>
+                            </OverlayTrigger>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )} */}
+
+                      {/* AMD5 Logs Column */}
+                      {/* {storeData.some(item => item.AMEND5_COMMENTS) && (
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {storeInfo?.AMEND5_COMMENTS ? (
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`tooltip-amend5-logs-${row.PROCESS}`} className="custom-tooltip">
+                                  View Amendment 5 Comments
+                                </Tooltip>
+                              }
+                            >
+                              <button
+                                className="btn btn-outline-warning btn-sm"
+                                onClick={() => {
+                                  const amendLogs = [];
+                                  const comments = storeInfo?.AMEND5_COMMENTS;
+
+                                  if (comments) {
+                                    try {
+                                      const parsedComments = JSON.parse(comments);
+                                      if (Array.isArray(parsedComments)) {
+                                        parsedComments.forEach(log => {
+                                          amendLogs.push({
+                                            date: log.date || storeInfo?.AMEND5_APPLY_DT || 'N/A',
+                                            comment: log.comment || 'No comment',
+                                            type: 'Amendment 5'
+                                          });
+                                        });
+                                      } else if (typeof parsedComments === 'string') {
+                                        amendLogs.push({
+                                          date: storeInfo?.AMEND5_APPLY_DT || 'N/A',
+                                          comment: parsedComments,
+                                          type: 'Amendment 5'
+                                        });
+                                      }
+                                    } catch (e) {
+                                      amendLogs.push({
+                                        date: storeInfo?.AMEND5_APPLY_DT || 'N/A',
+                                        comment: comments,
+                                        type: 'Amendment 5'
+                                      });
+                                    }
+                                  }
+
+                                  if (amendLogs.length > 0) {
+                                    setLogModalTitle(`${row.PROCESS} - Amendment 5 Comments`);
+                                    setCurrentLogs(amendLogs);
+                                    setShowLogModal(true);
+                                  }
+                                }}
+                              >
+                                <i className="fas fa-history"></i>
+                              </button>
+                            </OverlayTrigger>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )} */}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </Col>
-      </Row>
+        </div>
+      )}
 
-       <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
+      <DocumentModal
+        show={showDocModal}
+        onClose={() => setShowDocModal(false)}
+        title={modalTitle}
+        docs={modalDocs}
+             isUpdated={true}
+      />
+
+      <EmailSelectionModal
+        show={showEmailModal}
+        onClose={() => {
+          setShowEmailModal(false);
+          setUpdateType('');
+          setCurrentProcessForUpdate(null);
+        }}
+        emailRecipients={emailRecipients}
+        selectedEmails={selectedEmails}
+        setSelectedEmails={setSelectedEmails}
+        onSendEmail={handleUnifiedSendEmail}
+        modalData={{
+          ...(updateType === 'regular' ? currentProcessForUpdate : {}),
+          ...(updateType === 'amendment' ? {
+            process: selectedAmendProcess,
+            category: selectedAmendCategory
+          } : {}),
+          updateType: updateType
+        }}
+      />
+
+      <DocumentModal
+        show={showAmendDocModal}
+        onClose={() => setShowAmendDocModal(false)}
+        title={amendDocTitle}
+        docs={amendModalDocs}
+        isAmendment={true}
+      />
+
+      <Modal show={showLogModal} onHide={() => setShowLogModal(false)} centered scrollable>
         <Modal.Header closeButton>
-          <Modal.Title>Logs for {immediateNextStep?.PROCESS}</Modal.Title>
+          <Modal.Title>{logModalTitle}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
-          {selectedLogs.length === 0 ? (
-            <p>No logs available</p>
+        <Modal.Body>
+          {currentLogs.length > 0 ? (
+            <div className="list-group">
+              {currentLogs.map((log, idx) => (
+                <div key={idx} className="list-group-item">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div className="flex-grow-1">
+                      <div className="d-flex align-items-center mb-1">
+                        <strong className="text-muted me-2">{formatDate(log.date)}:</strong>
+                        {log.type && (
+                          <span className="badge bg-info me-2">{log.type}</span>
+                        )}
+                      </div>
+                      <div className="ps-3">
+                        {log.comment}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
-            selectedLogs.map((log, i) => (
-              <div key={i} className="mb-2">
-                <strong>{log?.date || "Unknown Date"}:</strong> {log?.comment || "No comment"}
-                <hr />
-              </div>
-            ))
+            <p>No amendment comments available.</p>
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+          <Button variant="secondary" onClick={() => setShowLogModal(false)}>
             Close
           </Button>
         </Modal.Footer>
       </Modal>
-
-      <EmailSelectionModal
-        show={showEmailModal}
-        onHide={() => setShowEmailModal(false)}
-        onSubmit={handleEmailSelectionSubmit}
-        processName={immediateNextStep?.PROCESS}
-        plantName={formData?.loc}
-        applyDate={formData?.applyDate}
-        comments={formData?.comments}
-      />
-      <ReraDocUploadModal
-        show={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        files={newDocs}
-        setFiles={setNewDocs}
-      />
     </>
   );
 };
 
-export default FireModifyTable;
+export default PcbUpdateTable;
+

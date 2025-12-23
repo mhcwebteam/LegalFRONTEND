@@ -1,33 +1,27 @@
 
-
-
-
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button, CardHeader, Form } from "react-bootstrap";
 import axios from "axios";
 import { API_BASE_URL } from "../config/Config";
+import { useNavigate } from "react-router-dom"; // Add this import
 
 import PcbTabs from "../components/PcbTabs";
 import PlantSelector from "../components/PlantSelector";
 import CategorySelector from "../components/CategorySelector";
 
 import "../pages/Amendment.css";
-// import '../pages/Update.css';
-// import '../components/PcbTabs.css';
 import CardWithHeader from "../components/CardWithHeader";
 import Swal from "sweetalert2";
-// import { text } from 'framer-motion/client';
 import { motion, AnimatePresence } from "framer-motion";
 
 const Amendment = () => {
-  
   const [key, setKey] = useState("Pollution Control Board");
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
   const [category, setCategory] = useState("");
-
   const [categories, setCategories] = useState([]);
   const [amendmentStatus, setamendmentStatus] = useState("");
+  const navigate = useNavigate(); // Initialize navigate
 
   const tabList = [
     "Pollution Control Board",
@@ -47,7 +41,6 @@ const Amendment = () => {
       .get(`${API_BASE_URL}/categories/${selectedPlant}`)
       .then((res) => {
         console.log("Fetched categories:", res.data);
-        // setCategories(res.data);
         setCategories(Array.isArray(res.data) ? res.data : [res.data]);
       })
       .catch((err) => {
@@ -58,14 +51,14 @@ const Amendment = () => {
 
   useEffect(() => {
     if (selectedPlant && key === "Airport Authority") {
-      setamendmentStatus("Yes"); // default
+      setamendmentStatus("Yes");
     } else {
-      setamendmentStatus(""); // reset
+      setamendmentStatus("");
     }
   }, [selectedPlant, key]);
 
   useEffect(() => {
-    if (!key) return; // wait until key is set
+    if (!key) return;
 
     axios
       .get(`${API_BASE_URL}/amnd_plants?process=${encodeURIComponent(key)}`)
@@ -79,7 +72,6 @@ const Amendment = () => {
   const handlePlantChange = (e) => {
     const newPlant = e.target.value;
     setSelectedPlant(newPlant);
-    // Reset category when plant changes
     setCategory("");
   };
 
@@ -87,15 +79,8 @@ const Amendment = () => {
     setCategory(e.target.value);
   };
 
-  //   const handleCreate = () => {
-  //     if (!selectedPlant || !category) {
-  //       alert('Please select both Plant and Category of Amendment');
-  //       return;
-  //     }
-  //     console.log('Create triggered with:', { plant: selectedPlant, category });
-  //     // TODO: trigger modal/form/api logic here
-  //   };
   const handleCreate = async () => {
+    // Validation
     if (!selectedPlant) {
       await Swal.fire({
         icon: "warning",
@@ -123,6 +108,24 @@ const Amendment = () => {
       return;
     }
 
+    // Show confirmation dialog
+    const confirmation = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to create an amendment for ${selectedPlant}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, create it!',
+      cancelButtonText: 'No, cancel',
+      reverseButtons: true
+    });
+
+    // If user cancels, return without doing anything
+    if (!confirmation.isConfirmed) {
+      return;
+    }
+
     const payload = {
       plant: selectedPlant,
       category:
@@ -133,21 +136,54 @@ const Amendment = () => {
           : null,
       process: key,
     };
-// 👇 Console log before sending
-  console.log("Payload to API:", payload);
+    
+    console.log("Payload to API:", payload);
+
     try {
-      await axios.post(`${API_BASE_URL}/amendments`, payload);
-      await Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Amendment saved successfully!",
+      // Show loading indicator
+      Swal.fire({
+        title: 'Creating...',
+        text: 'Please wait while we create the amendment',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
       });
+
+      const response = await axios.post(`${API_BASE_URL}/amendments`, payload);
+      
+      // Hide loading indicator
+      Swal.close();
+      
+      // Show success message
+      const result = await Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Amendment created successfully!",
+        showCancelButton: true,
+        confirmButtonText: 'Go to Details',
+        cancelButtonText: 'Stay Here',
+        reverseButtons: true
+      });
+
+      // If user clicks "Go to Details", navigate to create page
+      if (result.isConfirmed) {
+        // Navigate to the create page with data
+        // You can pass data via state or query params
+        navigate('/create');
+      } else {
+        // User chose to stay here, you can reset the form if needed
+        setSelectedPlant("");
+        setCategory("");
+        setamendmentStatus("");
+      }
+      
     } catch (err) {
       console.error(err);
-      await Swal.fire({
+      Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Failed to save amendment.",
+        text: "Failed to create amendment.",
       });
     }
   };
@@ -157,7 +193,7 @@ const Amendment = () => {
       <PcbTabs keyState={key} setKey={setKey} tabList={tabList}>
         {key === "Pollution Control Board"}
         {key === "Airport Authority"}
-          {key === "Fire" && <p>This is the Fire tab.</p>}
+        {key === "Fire" && <p>This is the Fire tab.</p>}
         {key === "HMDA" && <p>This is the HMDA tab.</p>}
       
         <Row className="g-3 align-items-end">

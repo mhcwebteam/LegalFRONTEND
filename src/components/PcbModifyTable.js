@@ -174,7 +174,7 @@ useEffect(() => {
     
           setStoreData(res.data);
 
-          console.log(res,"pcb----------------store");
+          console.log(res.data,"pcb----------------store");
         })
         .catch((err) => console.error(err));
     } else {
@@ -496,7 +496,6 @@ useEffect(() => {
 
     if (!result.isConfirmed) return;
 
-    console.log(docPath,"ddddddddddddddddddddddddddddddd");
 
     try {
       await axios.post(`${API_BASE_URL}/delete-edit-file`, {
@@ -630,7 +629,7 @@ const formatDate = (dateString) => {
     comments,
     category,
     amendreturnsSubmitted,
-    selectedEmails, // ✅ Add selected emails here
+    selectedEmails,
   } = amendData;
 
   const isExistingRecord = storeData.some(
@@ -1062,7 +1061,7 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
                   const storeInfo = storeData.find(
                     (item) => item.PROCESS === row.PROCESS
                   );
-
+             
                   const isUpdated = !!storeInfo;
                   const isNextStep = index === lastUpdatedIndex + 1;
 

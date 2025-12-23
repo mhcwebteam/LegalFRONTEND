@@ -280,7 +280,17 @@ const EmailSelectionModal = ({
     // Show confirmation dialog
     setConfirmOpen(true);
   };
+const formatDate = (date) => {
+  if (!date) return "";
 
+  // Split date & time safely
+  const [fullDate, time] = date.split(" ");
+
+  const [y, m, d] = fullDate.split("-");
+
+  // If no time → return only date
+  return time ? `${d}-${m}-${y} ${time}` : `${d}-${m}-${y}`;
+};
   // When user confirms in the dialog
   const handleConfirmSubmit = () => {
     // Close both modals
@@ -320,7 +330,7 @@ const EmailSelectionModal = ({
                   )}
                   {modalData.APPLY_DT && (
                     <>
-                      <strong className="text-muted">Apply Date:</strong> {modalData.APPLY_DT || 'N/A'} <br />
+                      <strong className="text-muted">Apply Date:</strong>  {formatDate(modalData?.APPLY_DT)} <br />
                     </>
                   )}
                   {modalData.process && (
