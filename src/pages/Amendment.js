@@ -30,6 +30,9 @@ const Amendment = () => {
     "HMDA"
   ];
 
+
+  
+
   useEffect(() => {
     if (!selectedPlant) {
       setCategories([]);
@@ -60,6 +63,7 @@ const Amendment = () => {
   useEffect(() => {
     if (!key) return;
 
+    console.log("keyyyyyyyyyy", key);
     axios
       .get(`${API_BASE_URL}/amnd_plants?process=${encodeURIComponent(key)}`)
       .then((res) => {

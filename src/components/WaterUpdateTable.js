@@ -254,17 +254,13 @@ const WaterUpdateTable = () => {
   // Fixed handleProcessClick function
   const handleProcessClick = (e, process) => {
     e.stopPropagation();
-    console.log("Clicked:", process);
-
-    // Find the process details from storeData
     const processDetails = storeData.find(
       (item) => item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
     );
 
-    console.log(processDetails, "processDetailsprocessDetails");
     setSelectedProcessDetails(processDetails || null);
 
-    // If process details found, also set it as the active step
+ 
     if (processDetails) {
       const stepIndex = steps.findIndex(step =>
         step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()

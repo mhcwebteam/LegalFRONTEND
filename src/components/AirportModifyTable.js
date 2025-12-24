@@ -45,7 +45,9 @@ const AirportModifyTable = () => {
 
   const [amendLinkDocs, setAmendLinkDocs] = useState([]);
   const [modalContext, setModalContext] = useState('main');
-
+//added on 23-12-2025 by rajakumari.m--------------------------------------------------------------------------------------
+const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
+//---------------------------------------------------------------------------------------------------------------------------
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allStepsCompleted, setAllStepsCompleted] = useState(false);
   const [errors, setErrors] = useState({});
@@ -78,6 +80,69 @@ const AirportModifyTable = () => {
   setHeaderData(null);
 }, []);
 
+//added on 23-12-2025 by rajakumari.m--------------------------------------------------------------------------------
+const handleProcessClick = (e, process) => {
+  e.stopPropagation();
+  console.log("Clicked:", process);
+
+  // Find the process details from storeData
+  const processDetails = storeData.find(
+    (item) => item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+  );
+
+  setSelectedProcessDetails(processDetails || null);
+
+  // If process details found, also set it as the active step
+  if (processDetails) {
+    const stepIndex = steps.findIndex(step =>
+      step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+    );
+    if (stepIndex !== -1) {
+      setActiveStep(stepIndex);
+    }
+  }
+};
+
+const handleViewNextStep = () => {
+  setSelectedProcessDetails(null);
+
+  if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+    const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+
+    if (nextStepName) {
+      axios
+        .get(
+          `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+            selectedPlant
+          )}/${encodeURIComponent(nextStepName)}`
+        )
+        .then((res) => {
+          setNextStepDetails(res.data);
+        })
+        .catch((err) =>
+          console.error("Error fetching next step details:", err)
+        );
+    }
+  }
+};
+// Add this new useEffect to handle selectedProcessDetails
+useEffect(() => {
+  if (selectedProcessDetails) {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      applyDate: selectedProcessDetails.APPLY_DT,
+      comments: selectedProcessDetails.COMMENTS || "",
+      totalPrjArea: selectedProcessDetails.AMEND_TOTAL_PRJ_AREA || "",
+      noOfNocs: selectedProcessDetails.AMEND_NO_OF_NOCS || "",
+      prjArea: selectedProcessDetails.TOTAL_PRJ_AREA || "",
+      STATUS: selectedProcessDetails.STATUS || "YES",
+      nocs: selectedProcessDetails.NO_OF_NOCS || "",
+    }));
+
+    setFirstStep(selectedProcessDetails);
+  }
+}, [selectedProcessDetails]);
+//------------------------------------------------------------------------------------------------------------------------
   // Check if all steps are completed
   useEffect(() => {
     if (steps.length > 0 && storeData.length > 0) {
@@ -171,6 +236,17 @@ const AirportModifyTable = () => {
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
+    //added on 23-12-2025 ny rajakumari.m-------------------------------------------------------------
+    if (selectedProcessDetails) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Viewing Completed Step',
+      text: 'You are viewing a completed step. No updates can be made.',
+      timer: 2000
+    });
+    return;
+  }
+  // ----------------------------------------------------------------------------------------------------
     if (!validateForm()) {
       if (errors.linkDocs) {
         toast.error('Please upload only PDF files');
@@ -646,7 +722,7 @@ const AirportModifyTable = () => {
 
                 return (
                   <Nav.Item key={idx} className="mb-2">
-                    <Nav.Link
+                    {/* <Nav.Link
                       eventKey={idx}
                       disabled={!clickable}
                       onClick={() => {
@@ -660,34 +736,78 @@ const AirportModifyTable = () => {
                     >
                       {statusIcon}
                       <span>{step.PROCESS}</span>
-                    </Nav.Link>
+                    </Nav.Link> */}
+                    {/* added on 23-12-2025 by rajakumari.m-------------------- */}
+                    <Nav.Link
+  eventKey={idx}
+  disabled={!clickable}
+  onClick={() => {
+    if (!clickable) return;
+    setActiveStep(idx);
+  }}
+  className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+  style={{
+    cursor: clickable ? "pointer" : "not-allowed"
+  }}
+>
+  {statusIcon}
+  <span
+    onClick={(e) => {
+      if (isCompleted) {
+        handleProcessClick(e, step.PROCESS);
+      }
+    }}
+    style={{
+      cursor: isCompleted ? "pointer" : "default",
+      textDecoration: isCompleted ? "underline" : "none"
+    }}
+  >
+    {step.PROCESS}
+  </span>
+</Nav.Link>
+{/* ----------------------------------------------------------------------------------------------------------------- */}
                   </Nav.Item>
                 );
               })}
             </Nav>
           </div>
         </Col>
-
+{/* added on 23-12-2025 by rajakumari.m-------------------------------------------------------------[] */}
         <Col md={6} className="d-flex flex-column">
-          {allStepsCompleted && !amendmentStatus ? (
-            renderCompletionMessage()
-          ) : (
-            <div style={{
-              height: "calc(100vh - 380px)",
-            }}>
-              <Form className="p-3 border rounded bg-light" style={{
-                height: "100%",
-                display: "flex",
-                flexDirection: "column"
-              }}>
-                {immediateNextStep && (
-                  <h4 className="mb-3 text-primary fw-bold">
-                    {immediateNextStep.PROCESS}
-                    {totalProjectArea && <> | Area: <span className="text-dark">{totalProjectArea}</span></>}
-                    {noofNOCS && <> | NOCs: <span className="text-dark">{noofNOCS}</span></>}
-                  </h4>
-                )}
-
+  {allStepsCompleted && !amendmentStatus && !selectedProcessDetails ? (
+    renderCompletionMessage()
+  ) : (
+    <div style={{
+      height: "calc(100vh - 380px)",
+    }}>
+      <Form className="p-3 border rounded bg-light" style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column"
+      }}>
+        {/* Form header showing current view */}
+        {selectedProcessDetails ? (
+          <div className="mb-3">
+            <h4 className="mb-2 text-info fw-bold">
+              Viewing: {selectedProcessDetails.PROCESS} (Completed)
+            </h4>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={handleViewNextStep}
+              disabled={!immediateNextStep}
+            >
+              View Next Step
+            </Button>
+          </div>
+        ) : immediateNextStep ? (
+          <h4 className="mb-3 text-primary fw-bold">
+            {immediateNextStep.PROCESS}
+            {totalProjectArea && <> | Area: <span className="text-dark">{totalProjectArea}</span></>}
+            {noofNOCS && <> | NOCs: <span className="text-dark">{noofNOCS}</span></>}
+          </h4>
+        ) : null}
+        {/* --------------------------------------------------------------------------------------------------------------- */}
                 {/* Scrollable content area */}
                 <div style={{
                   flex: 1,

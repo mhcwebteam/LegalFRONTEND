@@ -249,7 +249,7 @@ const PollutionForm = () => {
         formPayload.append('process', formData.process);
         formPayload.append('applyDate', formData.applyDate);
         formPayload.append('comments', formData.comments);
-    // formPayload.append('receivedDate', today);
+    formPayload.append('receivedDate', "");
 
 
         // ✅ Append only validated PDF files

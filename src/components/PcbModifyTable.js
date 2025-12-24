@@ -47,6 +47,7 @@ const PcbModifyTable = () => {
 const [errors, setErrors] = useState({
   applyDate: "",
   comments: "",
+  recievedDate: ""
 });
 
   const {
@@ -64,6 +65,7 @@ const [errors, setErrors] = useState({
     plant: "",
     process: "",
     applyDate: "",
+    receivedDate: "",
     selectedFiles: [],
     existingDocs: [],
     existingNames: [],
@@ -73,12 +75,15 @@ const [errors, setErrors] = useState({
   });
 
 
+  console.log(storeData,"fffffffffffffffffffffffff");
+
  
   const [showAmendModal, setShowAmendModal] = useState(false);
   const [amendData, setAmendData] = useState({
     plant: "",
     process: "",
     applyDate: "",
+    receivedDate: "",
     category: "",
     selectedFiles: [],
     existingDocs: [],
@@ -86,7 +91,7 @@ const [errors, setErrors] = useState({
     comments: "",
     oldComments: "",
     amendreturnsSubmitted: "",
-     receivedDate: "", 
+
   });
 
      useEffect(() => {
@@ -153,7 +158,12 @@ useEffect(() => {
     }
   };
 
-
+const receivedDateProcesses = [
+  "Received TOR",
+  "EC (Environmetal Clearance)",
+  "Application for CFE",
+  "Received CFE",
+]
 
   // Handle Email Checkbox Toggle
 
@@ -310,6 +320,7 @@ useEffect(() => {
   const handleEditClick = (row) => {
     const storeInfo =
       storeData.find((item) => item.PROCESS === row.PROCESS) || {};
+
     const existingDocs = storeInfo.DOC_PATH
       ? storeInfo.DOC_PATH.split(",")
       : [];
@@ -321,6 +332,7 @@ useEffect(() => {
       plant: selectedPlant,
       process: row.PROCESS,
       applyDate: storeInfo.APPLY_DT || "",
+      receivedDate:storeInfo.RECEIVED_DT || "",
       selectedFiles: [],
       existingDocs,
       existingNames,
@@ -339,7 +351,7 @@ useEffect(() => {
       const storeInfo =
         storeData.find((item) => item.PROCESS === row.PROCESS) || {};
 
-        console.log(row,'storeinfiiiiiiiiiiiiiiiiiiiiii',storeData, "storeInfostoreInfo",storeInfo);
+      
 
       const endpoint = `${API_BASE_URL}/amendment-data/${selectedPlant}/${encodeURIComponent(
         row.PROCESS
@@ -360,13 +372,18 @@ useEffect(() => {
         ? JSON.parse(data[`${prefix}_DOC_NAME`])
         : [];
       const amendDate = data[`${prefix}_DATE`] || "";
+     
       const oldComments = data[`${prefix}_COMMENTS`] || "";
       const amendreturnsubmit = data[`${prefix}_RETURNS_SUBMITTED`] || "";
+
+
+      console.log(storeData,"sssssssssssssssssssssss", row.PROCESS);
 
       setAmendData({
         plant: selectedPlant,
         process: row.PROCESS,
         applyDate: storeData[0].APPLY_DT || "",
+        receivedDate: storeData[0].RECEIVED_DT || "",
         amendDate,
         category,
         selectedFiles: [],
@@ -376,7 +393,7 @@ useEffect(() => {
         oldComments,
         amendDecision: "Yes",
         amendreturnsSubmitted: amendreturnsubmit,
-         receivedDate: data.RECEIVED_DT || "",
+    
       });
 
       setShowAmendModal(true);
@@ -389,9 +406,9 @@ useEffect(() => {
     }
   };
   // Remove Selected Email
-  const handleRemoveEmail = (email) => {
-    setSelectedEmails((prev) => prev.filter((e) => e !== email));
-  };
+  // const handleRemoveEmail = (email) => {
+  //   setSelectedEmails((prev) => prev.filter((e) => e !== email));
+  // };
   // Submit Edit Modal
   const handleSendEmail = async () => {
     if (selectedEmails.length === 0) {
@@ -407,9 +424,10 @@ useEffect(() => {
     formData.append("loc", modalData.plant);
     formData.append("process", modalData.process);
     formData.append("applyDate", modalData.applyDate);
-    formData.append("comments", modalData.comments);
+       formData.append("receivedDate", modalData.receivedDate || "");
+          formData.append("comments", modalData.comments);
 
-  
+    
 
     selectedEmails.forEach((email, i) => {
       formData.append(`emails[${i}]`, email);
@@ -620,10 +638,13 @@ const formatDate = (dateString) => {
 
 
   const handleAmendSubmit = async () => {
+
+    alert(12)
   const {
     plant,
     process,
     applyDate,
+    receivedDate,
     amendDate,
     selectedFiles,
     comments,
@@ -645,6 +666,7 @@ const formatDate = (dateString) => {
   formData.append("loc", plant);
   formData.append("process", process);
   formData.append("applyDate", applyDate);
+  formData.append("receivedDate", receivedDate);
   formData.append("amendDate", amendDate);
   formData.append("comments", comments);
   formData.append("category", category);
@@ -708,10 +730,20 @@ const formatDate = (dateString) => {
 
 
 const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
-  console.log("📨 handleSendAmendEmail triggered!");
-  console.log("📦 Incoming amendData:", amendDataFromModal);
-  console.log("📬 Selected Emails:", selectedEmails.selectedAmendEmails);
-
+ let freshStoreData = [];
+  
+  if (amendDataFromModal.plant) {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/pcb-store/${amendDataFromModal.plant}`);
+      freshStoreData = response.data;
+      setStoreData(freshStoreData); // Update state too
+      console.log("Fresh store data fetched:", freshStoreData);
+    } catch (err) {
+      console.error("Error fetching fresh data:", err);
+      // Fall back to existing storeData
+      freshStoreData = storeData;
+    }
+  }
  
   const payload = new FormData();
 
@@ -719,6 +751,8 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
   payload.append("plant", amendDataFromModal.plant);
   payload.append("process", amendDataFromModal.process);
   payload.append("applyDate", amendDataFromModal.applyDate);
+
+  payload.append("receivedDate", amendDataFromModal.receivedDate);
   payload.append("amendDate", amendDataFromModal.amendDate);
   payload.append("comments", amendDataFromModal.comments);
   payload.append("category", amendDataFromModal.category);
@@ -760,12 +794,15 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
 
 
   try {
-    // Check if record already exists
-    const isExistingRecord = storeData.some(
-      (item) =>
-        item.PROCESS?.toLowerCase().trim() ===
-        amendDataFromModal.process?.toLowerCase().trim()
-    );
+
+console.log("Checking modal process:", amendDataFromModal.process, "amendDataFromModal",amendDataFromModal);
+
+  const isExistingRecord = freshStoreData.some(
+    (item) =>
+      item.PROCESS?.trim().toLowerCase() === amendDataFromModal.process?.trim().toLowerCase()
+  );
+  
+console.log("isExistingRecord:", isExistingRecord);
 
     const endpoint = isExistingRecord
       ? `${API_BASE_URL}/amendment-updt`
@@ -776,7 +813,7 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
       headers: { "Content-Type": "multipart/form-data" },
     });
 
-    console.log("✅ Backend response:", response.data);
+     console.log("✅ Backend response:", response.data);
  setShowAmendModal(false);
  
     await Swal.fire({
@@ -1061,7 +1098,7 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
                   const storeInfo = storeData.find(
                     (item) => item.PROCESS === row.PROCESS
                   );
-             
+               console.log("storeinmgo",storeInfo);
                   const isUpdated = !!storeInfo;
                   const isNextStep = index === lastUpdatedIndex + 1;
 
@@ -1269,17 +1306,10 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
               <Form.Control type="text" value={modalData.process} readOnly />
             </Form.Group>
             <Form.Group className="mb-3">
-
-          <Form.Label>
-{
-  modalData.process === "Received TOR" || 
-modalData.process === "EC (Environmetal Clearance)" || 
-modalData.process === "Application for CFE" || 
-modalData.process === "Received CFE" ? "Received Date" : "Apply Date"
-}
-  <span style={{ color: "red" }}>*</span>
-</Form.Label>
-
+  <Form.Label> Apply Date 
+      <span style={{ color: "red" }}>*</span>
+  </Form.Label>
+  
               <Form.Control
                 type="date"
                 value={modalData.applyDate}
@@ -1296,6 +1326,35 @@ modalData.process === "Received CFE" ? "Received Date" : "Apply Date"
     <div className="text-danger" style={{ fontSize: "14px" }}>{errors.applyDate}</div>
   )}  
             </Form.Group>
+
+
+
+  {receivedDateProcesses.includes(modalData.process) && (
+  <Form.Group className="mb-3">
+    <Form.Label>
+      Received Date <span style={{ color: "red" }}>*</span>
+    </Form.Label>
+
+    <Form.Control
+      type="date"
+      value={modalData.receivedDate || ""}
+      max={new Date().toISOString().split("T")[0]}
+      onChange={(e) =>
+        setModalData((prev) => ({
+          ...prev,
+          receivedDate: e.target.value,
+        }))
+      }
+    />
+
+    {errors.receivedDate && (
+      <div className="text-danger" style={{ fontSize: "14px" }}>
+        {errors.receivedDate}
+      </div>
+    )}
+  </Form.Group>
+)}
+
 
             {/* Conditional Radio Button for "Returns Submit" */}
             {modalData.process ===

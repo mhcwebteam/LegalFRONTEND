@@ -55,6 +55,9 @@ const PcbUpdateTable = () => {
     headerData 
   } = useContext(Context);
 
+
+  console.log("cattttttttttttttttttt",amendCategories);
+
   useEffect(() => {
     axios.get(`${API_BASE_URL}/pcb-processes`).then(res => setPcbProcesses(res.data));
     axios.get(`${API_BASE_URL}/plants`).then(res => setPlants(res.data));
@@ -104,7 +107,7 @@ const PcbUpdateTable = () => {
         .then(res => {
           const records = res.data.data || [];
 
-          console.log("rrrrrrrrrrrrrrrrrrr",records);
+    
           setAmendmentRecords(records);
 
           const processRecord = records.find(r => r.PROCESS === key);
@@ -112,6 +115,8 @@ const PcbUpdateTable = () => {
 
           const createdRecords = records.filter(r => r.STATUS === 'created');
           const categories = [...new Set(createdRecords.map(r => r.CATEGORY))];
+
+          console.log(createdRecords,"ccccccccccccccccc")
           setAmendCategories(categories);
         })
         .catch(err => {
@@ -122,6 +127,10 @@ const PcbUpdateTable = () => {
         });
     }
   }, [selectedPlant, key]);
+
+    const latestCreatedAmendment = amendmentRecords
+    .filter(a => a.STATUS === 'created')
+    .sort((a, b) => b.SNO - a.SNO)[0];
 
   // Function to show email modal for ANY update
   const showEmailModalForUpdate = async (type, processInfo, amendCategory = '') => {
@@ -219,6 +228,7 @@ const PcbUpdateTable = () => {
         applyDate: storeInfo.APPLY_DT,
         documentPath: storeInfo.DOC_PATH,
         comments: storeInfo.COMMENTS,
+        receivedDate:storeInfo.RECEIVED_DT || "",
         emails: selectedEmails
       });
 
@@ -262,10 +272,11 @@ const PcbUpdateTable = () => {
 
   const handleAmendmentEmail = async (selectedEmails) => {
     const storeInfo = currentProcessForUpdate || storeData.find(item => item.PROCESS === selectedAmendProcess);
-    const docPathKey = `${selectedAmendCategory}_DOC_PATH`;
-    const commentsKey = `${selectedAmendCategory}_COMMENTS`;
+    const docPathKey = `${latestCreatedAmendment.CATEGORY}_DOC_PATH`;
+    const commentsKey = `${latestCreatedAmendment.CATEGORY}_COMMENTS`;
    const endpoint = `${API_BASE_URL}/amendment-update`;
 
+   
     try {
       Swal.fire({
         title: 'Updating Amendment...',
@@ -276,8 +287,9 @@ const PcbUpdateTable = () => {
       await axios.post(endpoint, {
         loc: selectedPlant,
         process: storeInfo.PROCESS,
-        category: selectedAmendCategory,
+        category:  latestCreatedAmendment.CATEGORY,
         applyDate: storeInfo.APPLY_DT,
+        receivedDate: storeInfo.RECEIVED_DT,
         documentPath: storeInfo[docPathKey],
         comments: storeInfo[commentsKey] || '',
         emails: selectedEmails
@@ -436,6 +448,7 @@ const PcbUpdateTable = () => {
  {/* -----------------------------------------------------added om 22-12-2025 -------------------------by rajakumari.m---------------------- */}
                    {amendCategories?.map(cat => (
       <React.Fragment key={cat}>
+          <th style={{ whiteSpace: 'nowrap' }}>{cat} DATE</th>
         <th style={{ whiteSpace: 'nowrap' }}>{cat} DOC</th>
         <th style={{ whiteSpace: 'nowrap' }}>{cat} LOGS</th>
         <th style={{ whiteSpace: 'nowrap' }}>{cat} ACTION</th>
@@ -452,8 +465,11 @@ const PcbUpdateTable = () => {
                 </tr>
               </thead>
               <tbody>
-                {pcbProcesses.map((row, index) => {
-                  const storeInfo = storeData.find(item => item.PROCESS === row.PROCESS);
+                {pcbProcesses?.map((row, index) => {
+                  const storeInfo = storeData?.find(item => item.PROCESS === row.PROCESS);
+
+
+                  console.log(storeInfo,"sssss111111111111111");
                    const isOriginalUpdated = storeInfo?.UPDATED === 'YES';
 
                   let isUpdated = false;
@@ -504,7 +520,10 @@ const PcbUpdateTable = () => {
                      <td style={{ whiteSpace: 'nowrap' }}>
                        {formatDate(storeInfo?.APPLY_DT)}
                       </td>
-
+                     
+                      {/* <td style={{ whiteSpace: 'nowrap' }}>
+                       {formatDate(storeInfo?.AMED)}
+                      </td> */}
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {storeInfo?.DOC_PATH ? (
                           <button
@@ -526,7 +545,7 @@ const PcbUpdateTable = () => {
                                 console.error('Error parsing DOC_PATH/DOC_NAME:', e);
                               }
 
-                              const files = docs.map((docPath, idx) => ({
+                              const files = docs?.map((docPath, idx) => ({
                                 DOC_PATH: docPath,
                                 DOC_NAME: names[idx] || `Document ${idx + 1}`,
                               }));
@@ -572,43 +591,47 @@ const PcbUpdateTable = () => {
                      
 
 <td>
-  {isAmendExists ? (
-    // If Amendment exists, lock the column but respect the original status
-    isOriginalUpdated ? (
-      <button className="btn btn-success btn-sm" disabled>
-        Updated
-      </button>
-    ) : (
-      <button className="btn btn-secondary btn-sm" disabled>
-        Pending
-      </button>
-    )
-  ) : (
-    // If NO Amendment exists, allow normal flow
-    isNextStep ? (
+{isAmendExists ? (
+    // 🟡 Amendment exists but NOT in "created" state → Original ni normal status maintain cheyyali
       <button
-        className="btn btn-primary btn-sm"
-        onClick={async () => {
-          if (!storeInfo?.APPLY_DT || !storeInfo?.DOC_PATH || !storeInfo?.COMMENTS) {
-            await Swal.fire({
-              icon: 'warning',
-              title: 'Missing Fields',
-              text: 'Please ensure Apply Date, Document, and Comments are all available.',
-            });
-            return;
-          }
-          showEmailModalForUpdate('regular', storeInfo);
-        }}
-      >
-        Update
-      </button>
-    ) : (
-      <button className="btn btn-success btn-sm" disabled>
-        {isOriginalUpdated ? 'Updated' : 'Pending'} 
-      </button>
-    )
+      className={`btn btn-sm ${
+        isOriginalUpdated ? "btn-success" : "btn-secondary"
+      }`}
+      disabled
+    >
+      {isOriginalUpdated ? "Updated" : "Pending"}
+    </button>
+  ) : isNextStep ? (
+    // ✅ No amendment exists → Normal update flow
+    <button
+      className="btn btn-primary btn-sm"
+      onClick={async () => {
+        if (
+          !storeInfo?.APPLY_DT ||
+          !storeInfo?.DOC_PATH ||
+          !storeInfo?.COMMENTS
+        ) {
+          await Swal.fire({
+            icon: "warning",
+            title: "Missing Fields",
+            text:
+              "Please ensure Apply Date, Document, and Comments are all available.",
+          });
+          return;
+        }
+        showEmailModalForUpdate("regular", storeInfo);
+      }}
+    >
+      Update
+    </button>
+  ) : (
+    // ⏳ Not next step, no amendment
+    <button className="btn btn-success btn-sm" disabled>
+      {isOriginalUpdated ? "Updated" : "Pending"}
+    </button>
   )}
 </td>
+
     {/* -----------------added on 22-12-2025 by rajakumari.m------------------------------------------------- */}                    
 
                       {/* Amendment columns - grouped as DOC, LOGS, ACTION for each category */}
@@ -622,9 +645,21 @@ const PcbUpdateTable = () => {
   const isAmendUpdated = storeInfo?.[statusKey] === 'YES';
   const hasComments = storeInfo?.[commentsKey];
 
+   const isLatestAmendmentForCat =
+                        latestCreatedAmendment &&
+                        latestCreatedAmendment.CATEGORY === cat;
+
+                      const canUpdateAmendment = !isAmendUpdated && isLatestAmendmentForCat && hasDocs;
+
   return (
     <React.Fragment key={cat}>
+
+
       {/* DOC Column */}
+
+      <td style={{ whiteSpace: 'nowrap' }}>
+       {formatDate(storeInfo?.AMEND1_DATE)}
+                      </td>
       <td>
         {hasDocs ? (
           <OverlayTrigger
@@ -725,26 +760,22 @@ const PcbUpdateTable = () => {
 
       {/* ACTION Column */}
       <td>
-        {isAmendUpdated ? (
-          <button className="btn btn-success btn-sm" disabled>
-            Updated
-          </button>
-        ) : hasDocs ? (
-          <button
-            className="btn btn-warning btn-sm"
-            onClick={() => {
-              // Show email modal for amendment update
-              showEmailModalForUpdate('amendment', storeInfo, cat);
-            }}
-          >
-            Update
-          </button>
-        ) : (
-          <button className="btn btn-secondary btn-sm" disabled>
-            Pending
-          </button>
-        )}
-      </td>
+                            {isAmendUpdated ? (
+                              <button className="btn btn-success btn-sm" disabled>Updated</button>
+                            ) : canUpdateAmendment ? (
+                              <button
+                                className="btn btn-warning btn-sm"
+                                onClick={() => showEmailModalForUpdate("amendment", storeInfo, cat)}
+                              >
+                                Update
+                              </button>
+                            ) : (
+                              <button className="btn btn-secondary btn-sm" disabled>Pending</button>
+                            )}
+                          </td>
+
+
+      
     </React.Fragment>
   );
 })}
@@ -785,6 +816,17 @@ const PcbUpdateTable = () => {
           updateType: updateType
         }}
       />
+
+
+      
+
+
+
+
+
+
+
+
 
       <DocumentModal
         show={showAmendDocModal}

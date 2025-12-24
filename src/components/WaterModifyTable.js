@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useRef, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import axios from "axios";
@@ -72,12 +70,16 @@ const WaterModifyTable = () => {
   const [isFirstProcess, setIsFirstProcess] = useState(true);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState([]);
+  
+  // Added on 24-12-2025 by rajakumari.m - State to store selected process details for viewing historical data
+  const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
+  
   const [loc, setLoc] = useState([]);
 
 
-       useEffect(() => {
-          setHeaderData(null);
-        }, []);
+  useEffect(() => {
+    setHeaderData(null);
+  }, []);
 
 
   useEffect(() => {
@@ -124,22 +126,14 @@ const WaterModifyTable = () => {
     if (!formData.loc) newErrors.loc = "Plant selection is required";
     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
 
-      if (formData.status === "YES" && !formData.comments) {
-    newErrors.comments = "Comments are required";
-  }
-  
-  // Reason is required when status is "NO"
-  if (formData.status === "NO" && !formData.reason) {
-    newErrors.reason = "Reason is required";
-  }
-    
-  //      if (formData.status !== "NO" && !formData.comments) {
-  //   newErrors.comments = "Comments are required";
-  // }
+    if (formData.status === "YES" && !formData.comments) {
+      newErrors.comments = "Comments are required";
+    }
 
-  //        if (formData.status == "YES" && !formData.reason) {
-  //   newErrors.reason = "reason are required";
-  // }
+    // Reason is required when status is "NO"
+    if (formData.status === "NO" && !formData.reason) {
+      newErrors.reason = "Reason is required";
+    }
 
     if (!validateDocuments()) {
       // Errors already set in validateDocuments function
@@ -213,6 +207,83 @@ const WaterModifyTable = () => {
     }
   }, [selectedPlant, immediateNextStepIndex, steps]);
 
+  // Added on 24-12-2025 by rajakumari.m - Handle clicking on completed process steps to view historical data
+  const handleProcessClick = (e, process) => {
+    e.stopPropagation();
+    console.log("Clicked:", process);
+
+    // Find the process details from storeData
+    const processDetails = storeData.find(
+      (item) => item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+    );
+
+    console.log(processDetails, "processDetailsprocessDetails");
+    setSelectedProcessDetails(processDetails || null);
+
+    // If process details found, also set it as the active step
+    if (processDetails) {
+      const stepIndex = steps.findIndex(step =>
+        step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+      );
+      if (stepIndex !== -1) {
+        setActiveStep(stepIndex);
+      }
+    }
+  };
+
+  // Added on 24-12-2025 by rajakumari.m - Populate form with selected process details when viewing historical data
+  useEffect(() => {
+    if (selectedProcessDetails) {
+      console.log(selectedProcessDetails, "selectedProcessDetailsselectedProcessDetails");
+
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        loc: selectedPlant,
+        applyDate: selectedProcessDetails.APPLY_DT || "",
+        status: selectedProcessDetails.STATUS || "",
+        reason: selectedProcessDetails.REASON || "",
+        comments: selectedProcessDetails.COMMENTS || "",
+        noOfFlats: selectedProcessDetails.NUMBER_OF_FLATS || "",
+        KLD: selectedProcessDetails.KLD || "",
+        amountPaid: selectedProcessDetails.AMOUNT_PAID || "",
+        Ghmc: selectedProcessDetails.GHMC || "",
+        OldAmount: selectedProcessDetails.OLD_AMOUNT || "",
+        Size: selectedProcessDetails.SIZE_OF_CONNECTION || "",
+        TotalAmount: selectedProcessDetails.TOTAL_AMOUNT || "",
+        TotalProjectArea: selectedProcessDetails?.TOTAL_PROJECT_AREA || '',
+        noOfTowers: selectedProcessDetails?.NUMBER_OF_TOWERS || '',
+        ProjectBuildArea: selectedProcessDetails?.PROJECT_BUILD_AREA || ''
+      }));
+
+      setFirstStep(selectedProcessDetails);
+      setSubmitted(false);
+    }
+  }, [selectedProcessDetails, selectedPlant]);
+
+  // Added on 24-12-2025 by rajakumari.m - Function to switch back to next step view from historical view
+  const handleViewNextStep = () => {
+    setSelectedProcessDetails(null);
+
+    // Re-fetch next step details if available
+    if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+      const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+      if (nextStepName) {
+        axios
+          .get(
+            `${API_BASE_URL}/water-step-details/${encodeURIComponent(
+              selectedPlant
+            )}/${encodeURIComponent(nextStepName)}`
+          )
+          .then((res) => {
+            setNextStepDetails(res.data);
+          })
+          .catch((err) =>
+            console.error("Error fetching next step details:", err)
+          );
+      }
+    }
+  };
+
   useEffect(() => {
     if (steps.length > 0 && storeData.length > 0) {
       const completedProcesses = storeData
@@ -232,17 +303,16 @@ const WaterModifyTable = () => {
     }
   }, [steps, storeData]);
 
+  // Modified on 24-12-2025 by rajakumari.m - Added check for selectedProcessDetails to prevent overwriting historical view data
   useEffect(() => {
-    if (nextStepDetails) {
+    if (nextStepDetails && !selectedProcessDetails) {
       let details = nextStepDetails;
-
-
 
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: details?.APPLY_DT,
         status: details?.STATUS || "YES",
-        reason:  "",
+        reason: "",
         comments: "",
         noOfFlats: details?.NUMBER_OF_FLATS || "",
         KLD: details?.KLD || "",
@@ -256,7 +326,7 @@ const WaterModifyTable = () => {
         ProjectBuildArea: details?.PROJECT_BUILD_AREA || ''
       }));
       setFirstStep(details);
-    } else {
+    } else if (!selectedProcessDetails) {
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: "",
@@ -276,7 +346,644 @@ const WaterModifyTable = () => {
       }));
       setFirstStep(null);
     }
-  }, [nextStepDetails]);
+  }, [nextStepDetails, selectedProcessDetails]);
+
+  // Added on 24-12-2025 by rajakumari.m - Helper function to check if a field has valid data
+  const hasFieldData = (fieldValue) => {
+    return fieldValue !== null && fieldValue !== undefined && fieldValue !== "" && fieldValue !== 0;
+  };
+
+  // Added on 24-12-2025 by rajakumari.m - Render form fields based on whether viewing historical data or next step
+  const renderFormFields = () => {
+    // Show completion message if all steps are done and no specific process is selected
+    if (allStepsCompleted && !selectedProcessDetails) {
+      return (
+        <Alert variant="success" className="text-center">
+          <FaCheckCircle size={48} className="text-success mb-3" />
+          <Alert.Heading>All Steps Completed! 🎉</Alert.Heading>
+          <p>All process steps for <strong>{selectedPlant}</strong> have been completed successfully.</p>
+          <hr />
+          <p className="mb-0">Select any completed step from the left panel to view its details.</p>
+        </Alert>
+      );
+    }
+
+    // If no process is selected, render the next step form
+    if (!selectedProcessDetails) {
+      return renderNextStepForm();
+    }
+
+    // Render historical process data
+    const process = selectedProcessDetails;
+    const fields = [];
+
+    // Always show basic info
+    fields.push(
+      <Row key="basic" className="mb-2">
+        <Col md={6}>
+          <Form.Group>
+            <Form.Label>Plant</Form.Label>
+            <Form.Control
+              type="text"
+              value={process.LOC || formData.loc || selectedPlant || ""}
+              readOnly
+              disabled
+            />
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group>
+            <Form.Label>Apply Date</Form.Label>
+            <Form.Control
+              type="date"
+              value={formData.applyDate || ""}
+              readOnly
+              disabled
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    );
+
+    // Determine which fields to show based on the specific process
+    const processName = process.PROCESS?.toLowerCase()?.trim();
+
+    // Application Filling process fields
+    if (processName === "application filling") {
+      if (hasFieldData(process.NO_OF_FLATS) || hasFieldData(process.KLD) || hasFieldData(process.AMOUNT_PAID)) {
+        fields.push(
+          <Row key="application-fields" className="mb-3">
+            {hasFieldData(process.NO_OF_FLATS) && (
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>Number of Flats</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={process.NO_OF_FLATS || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+            {hasFieldData(process.KLD) && (
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>KLD</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={process.KLD || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+            {hasFieldData(process.AMOUNT_PAID) && (
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>Amount Paid</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={process.AMOUNT_PAID || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+            {hasFieldData(process.TOTAL_PROJECT_AREA) && (
+              <Col md={4} className="mt-3">
+                <Form.Group>
+                  <Form.Label>Total Project Area</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={process.TOTAL_PROJECT_AREA || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+            {hasFieldData(process.NUMBER_OF_TOWERS) && (
+              <Col md={4} className="mt-3">
+                <Form.Group>
+                  <Form.Label>Number Of Towers</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={process.NUMBER_OF_TOWERS || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+            {hasFieldData(process.PROJECT_BUILD_AREA) && (
+              <Col md={4} className="mt-3">
+                <Form.Group>
+                  <Form.Label>Project Build Area</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={process.PROJECT_BUILD_AREA || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+          </Row>
+        );
+      }
+
+      if (hasFieldData(process.COMMENTS)) {
+        fields.push(
+          <Row key="application-comments" className="mb-3">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label>Comments</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  value={process.COMMENTS || ""}
+                  readOnly
+                  disabled
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        );
+      }
+    }
+    // Applied For Water Release process fields  
+    else if (processName === "applied for water release") {
+      if (hasFieldData(process.GHMC)) {
+        fields.push(
+          <Row key="ghmc" className="mb-2">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>GHMC</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={process.GHMC || ""}
+                  readOnly
+                  disabled
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        );
+      }
+
+      if (hasFieldData(process.OLD_AMOUNT) || hasFieldData(process.TOTAL_AMOUNT)) {
+        fields.push(
+          <Row key="payment-fields" className="mb-2">
+            {hasFieldData(process.OLD_AMOUNT) && (
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Remaining Paid</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={process.OLD_AMOUNT || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+            {hasFieldData(process.TOTAL_AMOUNT) && (
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Total Amount</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={process.TOTAL_AMOUNT || ""}
+                    readOnly
+                    disabled
+                  />
+                </Form.Group>
+              </Col>
+            )}
+          </Row>
+        );
+      }
+    }
+    // Community Inspection process fields
+    else if (processName === "community inspection") {
+      if (hasFieldData(process.SIZE_OF_CONNECTION)) {
+        fields.push(
+          <Row key="size" className="mb-2">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label>Size Of Connection</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={process.SIZE_OF_CONNECTION || ""}
+                  readOnly
+                  disabled
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        );
+      }
+    }
+    // Other processes
+    else {
+      if (hasFieldData(process.GHMC)) {
+        fields.push(
+          <Row key="ghmc" className="mb-2">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label>GHMC</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={process.GHMC || ""}
+                  readOnly
+                  disabled
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        );
+      }
+
+      if (hasFieldData(process.SIZE_OF_CONNECTION)) {
+        fields.push(
+          <Row key="size" className="mb-2">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label>Size Of Connection</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={process.SIZE_OF_CONNECTION || ""}
+                  readOnly
+                  disabled
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        );
+      }
+    }
+
+    // Show comments if status is YES
+    if (formData.status === "YES" && hasFieldData(process.COMMENTS)) {
+      fields.push(
+        <Row key="comments" className="mb-3">
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>Comments</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={process.COMMENTS || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
+
+    // Show reason if status is NO
+    if (formData.status === "NO" && hasFieldData(process.REASON)) {
+      fields.push(
+        <Row key="reason" className="mb-2">
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>Reason</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.reason || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
+
+    return fields;
+  };
+
+  // Added on 24-12-2025 by rajakumari.m - Render the next step form (editable form for current process)
+  const renderNextStepForm = () => {
+    return (
+      <>
+        <Row className="mb-2">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Plant</Form.Label>
+              <Form.Select
+                name="loc"
+                value={formData.loc || ""}
+                onChange={handleChange}
+                isInvalid={!!errors.loc}
+              >
+                <option value="">Select Plant</option>
+                {loc.map((ele, index) => (
+                  <option key={index} value={ele.loc}>
+                    {ele.loc}
+                  </option>
+                ))}
+              </Form.Select>
+              <Form.Control.Feedback type="invalid">
+                {errors.loc}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Apply Date</Form.Label>
+              <Form.Control
+                type="date"
+                name="applyDate"
+                value={formData.applyDate || ""}
+                onChange={handleChange}
+                max={new Date().toISOString().split("T")[0]}
+                isInvalid={!!errors.applyDate}
+                disabled={!formData.loc || (nextStepDetails && nextStepDetails.APPLY_DT)}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.applyDate}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <>
+          <Row className="mb-3 align-items-end">
+            {!isFirstProcess && (
+              <>
+                <Col md={6} className="mb-2">
+                  <Form.Group>
+                    <Form.Label>STATUS</Form.Label>
+                    <div>
+                      <Form.Check
+                        inline
+                        label="Yes"
+                        name="status"
+                        type="radio"
+                        value="YES"
+                        checked={formData.status === "YES"}
+                        disabled={!formData.loc}
+                        onChange={handleChange}
+                      />
+                      <Form.Check
+                        inline
+                        label="No"
+                        name="status"
+                        type="radio"
+                        value="NO"
+                        checked={formData.status === "NO"}
+                        disabled={!formData.loc}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </Form.Group>
+                </Col>
+                {immediateNextStepIndex === 1 && (
+                  <Col md={6} className="mb-2">
+                    <Form.Group>
+                      <Form.Label>GHMC</Form.Label>
+                      <div>
+                        <Form.Check
+                          inline
+                          label="Yes"
+                          name="Ghmc"
+                          type="radio"
+                          value="YES"
+                          checked={formData.Ghmc === "YES"}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                        <Form.Check
+                          inline
+                          label="No"
+                          name="Ghmc"
+                          type="radio"
+                          value="NO"
+                          checked={formData.Ghmc === "NO"}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </Form.Group>
+                  </Col>
+                )}
+
+                {immediateNextStepIndex === 1 && (
+                  <Row className="mb-2">
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label>Remaining Paid</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="OldAmount"
+                          value={formData.OldAmount || ""}
+                          disabled={!formData.loc}
+                          onChange={handleChange}
+                          isInvalid={!!errors.loc}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.OldAmount}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label>Total Amount</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="TotalAmount"
+                          value={formData.TotalAmount || ""}
+                          onChange={handleChange}
+                          readOnly
+                          isInvalid={!!errors.loc}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.TotalAmount}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                )}
+
+                {immediateNextStepIndex === 3 && (
+                  <Row className="mb-2">
+                    <Form.Group>
+                      <Form.Label>Size Of Connection</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="Size"
+                        value={formData.Size || ""}
+                        onChange={handleChange}
+                        isInvalid={!!errors.Size}
+                        disabled={!formData.loc}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.Size}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Row>
+                )}
+              </>
+            )}
+          </Row>
+        </>
+
+        {formData.status === "NO" && (
+          <Row className="mb-2">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label>Reason*</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  name="reason"
+                  value={formData.reason || ""}
+                  disabled={!formData.loc}
+                  isInvalid={!!errors.reason}
+                  onChange={handleChange}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.reason}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Col>
+          </Row>
+        )}
+
+        {isFirstProcess && (
+          <>
+            <Row className="mb-3">
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>Number of Flats</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="noOfFlats"
+                    value={formData.noOfFlats || ""}
+                    disabled={!formData.loc}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>KLD</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="KLD"
+                    readOnly
+                    value={formData.KLD || ""}
+                    disabled={!formData.loc}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>Amount Paid</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="amountPaid"
+                    value={formData.amountPaid || ""}
+                    disabled={!formData.loc}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4} className="mt-3">
+                <Form.Group>
+                  <Form.Label>Total Project Area</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="TotalProjectArea"
+                    value={formData.TotalProjectArea || ""}
+                    disabled={!formData.loc}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4} className="mt-3">
+                <Form.Group>
+                  <Form.Label>Number Of Towers</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="noOfTowers"
+                    value={formData.noOfTowers}
+                    disabled={!formData.loc}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4} className="mt-3">
+                <Form.Group>
+                  <Form.Label>Project Build Area</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="ProjectBuildArea"
+                    value={formData.ProjectBuildArea}
+                    disabled={!formData.loc}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </>
+        )}
+
+        <Row className="mb-3">
+          <Col md={6}>
+            <Form.Label>Upload Documents</Form.Label>
+            <button
+              type="button"
+              className="upload-button"
+              onClick={() => setAmountPaidDocModal(true)}
+              disabled={!formData.loc}
+            >
+              <FaUpload className="upload-icon" /> Upload Documents
+              <span className="upload-count">
+                {AmountPaidDocs.length > 0 &&
+                  `(${AmountPaidDocs.length} files)`}
+              </span>
+            </button>
+            {errors.AmountPaidDocs && (
+              <p className="error-text text-danger mt-1 mb-0">
+                {errors.AmountPaidDocs}
+              </p>
+            )}
+          </Col>
+
+          {formData.status !== "NO" && (
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>Comments*</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  name="comments"
+                  value={formData.comments || ""}
+                  disabled={!formData.loc}
+                  onChange={handleChange}
+                  isInvalid={!!errors.comments}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.comments}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Col>
+          )}
+        </Row>
+      </>
+    );
+  };
 
   useEffect(() => {
     if (selectedPlant) {
@@ -369,29 +1076,20 @@ const WaterModifyTable = () => {
       }));
     }
   };
+
   const validateFileType = (file) => {
-    // Check file extension
     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     const validExtensions = ['.pdf'];
-
-    // Check MIME type
     const validMimeTypes = ['application/pdf'];
-
-    // Validate extension
     const isValidExtension = validExtensions.includes(fileExtension);
-
-    // Validate MIME type (if available)
     const isValidMimeType = !file.type || validMimeTypes.includes(file.type);
-
     return isValidExtension && isValidMimeType;
   };
-
 
   const validateDocuments = () => {
     let isValid = true;
     const newErrors = {};
 
-    // Validate linkDocs if any files are selected
     if (AmountPaidDocs.length > 0) {
       const invalidFiles = AmountPaidDocs.filter(file => !validateFileType(file));
       if (invalidFiles.length > 0) {
@@ -432,15 +1130,6 @@ const WaterModifyTable = () => {
       payload.append(`emails[${i}]`, email);
     });
 
-    // if (isFirstProcess) {
-    //   payload.append("noOfFlats", formData.noOfFlats || "");
-    //   payload.append("KLD", formData.KLD || "");
-    //   payload.append("amountPaid", formData.amountPaid || "");
-    //   payload.append("noOfTowers", formData.noOfTowers || 0);
-    //   feasibilityDocs.forEach(f => payload.append('FEAS_DOC[]', f));
-
-    // }
-
     try {
       const existingRecord = storeData.find(
         (item) =>
@@ -461,11 +1150,6 @@ const WaterModifyTable = () => {
         `${API_BASE_URL}/water-data?plant=${formData.loc}`
       );
       setStoreData(refreshed.data);
-
-      // const master = await getMasterByLoc(formData.loc);
-      // if (master) {
-      //   setHeaderData(master);
-      // }
 
       setFormData({
         loc: formData.loc,
@@ -543,6 +1227,7 @@ const WaterModifyTable = () => {
 
                 return (
                   <Nav.Item key={idx} className="mb-2">
+                    {/* Modified on 24-12-2025 by rajakumari.m - Added click handler for completed steps */}
                     <Nav.Link
                       eventKey={idx}
                       disabled={!clickable}
@@ -556,7 +1241,19 @@ const WaterModifyTable = () => {
                       }}
                     >
                       {statusIcon}
-                      <span>{step.PROCESS}</span>
+                      <span
+                        onClick={(e) => {
+                          if (isCompleted) {
+                            handleProcessClick(e, step.PROCESS);
+                          }
+                        }}
+                        style={{
+                          cursor: isCompleted ? "pointer" : "default",
+                          textDecoration: isCompleted ? "underline" : "none"
+                        }}
+                      >
+                        {step.PROCESS}
+                      </span>
                     </Nav.Link>
                   </Nav.Item>
                 );
@@ -568,347 +1265,43 @@ const WaterModifyTable = () => {
         <Col
           md={6}
           className="d-flex flex-column"
-          style={{ height: '350px', overflowY: 'auto' }}
-
+          style={{ height: '400px', overflowY: 'auto' }}
         >
-          {allStepsCompleted ? (
-            renderCompletionMessage()
-          ) : (
-            <Form className="p-3 border rounded bg-light ">
-              {immediateNextStep && (
-                <h4 className="mb-3 text-warning fw-bold">
-                  {immediateNextStep.PROCESS}
+          {/* Modified on 24-12-2025 by rajakumari.m - Updated form rendering logic */}
+          <Form className="p-3 border rounded bg-light">
+            {selectedProcessDetails ? (
+              <div className="mb-3">
+                <h4 className="mb-2 text-info fw-bold">
+                  Viewing: {selectedProcessDetails.PROCESS} (Completed)
                 </h4>
-              )}
-              <Row className="mb-2">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Plant</Form.Label>
-                    <Form.Select
-                      name="loc"
-                      value={formData.loc || ""}
-                      onChange={handleChange}
-                      isInvalid={!!errors.loc}
-                    >
-                      <option value="">Select Plant</option>
-                      {loc.map((ele, index) => (
-                        <option key={index} value={ele.loc}>
-                          {ele.loc}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">
-                      {errors.loc}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Apply Date</Form.Label>
-                    <Form.Control
-                      type="date"
-                      name="applyDate"
-                      value={formData.applyDate || ""}
-                      onChange={handleChange}
-                      max={new Date().toISOString().split("T")[0]}
-                      isInvalid={!!errors.applyDate}
-                      disabled={!formData.loc || (nextStepDetails && nextStepDetails.APPLY_DT)}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.applyDate}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-              </Row>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={handleViewNextStep}
+                  disabled={!immediateNextStep}
+                >
+                  View Next Step
+                </Button>
+              </div>
+            ) : immediateNextStep ? (
+              <h4 className="mb-3 text-warning fw-bold">
+                {immediateNextStep.PROCESS}
+              </h4>
+            ) : allStepsCompleted ? (
+              <h4 className="mb-3 text-success fw-bold">
+                🎉 All Steps Completed!
+              </h4>
+            ) : null}
 
-              <>
-                <Row className="mb-3 align-items-end">
-                  {immediateNextStepIndex === 1 && (
-                    <>
-                      <Col md={6} className="mb-2">
-                        <Form.Group>
-                          <Form.Label>STATUS</Form.Label>
-                          <div>
-                            <Form.Check
-                              inline
-                              label="Yes"
-                              name="status"
-                              type="radio"
-                              value="YES"
-                              checked={formData.status === "YES"}
-                              disabled={!formData.loc}
-                              onChange={handleChange}
-                            />
-                            <Form.Check
-                              inline
-                              label="No"
-                              name="status"
-                              type="radio"
-                              value="NO"
-                              checked={formData.status === "NO"}
-                              disabled={!formData.loc}
-                              onChange={handleChange}
-                            />
-                          </div>
-                        </Form.Group>
-                      </Col>
-                      {immediateNextStepIndex === 1 && (
-                        <Col md={6} className="mb-2">
-                          <Form.Group>
-                            <Form.Label>GHMC</Form.Label>
-                            <div>
-                              <Form.Check
-                                inline
-                                label="Yes"
-                                name="Ghmc"
-                                type="radio"
-                                value="YES"
-                                checked={formData.Ghmc === "YES"}
-                                disabled={!formData.loc}
-                                onChange={handleChange}
-                              />
-                              <Form.Check
-                                inline
-                                label="No"
-                                name="Ghmc"
-                                type="radio"
-                                value="NO"
-                                checked={formData.Ghmc === "NO"}
-                                disabled={!formData.loc}
-                                onChange={handleChange}
-                              />
-                            </div>
-                          </Form.Group>
-                        </Col>
-                      )}
+            {renderFormFields()}
 
-                      {immediateNextStepIndex === 1 && (
-                        <Row className="mb-2">
-                          <Col md={6}>
-                            <Form.Group>
-                              <Form.Label>Remaining Paid</Form.Label>
-                              <Form.Control
-                                type="number"
-                                name="OldAmount"
-                                value={formData.OldAmount || ""}
-                                disabled={!formData.loc}
-                                onChange={handleChange}
-                                isInvalid={!!errors.loc}
-                              />
-                              <Form.Control.Feedback type="invalid">
-                                {errors.OldAmount}
-                              </Form.Control.Feedback>
-                            </Form.Group>
-                          </Col>
-                          <Col md={6}>
-                            <Form.Group>
-                              <Form.Label>Total Amount</Form.Label>
-                              <Form.Control
-                                type="number"
-                                name="TotalAmount"
-                                value={formData.TotalAmount || ""}
-                                onChange={handleChange}
-                                readOnly
-                                isInvalid={!!errors.loc}
-                              />
-                              <Form.Control.Feedback type="invalid">
-                                {errors.TotalAmount}
-                              </Form.Control.Feedback>
-                            </Form.Group>
-                          </Col>
-                        </Row>
-                      )}
-
-                   
-                    </>
-                  )}
-                </Row>
-
-                <Row>
-                     {immediateNextStepIndex === 3 && (
-                        <Row className="mb-2">
-                          <Form.Group>
-                            <Form.Label>Size Of Connection</Form.Label>
-                            <Form.Control
-                              type="number"
-                              name="Size"
-                              value={formData.Size || ""}
-                              onChange={handleChange}
-                              isInvalid={!!errors.Size}
-                              disabled={!formData.loc}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.Size}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                        </Row>
-                      )}
-                </Row>
-              </>
-
-
-
-              {formData.status === "NO" && (
-                <Row className="mb-2">
-                  <Col md={12}>
-                    <Form.Group>
-                      <Form.Label>Reason*</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={2}
-                        name="reason"
-                        value={formData.reason || ""}
-                        disabled={!formData.loc}
-                        isInvalid={!!errors.reason}
-                        onChange={handleChange}
-                      />
-                       <Form.Control.Feedback type="invalid">
-                                {errors.reason}
-                              </Form.Control.Feedback>
-
-                    </Form.Group>
-
-
-                  </Col>
-                </Row>
-              )}
-
-              {isFirstProcess && (
-                <>
-                  <Row className="mb-3">
-                    <Col md={4}>
-                      <Form.Group>
-                        <Form.Label>Number of Flats</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="noOfFlats"
-                          value={formData.noOfFlats || ""}
-                          disabled={!formData.loc}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={4}>
-                      <Form.Group>
-                        <Form.Label>KLD</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="KLD"
-                          readOnly
-                          value={formData.KLD || ""}
-                          disabled={!formData.loc}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={4}>
-                      <Form.Group>
-                        <Form.Label>Amount Paid</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="amountPaid"
-                          value={formData.amountPaid || ""}
-                          disabled={!formData.loc}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={4} className="mt-3">
-                      <Form.Group>
-                        <Form.Label>Total Project Area</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="TotalProjectArea"
-                          value={formData.TotalProjectArea || ""}
-                          disabled={!formData.loc}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={4} className="mt-3">
-                      <Form.Group>
-                        <Form.Label>Number Of Towers</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="noOfTowers"
-                          value={formData.noOfTowers}
-                          disabled={!formData.loc}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={4} className="mt-3">
-                      <Form.Group>
-                        <Form.Label>Project Build Area</Form.Label>
-                        <Form.Control
-                          type="number"
-                          name="ProjectBuildArea"
-                          value={formData.ProjectBuildArea}
-                          disabled={!formData.loc}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                </>
-              )}
-
-
-              <Row className="mb-3">
-                <Col md={6}>
-                  <Form.Label>Upload Documents</Form.Label>
-                  <button
-                    type="button"
-                    className="upload-button"
-                    onClick={() => setAmountPaidDocModal(true)}
-                    disabled={!formData.loc}
-                  >
-                    <FaUpload className="upload-icon" /> Upload  Documents
-                    <span className="upload-count">
-                      {AmountPaidDocs.length > 0 &&
-                        `(${AmountPaidDocs.length} files)`}
-                    </span>
-                  </button>
-                  {errors.AmountPaidDocs && (
-                    <p className="error-text text-danger mt-1 mb-0">
-                      {errors.AmountPaidDocs}
-                    </p>
-                  )}
-                </Col>
-
-
-
-                {formData.status !== "NO" && (
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>Comments*</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={2}
-                        name="comments"
-                        value={formData.comments || ""}
-                        disabled={!formData.loc}
-                        onChange={handleChange}
-                      isInvalid={!!errors.comments}
-
-                      />
-
-                                        <Form.Control.Feedback type="invalid">
-                                               {errors.comments}
-                                             </Form.Control.Feedback>
-                    </Form.Group>
-             
-                  </Col>
-                )}
-
-              </Row>
-
-
-
-
-              <div className="d-grid">
+            <div className="d-grid">
+              {selectedProcessDetails ? (
+                <div className="alert alert-info d-flex align-items-center">
+                  <i className="fas fa-info-circle me-2"></i>
+                  You are viewing historical data. To make changes, select the current step.
+                </div>
+              ) : !allStepsCompleted ? (
                 <Button
                   variant={submitted ? "success" : "primary"}
                   size="md"
@@ -918,21 +1311,18 @@ const WaterModifyTable = () => {
                 >
                   {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
                 </Button>
-              </div>
-            </Form>
-
-          )}
+              ) : null}
+            </div>
+          </Form>
         </Col>
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousWaterUploadedDocs firstStep={firstStep} type="modify"
-            />
+            <PreviousWaterUploadedDocs firstStep={firstStep} type="modify" />
           </div>
         </Col>
       </Row>
 
-      {/* Reusable Email Selection Modal */}
       <EmailSelectionModal
         show={showEmailModal}
         onHide={() => setShowEmailModal(false)}
@@ -978,7 +1368,7 @@ const WaterModifyTable = () => {
         onClose={() => setAmountPaidDocModal(false)}
         linkDocs={AmountPaidDocs}
         setLinkDocs={setAmountPaidDocs}
-        title="Upload  Document Certificate"
+        title="Upload Document Certificate"
         showLandDocs={false}
         showOthDocs={false}
       />
