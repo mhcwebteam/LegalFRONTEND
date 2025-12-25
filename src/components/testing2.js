@@ -75,9 +75,9 @@ const [errors, setErrors] = useState({
   });
 
 
+  console.log(storeData,"fffffffffffffffffffffffff");
 
 
- 
   const [showAmendModal, setShowAmendModal] = useState(false);
   const [amendData, setAmendData] = useState({
     plant: "",
@@ -125,7 +125,7 @@ useEffect(() => {
   let newErrors = {};
 
   if (!modalData.applyDate) {
-    newErrors.applyDate = "Please select Apply Date";
+   newErrors.applyDate = "Please select Apply Date";
   }
 
   if (!modalData.comments || !modalData.comments.trim()) {
@@ -327,7 +327,7 @@ const receivedDateProcesses = [
     const existingNames = storeInfo.DOC_NAME
       ? storeInfo.DOC_NAME.split(",")
       : [];
-   const isExistingRecord = storeInfo.UPDATED === "YES" || !!storeInfo.APPLY_DT;
+
     setModalData({
       plant: selectedPlant,
       process: row.PROCESS,
@@ -339,7 +339,6 @@ const receivedDateProcesses = [
       comments: "",
       returnsSubmitted: storeInfo.RETURNS_SUBMITTED,
       logs: storeInfo.LOG || "",
-      isExistingRecord
     });
 
     setShowModal(true);
@@ -349,7 +348,7 @@ const receivedDateProcesses = [
   // Handlers for Amend
   const handleAmendClick = async (row, category) => {
     try {
-      const storeInfo =
+     const storeInfo =
         storeData.find((item) => item.PROCESS === row.PROCESS) || {};
 
       
@@ -378,11 +377,13 @@ const receivedDateProcesses = [
       const amendreturnsubmit = data[`${prefix}_RETURNS_SUBMITTED`] || "";
 
 
+      console.log(storeData,"sssssssssssssssssssssss", row.PROCESS);
+
       setAmendData({
         plant: selectedPlant,
         process: row.PROCESS,
         applyDate: storeData[0].APPLY_DT || "",
-        receivedDate: storeData.RECEIVED_DT || "",
+        receivedDate: storeData[0].RECEIVED_DT || "",
         amendDate,
         category,
         selectedFiles: [],
@@ -466,13 +467,11 @@ const receivedDateProcesses = [
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-    
+      // alert(existingRecord ? 'Updated successfully' : 'Inserted successfully');
       setShowModal(false);
       setShowEmailModal(false);
        setLoading(false);    
       setSelectedEmails([]);
-
-
       const response = await axios.get(
         `${API_BASE_URL}/pcb-store/${selectedPlant}`
       );
@@ -731,7 +730,7 @@ const formatDate = (dateString) => {
 
 
 const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
- let freshStoreData = [];
+let freshStoreData = [];
   
   if (amendDataFromModal.plant) {
     try {
@@ -745,7 +744,7 @@ const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
       freshStoreData = storeData;
     }
   }
- 
+
   const payload = new FormData();
 
   // Add all normal fields
@@ -815,8 +814,8 @@ console.log("isExistingRecord:", isExistingRecord);
     });
 
      console.log("✅ Backend response:", response.data);
- setShowAmendModal(false);
- 
+setShowAmendModal(false);
+
     await Swal.fire({
       icon: "success",
       title: "Email Sent!",
@@ -1016,14 +1015,14 @@ console.log("isExistingRecord:", isExistingRecord);
         <div
           className="custom-tbl"
           style={{
-            backgroundColor: "#fff",
+           backgroundColor: "#fff",
             borderRadius: "8px",
             overflow: "hidden",
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             marginTop: "5px",
             height: "calc(100vh - 380px)",
             display: "flex",
-            flexDirection: "column",
+           flexDirection: "column",
           }}
         >
           <div style={{ flex: 1, overflowY: "auto", overflowX: "auto" }}>
@@ -1306,34 +1305,27 @@ console.log("isExistingRecord:", isExistingRecord);
               <Form.Label>Process</Form.Label>
               <Form.Control type="text" value={modalData.process} readOnly />
             </Form.Group>
-          <Form.Group className="mb-3">
-  <Form.Label>
-    Apply Date 
-    <span style={{ color: "red" }}>*</span>
+            <Form.Group className="mb-3">
+  <Form.Label> Apply Date 
+      <span style={{ color: "red" }}>*</span>
   </Form.Label>
   
-  <Form.Control
-    type="date"
-    value={modalData.applyDate}
-    max={new Date().toISOString().split("T")[0]}
-    readOnly={modalData.isExistingRecord} // Make readonly if record exists
-    onChange={(e) => {
-      // Only allow changes if it's NOT an existing record
-      if (!modalData.isExistingRecord) {
-        setModalData((prev) => ({
-          ...prev,
-          applyDate: e.target.value,
-        }));
-      }
-    }}
-    className={modalData.isExistingRecord ? "bg-light" : ""}
-  />
-  
-  
-  {!modalData.applyDate && errors.applyDate && (
+              <Form.Control
+                type="date"
+                value={modalData.applyDate}
+                  max={new Date().toISOString().split("T")[0]} 
+                onChange={(e) =>
+                  setModalData((prev) => ({
+                    ...prev,
+                    applyDate: e.target.value,
+                  }))
+                }
+                 
+              />
+                        {errors.applyDate && (
     <div className="text-danger" style={{ fontSize: "14px" }}>{errors.applyDate}</div>
   )}  
-</Form.Group>
+            </Form.Group>
 
 
 
@@ -1347,28 +1339,19 @@ console.log("isExistingRecord:", isExistingRecord);
       type="date"
       value={modalData.receivedDate || ""}
       max={new Date().toISOString().split("T")[0]}
-
-  readOnly={modalData.isExistingRecord}
-      onChange={(e) => {
-      // Only allow changes if it's NOT an existing record
-      if (!modalData.isExistingRecord) {
+      onChange={(e) =>
         setModalData((prev) => ({
           ...prev,
-         receivedDate: e.target.value,
-        }));
+          receivedDate: e.target.value,
+        }))
       }
-    }}
-
-
-      // onChange={(e) =>
-      //   setModalData((prev) => ({
-      //     ...prev,
-      //     receivedDate: e.target.value,
-      //   }))
-      // }
     />
 
-  
+    {errors.receivedDate && (
+      <div className="text-danger" style={{ fontSize: "14px" }}>
+        {errors.receivedDate}
+      </div>
+    )}
   </Form.Group>
 )}
 
@@ -1474,8 +1457,8 @@ console.log("isExistingRecord:", isExistingRecord);
               <strong>Previously Uploaded Files:</strong>
 {/* ////--------------------20/11/2025---------------------- */}
   {Array.isArray(modalData.existingDocs) &&
- modalData.existingDocs.length > 0 &&
- modalData.existingDocs.some(doc => doc && doc !== "null" && doc !== "[]") ? (
+modalData.existingDocs.length > 0 &&
+modalData.existingDocs.some(doc => doc && doc !== "null" && doc !== "[]") ? (
   <ul className="mb-2 list-unstyled">
     {modalData.existingDocs
       .filter(doc => doc && doc !== "null" && doc !== "[]")

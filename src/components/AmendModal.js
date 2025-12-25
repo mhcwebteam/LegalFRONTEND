@@ -116,28 +116,28 @@ const AmendModal = ({
   };
 
 
-const formatDate = (date) => {
-  if (!date) return "";
+  const formatDate = (date) => {
+    if (!date) return "";
 
-  // Split date & time safely
-  const [fullDate, time] = date.split(" ");
+    // Split date & time safely
+    const [fullDate, time] = date.split(" ");
 
-  const [y, m, d] = fullDate.split("-");
+    const [y, m, d] = fullDate.split("-");
 
-  // If no time → return only date
-  return time ? `${d}-${m}-${y} ${time}` : `${d}-${m}-${y}`;
-};
+    // If no time → return only date
+    return time ? `${d}-${m}-${y} ${time}` : `${d}-${m}-${y}`;
+  };
 
 
 
-const receivedDateProcesses = [
-  "Received TOR",
-  "EC (Environmetal Clearance)",
-  "Application for CFE",
-  "Received CFE",
-]
+  const receivedDateProcesses = [
+    "Received TOR",
+    "EC (Environmetal Clearance)",
+    "Application for CFE",
+    "Received CFE",
+  ]
 
-console.log("a,,,,,,,,,,,,,",amendData.applyDate);
+  console.log(amendData, "eeeeeeeeeeeeeeeeeeeee")
 
   return (
     <>
@@ -168,34 +168,34 @@ console.log("a,,,,,,,,,,,,,",amendData.applyDate);
             <Form.Group className="mb-3">
 
               <Form.Label>Process</Form.Label>
-              
+
               <Form.Control type="text" value={amendData.process} readOnly />
             </Form.Group>
 
             {/* APPLY DATE */}
-                      <Form.Group className="mb-3">
-            <Form.Label> Apply Date 
+            <Form.Group className="mb-3">
+              <Form.Label> Apply Date
                 <span style={{ color: "red" }}>*</span>
-            </Form.Label>
-            
-                    <Form.Control type="text" value={formatDate(amendData?.applyDate)} readOnly />
-                                 
-                      </Form.Group>
-          
-          
-          
-        {receivedDateProcesses.includes(amendData.process) && (
-  <Form.Group className="mb-3">
-    <Form.Label>Received Date</Form.Label>
-    <Form.Control
-      type="date"
-      value={amendData.receivedDate}
-      onChange={(e) =>
-        setAmendData((prev) => ({ ...prev, receivedDate: e.target.value }))
-      }
-    />
-  </Form.Group>
-)}
+              </Form.Label>
+
+              <Form.Control type="text" value={formatDate(amendData?.applyDate)} readOnly />
+
+            </Form.Group>
+
+
+
+            {receivedDateProcesses.includes(amendData.process) && (
+              <Form.Group className="mb-3">
+                <Form.Label>Received Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={amendData.receivedDate}
+                  onChange={(e) =>
+                    setAmendData((prev) => ({ ...prev, receivedDate: e.target.value }))
+                  }
+                />
+              </Form.Group>
+            )}
 
 
             {/* AMENDMENT DATE */}
@@ -209,7 +209,7 @@ console.log("a,,,,,,,,,,,,,",amendData.applyDate);
               <Form.Control
                 type="date"
                 value={amendData.amendDate}
-              max={new Date().toISOString().split("T")[0]} 
+                max={new Date().toISOString().split("T")[0]}
                 onChange={(e) =>
                   setAmendData((prev) => ({
                     ...prev,
@@ -502,30 +502,30 @@ console.log("a,,,,,,,,,,,,,",amendData.applyDate);
             </Form.Group>
           </Form>
         </Modal.Body>
-      <Modal.Footer>
-  <Button 
-    variant="secondary" 
-    onClick={onClose}
-    disabled={loading}  // ✅ Disable Cancel during processing
-  >
-    Cancel
-  </Button>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}  // ✅ Disable Cancel during processing
+          >
+            Cancel
+          </Button>
 
-  <Button 
-    variant="primary" 
-    onClick={handleOpenEmailModal} 
-    disabled={loading}  // ✅ Disable Send Email during processing
-  >
-    {loading ? (
-      <>
-        <span className="spinner-border spinner-border-sm me-2"></span>
-        Processing...
-      </>
-    ) : (
-      "Send Email"
-    )}
-  </Button>
-</Modal.Footer>
+          <Button
+            variant="primary"
+            onClick={handleOpenEmailModal}
+            disabled={loading}  // ✅ Disable Send Email during processing
+          >
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2"></span>
+                Processing...
+              </>
+            ) : (
+              "Send Email"
+            )}
+          </Button>
+        </Modal.Footer>
       </Modal>
 
 

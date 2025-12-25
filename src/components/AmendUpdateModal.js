@@ -1,8 +1,82 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Form, Toast } from 'react-bootstrap';
+import { Modal, Button, Form } from 'react-bootstrap';
 import axios from 'axios';
 import { API_BASE_URL, API_DOC_URL } from '../config/Config';
+import Swal from 'sweetalert2';
+import EmailAmendModal from './EmailAmendModal';
+
+// Helper function to extract latest comment with date (sorted by date descending)
+const getLatestComment = (commentsJson) => {
+  if (!commentsJson) return { date: '', comment: '' };
+  
+  try {
+    const parsed = JSON.parse(commentsJson);
+    
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Sort by date descending (newest first)
+      const sorted = [...parsed].sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+      });
+      
+      // Get the first element (newest)
+      const latest = sorted[0];
+      return {
+        date: latest.date || '',
+        comment: latest.comment || latest || ''
+      };
+    } else if (typeof parsed === 'string') {
+      return {
+        date: '',
+        comment: parsed
+      };
+    }
+  } catch (e) {
+    // If parsing fails, return as is
+    return {
+      date: '',
+      comment: commentsJson
+    };
+  }
+  
+  return { date: '', comment: '' };
+};
+
+// Helper function to format date for input field (YYYY-MM-DD)
+const formatDateForInput = (dateStr) => {
+  if (!dateStr) return '';
+  
+  try {
+    // Remove time part if exists
+    const datePart = dateStr.split(' ')[0];
+    
+    // Check current format
+    if (datePart.includes('-')) {
+      const parts = datePart.split('-');
+      
+      if (parts.length === 3) {
+        // Check if it's DD-MM-YYYY or YYYY-MM-DD
+        if (parts[0].length === 4) {
+          // YYYY-MM-DD format, return as is
+          return datePart;
+        } else if (parts[2].length === 4) {
+          // DD-MM-YYYY format, convert to YYYY-MM-DD
+          const [day, month, year] = parts;
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+    }
+    
+    // Try to parse as Date object
+    const dateObj = new Date(dateStr);
+    if (!isNaN(dateObj.getTime())) {
+      return dateObj.toISOString().split('T')[0];
+    }
+  } catch (e) {
+    console.error('Error formatting date:', e);
+  }
+  
+  return '';
+};
 
 const AmendUpdateModal = ({
   show,
@@ -20,8 +94,8 @@ const AmendUpdateModal = ({
     applyDate: '',
     receivedDate: '',
     amendDate: '',
-    amendDecision: 'Yes',
-    comments: '',
+    commentDate: '',
+    commentText: '',
     selectedFiles: [],
     existingDocs: [],
     existingNames: []
@@ -29,10 +103,14 @@ const AmendUpdateModal = ({
   
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailAmendRecipients, setEmailAmendRecipients] = useState([]);
+  const [selectedAmendEmails, setSelectedAmendEmails] = useState([]);
+  
   const fileInputRef = useRef(null);
 
-  // Format date helper
-  const formatDate = (date) => {
+  // Format date for display helper
+  const formatDateForDisplay = (date) => {
     if (!date) return "";
     const [fullDate, time] = date.split(" ");
     const [y, m, d] = fullDate.split("-");
@@ -58,15 +136,26 @@ const AmendUpdateModal = ({
         console.error('Error parsing existing docs:', e);
       }
       
+      // Extract the latest comment with date
+      const latestComment = getLatestComment(storeInfo[commentsKey]);
+      
+      // Format dates for input fields
+      const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
+      const formattedReceivedDate = formatDateForInput(storeInfo.RECEIVED_DT || '');
+      const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
+
+      console.log(formattedAmendDate,"111111111111111111133333333333333");
+      
       setAmendData(prev => ({
         ...prev,
         plant: plant,
         process: process,
         category: category,
-        applyDate: storeInfo.APPLY_DT || '',
-        receivedDate: storeInfo.RECEIVED_DT || '',
-        amendDate: storeInfo[dateKey] || new Date().toISOString().split('T')[0],
-        comments: storeInfo[commentsKey] || '',
+        applyDate: formattedApplyDate,
+        receivedDate: formattedReceivedDate,
+        amendDate: formattedAmendDate || new Date().toISOString().split('T')[0],
+        commentDate: latestComment.date,
+        commentText: latestComment.comment,
         existingDocs: existingDocs,
         existingNames: existingNames
       }));
@@ -77,9 +166,20 @@ const AmendUpdateModal = ({
   const validateForm = () => {
     const newErrors = {};
     
-    if (amendData.amendDecision === 'Yes') {
-      if (!amendData.amendDate) newErrors.amendDate = 'Amendment date is required';
-      if (!amendData.comments.trim()) newErrors.comments = 'Comments are required';
+    // Validate required fields
+    if (!amendData.applyDate) newErrors.applyDate = 'Apply date is required';
+    if (!amendData.amendDate) newErrors.amendDate = 'Amendment date is required';
+    
+    // Validate received date for specific processes
+    const receivedDateProcesses = [
+      "Received TOR",
+      "EC (Environmental Clearance)",
+      "Application for CFE",
+      "Received CFE"
+    ];
+    
+    if (receivedDateProcesses.includes(amendData.process) && !amendData.receivedDate) {
+      newErrors.receivedDate = 'Received date is required for this process';
     }
     
     setErrors(newErrors);
@@ -89,7 +189,10 @@ const AmendUpdateModal = ({
   // Handle file upload
   const handleUploadFiles = async () => {
     if (amendData.selectedFiles.length === 0) {
-      return { docPath: JSON.stringify(amendData.existingDocs), docName: JSON.stringify(amendData.existingNames) };
+      return { 
+        docPath: JSON.stringify(amendData.existingDocs), 
+        docName: JSON.stringify(amendData.existingNames) 
+      };
     }
 
     const formData = new FormData();
@@ -115,343 +218,350 @@ const AmendUpdateModal = ({
     }
   };
 
-  // Handle submission
+  // Convert date from YYYY-MM-DD to DD-MM-YYYY format for backend
+  const convertDateForBackend = (dateStr) => {
+    if (!dateStr) return '';
+    
+    // If already in DD-MM-YYYY format, return as is
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length === 3 && parts[2].length === 4) {
+        // DD-MM-YYYY format
+        return `${dateStr} 00:00:00`;
+      }
+    }
+    
+    // Convert from YYYY-MM-DD to DD-MM-YYYY
+    if (dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}-${month}-${year} 00:00:00`;
+    }
+    
+    return `${dateStr} 00:00:00`;
+  };
+
+  // Prepare comments for submission
+  const prepareCommentsForSubmission = () => {
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
+    
+    // Get existing comments
+    let existingComments = [];
+    const existingCommentsJson = storeInfo[`${category}_COMMENTS`];
+    
+    if (existingCommentsJson) {
+      try {
+        const parsed = JSON.parse(existingCommentsJson);
+        if (Array.isArray(parsed)) {
+          existingComments = parsed;
+        } else if (typeof parsed === 'string') {
+          // Convert old string comment to array format
+          existingComments = [{
+            date: storeInfo[`${category}_DATE`] || timestamp,
+            comment: parsed
+          }];
+        }
+      } catch (e) {
+        // If parsing fails, create new array
+        existingComments = [{
+          date: timestamp,
+          comment: existingCommentsJson
+        }];
+      }
+    }
+    
+    // Add new comment with current date/time
+    const newCommentObj = {
+      date: timestamp,
+      comment: amendData.commentText || 'Updated'
+    };
+    
+    // Add new comment at the beginning
+    const allComments = [newCommentObj, ...existingComments];
+    
+    return JSON.stringify(allComments);
+  };
+
+  // Handle submission to show email modal first
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
-    
     try {
-      // Upload files if any
-      const uploadResult = await handleUploadFiles();
+      // Fetch email recipients first
+      const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
+      setEmailAmendRecipients(response.data);
       
-      // Prepare data for submission
+      // Show email modal
+      setShowEmailModal(true);
+      
+    } catch (error) {
+      console.error('Failed to fetch email recipients:', error);
+      setShowEmailModal(true);
+    }
+  };
+
+  // Final submission after email selection
+  const handleFinalSubmit = async (selectedEmails) => {
+    setLoading(true);
+    try {
+      const uploadResult = await handleUploadFiles();
+
       const submissionData = {
         loc: plant,
         process: process,
         category: category,
-        applyDate: storeInfo.APPLY_DT,
-        receivedDate: amendData.receivedDate || storeInfo.RECEIVED_DT,
-        amendDate: amendData.amendDate,
+        applyDate: convertDateForBackend(amendData.applyDate),
+        receivedDate: convertDateForBackend(amendData.receivedDate),
+        amendDate: convertDateForBackend(amendData.amendDate),
         documentPath: uploadResult.docPath,
         docName: uploadResult.docName,
-        comments: amendData.comments,
-        status: amendData.amendDecision === 'Yes' ? 'YES' : 'NO'
+        comments: prepareCommentsForSubmission(),
+        status: 'YES',
+        emails: selectedEmails 
       };
 
-      // Send to backend
       await axios.post(`${API_BASE_URL}/amendment-update`, submissionData);
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Amendment updated successfully!',
+        timer: 2000,
+        showConfirmButton: false
+      });
       
       // Call success callback
       if (onSuccess) {
         onSuccess();
       }
       
-      // Close modal
+      // Close both modals
+      setShowEmailModal(false);
       onClose();
       
     } catch (error) {
       console.error('Submission failed:', error);
-      alert('Failed to update amendment. Please try again.');
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: 'Failed to update amendment. Please try again.'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle delete file
-  const handleDeleteFile = (docPath, index) => {
-    const updatedDocs = [...amendData.existingDocs];
-    const updatedNames = [...amendData.existingNames];
-    
-    updatedDocs.splice(index, 1);
-    updatedNames.splice(index, 1);
-    
-    setAmendData(prev => ({
-      ...prev,
-      existingDocs: updatedDocs,
-      existingNames: updatedNames
-    }));
-  };
-
   // List of processes that require received date
   const receivedDateProcesses = [
-    "Comply EC conditions and submit half yearly returns and compliance Reports"
-    // Add other processes if needed
+    "Received TOR",
+    "EC (Environmental Clearance)",
+    "Application for CFE",
+    "Received CFE"
   ];
 
   return (
-    <Modal
-      show={show}
-      onHide={onClose}
-      dialogClassName="modal-dialog-scrollable"
-      centered
-      size="lg"
-    >
-      <Modal.Header closeButton>
-        <Modal.Title>Update Amendment - {category}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form>
-          {/* PLANT */}
-          <Form.Group className="mb-3">
-            <Form.Label>Plant</Form.Label>
-            <Form.Control
-              type="text"
-              value={amendData.plant}
-              className="form-control"
-              readOnly
-            />
-          </Form.Group>
-
-          {/* PROCESS */}
-          <Form.Group className="mb-3">
-            <Form.Label>Process</Form.Label>
-            <Form.Control 
-              type="text" 
-              value={amendData.process} 
-              readOnly 
-            />
-          </Form.Group>
-
-          {/* APPLY DATE */}
-          <Form.Group className="mb-3">
-            <Form.Label>Original Apply Date</Form.Label>
-            <Form.Control 
-              type="text" 
-              value={formatDate(amendData.applyDate)} 
-              readOnly 
-            />
-          </Form.Group>
-
-          {/* RECEIVED DATE (conditional) */}
-          {receivedDateProcesses.includes(amendData.process) && (
+    <>
+      <Modal
+        show={show}
+        onHide={onClose}
+        dialogClassName="modal-dialog-scrollable"
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Update Amendment - {category}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            {/* PLANT */}
             <Form.Group className="mb-3">
-              <Form.Label>Received Date</Form.Label>
+              <Form.Label>Plant</Form.Label>
+              <Form.Control
+                type="text"
+                value={amendData.plant}
+                className="form-control"
+                readOnly
+              />
+            </Form.Group>
+
+            {/* PROCESS */}
+            <Form.Group className="mb-3">
+              <Form.Label>Process</Form.Label>
+              <Form.Control 
+                type="text" 
+                value={amendData.process} 
+                readOnly 
+              />
+            </Form.Group>
+
+            {/* APPLY DATE - EDITABLE */}
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Apply Date <span style={{ color: "red" }}>*</span>
+              </Form.Label>
               <Form.Control
                 type="date"
-                value={amendData.receivedDate}
+                value={amendData.applyDate || ""}
+                max={new Date().toISOString().split("T")[0]}
                 onChange={(e) =>
-                  setAmendData((prev) => ({ 
-                    ...prev, 
-                    receivedDate: e.target.value 
+                  setAmendData((prev) => ({
+                    ...prev,
+                    applyDate: e.target.value,
                   }))
                 }
               />
+              {errors.applyDate && (
+                <div className="text-danger" style={{ fontSize: "14px" }}>
+                  {errors.applyDate}
+                </div>
+              )}
+              <Form.Text className="text-muted">
+                Original: {formatDateForDisplay(storeInfo?.APPLY_DT)}
+              </Form.Text>
             </Form.Group>
-          )}
 
-          {/* AMENDMENT DATE */}
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Amendment Date
-              {amendData.amendDecision === "Yes" && (
-                <span style={{ color: "red" }}>*</span>
-              )}
-            </Form.Label>
-            <Form.Control
-              type="date"
-              value={amendData.amendDate}
-              max={new Date().toISOString().split("T")[0]}
-              onChange={(e) =>
-                setAmendData((prev) => ({
-                  ...prev,
-                  amendDate: e.target.value,
-                }))
-              }
-            />
-            {errors.amendDate && (
-              <div className="text-danger" style={{ fontSize: "14px" }}>
-                {errors.amendDate}
-              </div>
-            )}
-          </Form.Group>
-
-          {/* CATEGORY */}
-          <Form.Group className="mb-3">
-            <Form.Label>Amendment Category</Form.Label>
-            <Form.Control 
-              type="text" 
-              value={amendData.category} 
-              readOnly 
-            />
-          </Form.Group>
-
-          {/* AMENDMENT DECISION */}
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Amendment Decision <span style={{ color: "red" }}>*</span>
-            </Form.Label>
-            <Form.Select
-              value={amendData.amendDecision}
-              onChange={(e) =>
-                setAmendData((prev) => ({
-                  ...prev,
-                  amendDecision: e.target.value,
-                }))
-              }
-            >
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </Form.Select>
-          </Form.Group>
-
-          {/* EXISTING DOCUMENTS */}
-          {amendData.existingDocs.length > 0 && (
-            <div className="mb-3">
-              <strong>Previously Uploaded Documents:</strong>
-              <ul className="mb-2 list-unstyled">
-                {amendData.existingDocs.map((docPath, idx) => {
-                  const cleanedPath = docPath.replace(/[[\]'"%]/g, "").trim();
-                  const displayName =
-                    amendData.existingNames[idx]?.trim() ||
-                    `Document ${idx + 1}`;
-                  
-                  return (
-                    <li
-                      key={idx}
-                      className="d-flex justify-content-between align-items-center mb-1 border p-2 rounded"
-                    >
-                      <a
-                        href={`${API_DOC_URL}/storage/${cleanedPath}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {displayName}
-                      </a>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDeleteFile(docPath, idx)}
-                      >
-                        Delete
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {/* UPLOAD NEW DOCUMENTS */}
-          <Form.Group className="mb-3">
-            <Form.Label>Upload Additional Documents (PDF Only)</Form.Label>
-            <Form.Control
-              type="file"
-              multiple
-              accept="application/pdf"
-              ref={fileInputRef}
-              onChange={(e) => {
-                const files = Array.from(e.target.files);
-                const invalidFiles = files.filter(
-                  (file) => file.type !== "application/pdf"
-                );
-
-                if (invalidFiles.length > 0) {
-                  alert("Only PDF files are allowed!");
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = null;
+            {/* RECEIVED DATE - EDITABLE (conditional) */}
+            {receivedDateProcesses.includes(amendData.process) && (
+              <Form.Group className="mb-3">
+                <Form.Label>
+                 Amendment Received Date <span style={{ color: "red" }}>*</span>
+                </Form.Label>
+                <Form.Control
+                  type="date"
+                  value={amendData.receivedDate || ""}
+                  max={new Date().toISOString().split("T")[0]}
+                  onChange={(e) =>
+                    setAmendData((prev) => ({ 
+                      ...prev, 
+                      receivedDate: e.target.value 
+                    }))
                   }
-                  return;
-                }
-
-                setAmendData((prev) => ({
-                  ...prev,
-                  selectedFiles: [...prev.selectedFiles, ...files],
-                }));
-
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = null;
-                }
-              }}
-            />
-          </Form.Group>
-
-          {/* FILES TO UPLOAD LIST */}
-          {amendData.selectedFiles.length > 0 && (
-            <div className="mb-3">
-              <strong>New Files to Upload:</strong>
-              <ul className="list-unstyled">
-                {amendData.selectedFiles.map((file, index) => (
-                  <li
-                    key={index}
-                    className="d-flex justify-content-between align-items-center border p-2 rounded mb-1"
-                  >
-                    <span>{file.name}</span>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => {
-                        const updatedFiles = [...amendData.selectedFiles];
-                        updatedFiles.splice(index, 1);
-                        setAmendData((prev) => ({
-                          ...prev,
-                          selectedFiles: updatedFiles,
-                        }));
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* COMMENTS */}
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Amendment Comments
-              {amendData.amendDecision === "Yes" && (
-                <span style={{ color: "red" }}>*</span>
-              )}
-            </Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              value={amendData.comments}
-              onChange={(e) =>
-                setAmendData((prev) => ({
-                  ...prev,
-                  comments: e.target.value,
-                }))
-              }
-              placeholder="Enter amendment comments..."
-            />
-            {errors.comments && (
-              <div className="text-danger" style={{ fontSize: "14px" }}>
-                {errors.comments}
-              </div>
+                />
+                {errors.receivedDate && (
+                  <div className="text-danger" style={{ fontSize: "14px" }}>
+                    {errors.receivedDate}
+                  </div>
+                )}
+                
+              </Form.Group>
             )}
-          </Form.Group>
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button 
-          variant="secondary" 
-          onClick={onClose}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <span className="spinner-border spinner-border-sm me-2"></span>
-              Updating...
-            </>
-          ) : (
-            "Update Amendment"
-          )}
-        </Button>
-      </Modal.Footer>
-    </Modal>
+
+     
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Amendment Date <span style={{ color: "red" }}>*</span>
+              </Form.Label>
+              <Form.Control
+                type="date"
+                value={amendData.amendDate || ""}
+                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) =>
+                  setAmendData((prev) => ({
+                    ...prev,
+                    amendDate: e.target.value,
+                  }))
+                }
+              />
+              {errors.amendDate && (
+                <div className="text-danger" style={{ fontSize: "14px" }}>
+                  {errors.amendDate}
+                </div>
+              )}
+      
+            </Form.Group>
+
+            {/* CATEGORY */}
+            <Form.Group className="mb-3">
+              <Form.Label>Amendment Category</Form.Label>
+              <Form.Control 
+                type="text" 
+                value={amendData.category} 
+                readOnly 
+              />
+            </Form.Group>
+
+            {/* LATEST COMMENT */}
+            <Form.Group className="mb-3">
+              <Form.Label>Amendment Comment</Form.Label>
+              
+              {/* Show date above comment */}
+              {amendData.commentDate && (
+                <div className="mb-2 p-2 bg-light rounded">
+                  <small className="text-muted d-block">
+                    <strong>Date:</strong> {formatDateForDisplay(amendData.commentDate)}
+                  </small>
+                </div>
+              )}
+              
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={amendData.commentText}
+                onChange={(e) =>
+                  setAmendData((prev) => ({
+                    ...prev,
+                    commentText: e.target.value,
+                  }))
+                }
+                placeholder="Enter your amendment comments here..."
+              />
+              <Form.Text className="text-muted">
+                New comments will be added to the beginning
+              </Form.Text>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2"></span>
+                Processing...
+              </>
+            ) : (
+              "Update Amendment"
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Email Selection Modal */}
+      <EmailAmendModal
+        show={showEmailModal}
+        onClose={() => {
+          setShowEmailModal(false);
+          setSelectedAmendEmails([]);
+        }}
+        emailAmendRecipients={emailAmendRecipients}
+        selectedAmendEmails={selectedAmendEmails}
+        setSelectedAmendEmails={setSelectedAmendEmails}
+        onSendAmendEmail={handleFinalSubmit}
+        modalData={{
+          ...amendData,
+          plant,
+          process,
+          category
+        }}
+        loading={loading}
+      />
+    </>
   );
 };
 
 export default AmendUpdateModal;
+
+
+

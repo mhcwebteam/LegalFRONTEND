@@ -52,18 +52,18 @@ const EmailAmendModal = ({
   };
 
   const handleConfirmSubmit = () => {
-    const emailAmendData = {
-      ...modalData,
-      selectedAmendEmails: selectedAmendEmails,
-    };
 
-    console.log("📤 Sending full emailData to parent:", emailAmendData);
-    
-    // Close confirmation dialog
+
+    // const emailAmendData = [
+    //    selectedAmendEmails,
+    // ];
+
+   
+
     setConfirmOpen(false);
     
     // Call parent function to send email
-    onSendAmendEmail(emailAmendData);
+    onSendAmendEmail(selectedAmendEmails);
     
     // Close email modal
     onClose();
