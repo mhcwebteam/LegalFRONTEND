@@ -80,42 +80,44 @@ const formatDate = (date) => {
     <>
       <Modal show={show} onHide={onClose} centered size="xl" dialogClassName="modal-dialog-scrollable">
         
-         {modalData && (
-              <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: '#f0f0f0' }}>
-                <Typography variant="subtitle2" className="mb-2 fw-semibold">
-                  Update Details:
-                </Typography>
-                <Typography variant="body2">
-                  {modalData.updateType && (
-                    <>
-                      <strong className="text-muted">Update Type:</strong> {modalData.updateType || 'N/A'} <br />
-                    </>
-                  )}
-                   {
-                    modalData.plant || modalData.LOC && (
-                       <>
-                      <strong className="text-muted">Plant:</strong> {modalData.plant || modalData.LOC || 'N/A'} <br />
-                    </> 
-                    )
-                   }
-                  {/* {modalData.APPLY_DT && (
-                    <>
-                      <strong className="text-muted">Apply Date555555:</strong>  {formatDate(modalData?.APPLY_DT) || modalData?.APPLY_DT || 'N/A' } <br />
-                    </>
-                  )} */}
-                  {modalData.process || modalData.PROCESS && (
-                    <>
-                      <strong className="text-muted">Process:</strong> {modalData.process ||  modalData.PROCESS || 'N/A'} <br />
-                    </>
-                  )}
-                  {modalData.category && (
-                    <>
-                      <strong className="text-muted">Amendment Type:</strong> {modalData.category || 'N/A'} <br />
-                    </>
-                  )}
-                </Typography>
-              </Box>
-            )}
+      {modalData && (
+  <Box className="mb-3 p-3 border rounded" style={{ backgroundColor: "#f0f0f0" }}>
+    <Typography variant="subtitle2" className="mb-2 fw-semibold">
+      Update Details:
+    </Typography>
+
+    <Typography variant="body2">
+      {modalData.updateType && (
+        <>
+          <strong className="text-muted">Update Type:</strong>{" "}
+          {modalData.updateType} <br />
+        </>
+      )}
+
+      {(modalData.plant || modalData.LOC) && (
+        <>
+          <strong className="text-muted">Plant:</strong>{" "}
+          {modalData.plant || modalData.LOC} <br />
+        </>
+      )}
+
+      {(modalData.process || modalData.PROCESS) && (
+        <>
+          <strong className="text-muted">Process:</strong>{" "}
+          {modalData.process || modalData.PROCESS} <br />
+        </>
+      )}
+
+      {modalData.category && (
+        <>
+          <strong className="text-muted">Amendment Type:</strong>{" "}
+          {modalData.category} <br />
+        </>
+      )}
+    </Typography>
+  </Box>
+)}
+
         <Modal.Header closeButton>
           <Modal.Title className="d-flex align-items-center gap-2">
             <Mail size={24} className="text-primary" />

@@ -137,6 +137,7 @@ const AmendModal = ({
     "Received CFE",
   ]
 
+  console.log(amendData,"ggggggggggggggg");
 
 
   return (
@@ -178,7 +179,21 @@ const AmendModal = ({
                 <span style={{ color: "red" }}>*</span>
               </Form.Label>
 
-              <Form.Control type="text" value={formatDate(amendData?.applyDate)} readOnly />
+              <Form.Control
+                type="date"
+                value={amendData.applyDate}
+                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) =>
+                  setAmendData((prev) => ({
+                    ...prev,
+                    applyDate: e.target.value,
+                  }))
+                }
+              />
+
+
+
+          
 
             </Form.Group>
 
