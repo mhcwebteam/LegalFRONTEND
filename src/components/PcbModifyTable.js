@@ -318,8 +318,11 @@ const receivedDateProcesses = [
 
   // Handlers for Edit
   const handleEditClick = (row) => {
+
     const storeInfo =
       storeData.find((item) => item.PROCESS === row.PROCESS) || {};
+
+      console.log(storeInfo,":dddddddddd")
 
     const existingDocs = storeInfo.DOC_PATH
       ? storeInfo.DOC_PATH.split(",")
@@ -332,7 +335,7 @@ const receivedDateProcesses = [
       plant: selectedPlant,
       process: row.PROCESS,
       applyDate: storeInfo.APPLY_DT || "",
-      receivedDate:storeInfo.RECEIVED_DT || "",
+      receivedDate:storeData?.RECEIVED_DT || "",
       selectedFiles: [],
       existingDocs,
       existingNames,
@@ -377,12 +380,12 @@ const receivedDateProcesses = [
       const oldComments = data[`${prefix}_COMMENTS`] || "";
       const amendreturnsubmit = data[`${prefix}_RETURNS_SUBMITTED`] || "";
 
-
+//  const isExistingRecord = storeInfo.UPDATED === "YES" || !!storeInfo.APPLY_DT;
       setAmendData({
         plant: selectedPlant,
         process: row.PROCESS,
-        applyDate: storeData[0].APPLY_DT || "",
-        receivedDate: storeData.RECEIVED_DT || "",
+        applyDate: storeInfo?.APPLY_DT || "",
+        receivedDate: storeData?.RECEIVED_DT || "",
         amendDate,
         category,
         selectedFiles: [],
@@ -394,6 +397,8 @@ const receivedDateProcesses = [
         amendreturnsSubmitted: amendreturnsubmit,
     
       });
+
+   
 
       setShowAmendModal(true);
     } catch (error) {

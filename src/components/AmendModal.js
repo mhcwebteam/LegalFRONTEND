@@ -186,7 +186,7 @@ const AmendModal = ({
 
             {receivedDateProcesses.includes(amendData.process) && (
               <Form.Group className="mb-3">
-                <Form.Label>Received Date</Form.Label>
+                <Form.Label>Amendment Received Date</Form.Label>
                 <Form.Control
                   type="date"
                   value={amendData.receivedDate}

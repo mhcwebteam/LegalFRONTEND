@@ -143,8 +143,6 @@ const AmendUpdateModal = ({
       const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
       const formattedReceivedDate = formatDateForInput(storeInfo.RECEIVED_DT || '');
       const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
-
-      console.log(formattedAmendDate,"111111111111111111133333333333333");
       
       setAmendData(prev => ({
         ...prev,
@@ -354,12 +352,12 @@ const AmendUpdateModal = ({
   };
 
   // List of processes that require received date
-  const receivedDateProcesses = [
-    "Received TOR",
-    "EC (Environmental Clearance)",
-    "Application for CFE",
-    "Received CFE"
-  ];
+const receivedDateProcesses = [
+  "Received TOR",
+  "EC (Environmetal Clearance)",
+  "Application for CFE",
+  "Received CFE",
+]
 
   return (
     <>
@@ -453,17 +451,18 @@ const AmendUpdateModal = ({
               <Form.Label>
                 Amendment Date <span style={{ color: "red" }}>*</span>
               </Form.Label>
-              <Form.Control
-                type="date"
-                value={amendData.amendDate || ""}
-                max={new Date().toISOString().split("T")[0]}
-                onChange={(e) =>
-                  setAmendData((prev) => ({
-                    ...prev,
-                    amendDate: e.target.value,
-                  }))
-                }
-              />
+          <Form.Control
+  type="date"
+  value={amendData.amendDate || ""}
+  max={new Date().toISOString().split("T")[0]}
+  onChange={(e) =>
+    setAmendData((prev) => ({
+      ...prev,
+      amendDate: e.target.value,
+    }))
+  }
+/>
+
               {errors.amendDate && (
                 <div className="text-danger" style={{ fontSize: "14px" }}>
                   {errors.amendDate}
@@ -505,11 +504,9 @@ const AmendUpdateModal = ({
                     commentText: e.target.value,
                   }))
                 }
-                placeholder="Enter your amendment comments here..."
+               readOnly
               />
-              <Form.Text className="text-muted">
-                New comments will be added to the beginning
-              </Form.Text>
+           
             </Form.Group>
           </Form>
         </Modal.Body>
@@ -562,6 +559,3 @@ const AmendUpdateModal = ({
 };
 
 export default AmendUpdateModal;
-
-
-

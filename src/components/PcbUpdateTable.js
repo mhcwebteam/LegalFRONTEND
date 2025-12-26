@@ -339,6 +339,8 @@ const PcbUpdateTable = () => {
     }
   };
 
+
+
   const showEmailModalForUpdate = async (type, processInfo, amendCategory = '') => {
     try {
       if (type === 'regular') {
@@ -621,6 +623,8 @@ const handleSendEmail = async (selectedEmails) => {
               <tbody>
                 {pcbProcesses?.map((row, index) => {
                   const storeInfo = storeData?.find(item => item.PROCESS === row.PROCESS);
+
+                  console.log(storeInfo,"infrrrrraaaaaaaaaaaaaa");
                   const isOriginalUpdated = storeInfo?.UPDATED === 'YES';
 
                   let isUpdated = false;
@@ -787,6 +791,8 @@ const handleSendEmail = async (selectedEmails) => {
                         const isAmendUpdated = storeInfo?.[statusKey] === 'YES';
                         const hasComments = storeInfo?.[commentsKey];
                         const amendDate = storeInfo?.[dateKey];
+
+                        console.log(storeInfo,":dddddddddddddd");
 
                         const isLatestAmendmentForCat =
                           latestCreatedAmendment &&
@@ -1088,7 +1094,7 @@ const handleSendEmail = async (selectedEmails) => {
           process={selectedAmendUpdateData?.process}
           category={selectedAmendUpdateData?.category}
           storeInfo={selectedAmendUpdateData?.storeInfo}
-          onSuccess={refreshStoreData}
+     
         />
       )}
 
