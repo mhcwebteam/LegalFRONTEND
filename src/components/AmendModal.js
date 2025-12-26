@@ -137,7 +137,7 @@ const AmendModal = ({
     "Received CFE",
   ]
 
-  console.log(amendData, "eeeeeeeeeeeeeeeeeeeee")
+
 
   return (
     <>

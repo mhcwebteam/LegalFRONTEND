@@ -149,13 +149,12 @@ const PcbUpdateTable = () => {
     headerData 
   } = useContext(Context);
 
-  const receivedDateProcesses = [
-    "Received TOR",
-    "EC (Environmental Clearance)",
-    "Application for CFE",
-    "Received CFE"
-  ];
-
+const receivedDateProcesses = [
+  "Received TOR",
+  "EC (Environmetal Clearance)",
+  "Application for CFE",
+  "Received CFE",
+]
   // Format date for input field (YYYY-MM-DD)
   const formatDateForInput = (dateStr) => {
     if (!dateStr) return '';

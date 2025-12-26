@@ -1003,6 +1003,9 @@ console.log("isExistingRecord:", isExistingRecord);
       transition: "all 0.3s ease",
     },
   };
+
+
+  console.log(modalData.isExistingRecord,"is exist", modalData);
   return (
     <>
       <PlantSelector
@@ -1353,15 +1356,15 @@ console.log("isExistingRecord:", isExistingRecord);
       value={modalData.receivedDate || ""}
       max={new Date().toISOString().split("T")[0]}
 
-  readOnly={modalData.isExistingRecord}
+  // readOnly={modalData.isExistingRecord}
       onChange={(e) => {
       // Only allow changes if it's NOT an existing record
-      if (!modalData.isExistingRecord) {
+      // if (!modalData.isExistingRecord) {
         setModalData((prev) => ({
           ...prev,
          receivedDate: e.target.value,
         }));
-      }
+      // }
     }}
 
 

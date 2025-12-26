@@ -143,6 +143,8 @@ const AmendUpdateModal = ({
       const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
       const formattedReceivedDate = formatDateForInput(storeInfo.RECEIVED_DT || '');
       const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
+
+      console.log(formattedReceivedDate,"ffffffffffff",formattedApplyDate);
       
       setAmendData(prev => ({
         ...prev,
@@ -320,7 +322,9 @@ const AmendUpdateModal = ({
         emails: selectedEmails 
       };
 
-      await axios.post(`${API_BASE_URL}/amendment-update`, submissionData);
+      console.log("sssssssssssss",submissionData)
+
+     await axios.post(`${API_BASE_URL}/amendment-update`, submissionData);
       
       await Swal.fire({
         icon: 'success',
