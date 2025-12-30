@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Badge, OverlayTrigger, Tooltip, Card, Alert, Modal } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
@@ -12,6 +13,8 @@ import EmailSelectionModal from "./EmailModal";
 const SUB_LEVELS = ["Level 1", "Level 2", "Level 3", "Level 4"];
 
 const ReraUpdateTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
   const {
     storeData,
@@ -41,6 +44,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewedStepDetails, setViewedStepDetails] = useState(null);
 
   const [projectInfo, setProjectInfo] = useState({ prjName: "", address: "" });
+      const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
   console.log("storeDatastoreDatastoreDatastoreDatastoreData", storeData);
 
@@ -54,7 +58,24 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   return steps.every((step) => completedSteps.includes(step.PROCESS?.trim()));
 };
 
-
+  
+    // --- 2. Check User Login ---
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+        return;
+      }
+      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    }, [token, navigate]);
+  
      useEffect(() => {
         setHeaderData(null);
       }, []);
@@ -267,11 +288,14 @@ const handleConfirmSubmit = async (emails) => {
     Swal.fire("Error", "No active step is available to update.", "error");
     return;
   }
+ //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
 
   const payload = new FormData();
   payload.append("loc", selectedPlant);
   payload.append("applyDate",viewedStepDetails?.APPLY_DT);
   payload.append("comments",  viewedStepDetails?.COMMENTS);
+  payload.append("username",  currentUserName);
 
 
    // UPDATED: Check which step we're updating to send appropriate date

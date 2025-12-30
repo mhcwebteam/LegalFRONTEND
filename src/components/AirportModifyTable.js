@@ -1,8 +1,6 @@
-
-
-
 import React, { useEffect, useState, useRef, useMemo, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL } from "../config/Config";
@@ -19,6 +17,8 @@ import { toast } from "react-toastify";
 import WaterDocUploadModal from "./WaterDocUploadModal";
 
 const AirportModifyTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const { totalMasterData, setHeaderData, headerData } = useContext(Context);
   const [steps, setSteps] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
@@ -44,10 +44,12 @@ const AirportModifyTable = () => {
   const [isAmendmentActive, setIsAmendmentActive] = useState(false);
 
   const [amendLinkDocs, setAmendLinkDocs] = useState([]);
-  const [modalContext, setModalContext] = useState('main');
-//added on 23-12-2025 by rajakumari.m--------------------------------------------------------------------------------------
-const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
-//---------------------------------------------------------------------------------------------------------------------------
+  const [modalContext, setModalContext] = useState("main");
+  //added on 23-12-2025 by rajakumari.m--------------------------------------------------------------------------------------
+  const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
+  //---------------------------------------------------------------------------------------------------------------------------
+
+  const [loggedInUser, setLoggedInUser] = useState(null);  //-----------login userstate
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allStepsCompleted, setAllStepsCompleted] = useState(false);
   const [errors, setErrors] = useState({});
@@ -56,93 +58,113 @@ const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
   // Add function to check if process is already submitted
   const isProcessAlreadySubmitted = useMemo(() => {
     if (!selectedPlant || !immediateNextStep) return false;
-    
+
     return storeData.some(
-      item => item.LOC?.trim() === selectedPlant?.trim() && 
-      item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
-      item.UPDATED === "YES"
+      (item) =>
+        item.LOC?.trim() === selectedPlant?.trim() &&
+        item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
+        item.UPDATED === "YES"
     );
   }, [selectedPlant, immediateNextStep, storeData]);
 
   // Also check if we're in amendment mode
   const isProcessAmended = useMemo(() => {
     if (!selectedPlant || !immediateNextStep) return false;
-    
+
     return storeData.some(
-      item => item.LOC?.trim() === selectedPlant?.trim() && 
-      item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
-      item.AMEND_STATUS === "YES"
+      (item) =>
+        item.LOC?.trim() === selectedPlant?.trim() &&
+        item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
+        item.AMEND_STATUS === "YES"
     );
   }, [selectedPlant, immediateNextStep, storeData]);
 
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
 
   useEffect(() => {
-  setHeaderData(null);
-}, []);
+    setHeaderData(null);
+  }, []);
 
-//added on 23-12-2025 by rajakumari.m--------------------------------------------------------------------------------
-const handleProcessClick = (e, process) => {
-  e.stopPropagation();
-  console.log("Clicked:", process);
+  //added on 23-12-2025 by rajakumari.m--------------------------------------------------------------------------------
+  const handleProcessClick = (e, process) => {
+    e.stopPropagation();
+    console.log("Clicked:", process);
 
-  // Find the process details from storeData
-  const processDetails = storeData.find(
-    (item) => item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
-  );
-
-  setSelectedProcessDetails(processDetails || null);
-
-  // If process details found, also set it as the active step
-  if (processDetails) {
-    const stepIndex = steps.findIndex(step =>
-      step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+    // Find the process details from storeData
+    const processDetails = storeData.find(
+      (item) =>
+        item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
     );
-    if (stepIndex !== -1) {
-      setActiveStep(stepIndex);
+
+    setSelectedProcessDetails(processDetails || null);
+
+    // If process details found, also set it as the active step
+    if (processDetails) {
+      const stepIndex = steps.findIndex(
+        (step) =>
+          step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+      );
+      if (stepIndex !== -1) {
+        setActiveStep(stepIndex);
+      }
     }
-  }
-};
+  };
 
-const handleViewNextStep = () => {
-  setSelectedProcessDetails(null);
+  const handleViewNextStep = () => {
+    setSelectedProcessDetails(null);
 
-  if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
-    const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+    if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+      const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
 
-    if (nextStepName) {
-      axios
-        .get(
-          `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
-            selectedPlant
-          )}/${encodeURIComponent(nextStepName)}`
-        )
-        .then((res) => {
-          setNextStepDetails(res.data);
-        })
-        .catch((err) =>
-          console.error("Error fetching next step details:", err)
-        );
+      if (nextStepName) {
+        axios
+          .get(
+            `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+              selectedPlant
+            )}/${encodeURIComponent(nextStepName)}`
+          )
+          .then((res) => {
+            setNextStepDetails(res.data);
+          })
+          .catch((err) =>
+            console.error("Error fetching next step details:", err)
+          );
+      }
     }
-  }
-};
-// Add this new useEffect to handle selectedProcessDetails
-useEffect(() => {
-  if (selectedProcessDetails) {
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      applyDate: selectedProcessDetails.APPLY_DT,
-      comments: selectedProcessDetails.COMMENTS || "",
-      totalPrjArea: selectedProcessDetails.AMEND_TOTAL_PRJ_AREA || "",
-      noOfNocs: selectedProcessDetails.AMEND_NO_OF_NOCS || "",
-      prjArea: selectedProcessDetails.TOTAL_PRJ_AREA || "",
-      STATUS: selectedProcessDetails.STATUS || "YES",
-      nocs: selectedProcessDetails.NO_OF_NOCS || "",
-    }));
+  };
+  // Add this new useEffect to handle selectedProcessDetails
+  useEffect(() => {
+    if (selectedProcessDetails) {
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        applyDate: selectedProcessDetails.APPLY_DT,
+        comments: selectedProcessDetails.COMMENTS || "",
+        totalPrjArea: selectedProcessDetails.AMEND_TOTAL_PRJ_AREA || "",
+        noOfNocs: selectedProcessDetails.AMEND_NO_OF_NOCS || "",
+        prjArea: selectedProcessDetails.TOTAL_PRJ_AREA || "",
+        STATUS: selectedProcessDetails.STATUS || "YES",
+        nocs: selectedProcessDetails.NO_OF_NOCS || "",
+      }));
 
-    setFirstStep(selectedProcessDetails);
-  }
-}, [selectedProcessDetails]);
-//------------------------------------------------------------------------------------------------------------------------
+      setFirstStep(selectedProcessDetails);
+    }
+  }, [selectedProcessDetails]);
+  //------------------------------------------------------------------------------------------------------------------------
   // Check if all steps are completed
   useEffect(() => {
     if (steps.length > 0 && storeData.length > 0) {
@@ -150,7 +172,7 @@ useEffect(() => {
         .filter((item) => item.UPDATED === "YES")
         .map((item) => item.PROCESS?.trim().toLowerCase());
 
-      const allCompleted = steps.every(step =>
+      const allCompleted = steps.every((step) =>
         completedProcesses.includes(step.PROCESS?.trim().toLowerCase())
       );
 
@@ -163,11 +185,13 @@ useEffect(() => {
   // Validate file type - PDF only
   const validateFileType = (file) => {
     // Check file extension
-    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    const validExtensions = ['.pdf'];
+    const fileExtension = file.name
+      .substring(file.name.lastIndexOf("."))
+      .toLowerCase();
+    const validExtensions = [".pdf"];
 
     // Check MIME type
-    const validMimeTypes = ['application/pdf'];
+    const validMimeTypes = ["application/pdf"];
 
     // Validate extension
     const isValidExtension = validExtensions.includes(fileExtension);
@@ -185,7 +209,7 @@ useEffect(() => {
 
     // Validate linkDocs if any files are selected
     if (linkDocs.length > 0) {
-      const invalidFiles = linkDocs.filter(file => !validateFileType(file));
+      const invalidFiles = linkDocs.filter((file) => !validateFileType(file));
       if (invalidFiles.length > 0) {
         newErrors.linkDocs = "Only PDF files are allowed";
         isValid = false;
@@ -201,12 +225,18 @@ useEffect(() => {
       <div className="text-center py-5">
         <FaCheckCircle size={64} className="text-success mb-3" />
         <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-        <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
+        <h5 className="text-muted mb-4">
+          All process steps have been completed successfully!
+        </h5>
+        <Alert
+          variant="success"
+          className="mx-auto"
+          style={{ maxWidth: "500px" }}
+        >
           <Alert.Heading>Project Completion Status</Alert.Heading>
           <p>
-            All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed.
-            You can review the completed project details.
+            All {steps.length} steps for <strong>{selectedPlant}</strong> have
+            been completed. You can review the completed project details.
           </p>
           <hr />
           <p className="mb-0">
@@ -238,20 +268,20 @@ useEffect(() => {
     e.preventDefault();
     //added on 23-12-2025 ny rajakumari.m-------------------------------------------------------------
     if (selectedProcessDetails) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Viewing Completed Step',
-      text: 'You are viewing a completed step. No updates can be made.',
-      timer: 2000
-    });
-    return;
-  }
-  // ----------------------------------------------------------------------------------------------------
+      Swal.fire({
+        icon: "info",
+        title: "Viewing Completed Step",
+        text: "You are viewing a completed step. No updates can be made.",
+        timer: 2000,
+      });
+      return;
+    }
+    // ----------------------------------------------------------------------------------------------------
     if (!validateForm()) {
       if (errors.linkDocs) {
-        toast.error('Please upload only PDF files');
+        toast.error("Please upload only PDF files");
       } else {
-        toast.error('Please fill all required fields');
+        toast.error("Please fill all required fields");
       }
       return;
     }
@@ -297,19 +327,25 @@ useEffect(() => {
   // Function to get date label based on process
   const getDateLabel = (processName) => {
     if (!processName) return "Date";
-    
+
     if (processName === "Received TOR") {
       return "Received Date";
     }
-    
+
     switch (processName) {
-      case "Submit Application": return "Application Date";
+      case "Submit Application":
+        return "Application Date";
       case "Inspection by Consultant":
-      case "Inspection by Authority": return "Inspection Date";
-      case "NOC Received or Not": return "NOC Received Date";
-      case "Appeal Filled": return "Appeal Date";
-      case "NOC for Appeal Status": return "NOC for Appeal Date";
-      default: return "Date";
+      case "Inspection by Authority":
+        return "Inspection Date";
+      case "NOC Received or Not":
+        return "NOC Received Date";
+      case "Appeal Filled":
+        return "Appeal Date";
+      case "NOC for Appeal Status":
+        return "NOC for Appeal Date";
+      default:
+        return "Date";
     }
   };
 
@@ -327,7 +363,7 @@ useEffect(() => {
     setAmendmentStatus(null);
     setIsAmendmentActive(false);
     setFormData((prev) => ({
-       plant: selectedPlant,
+      plant: selectedPlant,
       // plant: prev.plant,
       applyDate: "",
       comments: "",
@@ -351,16 +387,15 @@ useEffect(() => {
       const processName = "Airport Authority";
 
       const airportDataUrl = `${API_BASE_URL}/airport-data?plant=${selectedPlant}`;
-      const amendmentCheckUrl = `${API_BASE_URL}/amendments/${selectedPlant}/${encodeURIComponent(processName)}`;
+      const amendmentCheckUrl = `${API_BASE_URL}/amendments/${selectedPlant}/${encodeURIComponent(
+        processName
+      )}`;
 
       // Use Promise.all to fetch main data and amendment status concurrently
-      Promise.all([
-        axios.get(airportDataUrl),
-        axios.get(amendmentCheckUrl)
-      ])
+      Promise.all([axios.get(airportDataUrl), axios.get(amendmentCheckUrl)])
         .then(([airportRes, amendmentRes]) => {
           const fetchedData = airportRes.data;
-       
+
           const amendmentRecord = amendmentRes.data?.data?.[0] || null;
 
           // Update data states
@@ -375,19 +410,24 @@ useEffect(() => {
           // 3. Determine the correct "next step" USING the data we just fetched
           let nextStep = null;
           let nextStepIndex = -1;
-          const isAmendActive = amendmentRecord && amendmentRecord.STATUS === "created";
+          const isAmendActive =
+            amendmentRecord && amendmentRecord.STATUS === "created";
 
           if (isAmendActive) {
             setIsAmendmentActive(true);
             setAmendmentStatus(amendmentRecord);
-            const completed = fetchedData.filter(i => i.AMEND_STATUS === 'YES').map(i => i.PROCESS);
-            nextStep = steps.find(s => !completed.includes(s.PROCESS));
+            const completed = fetchedData
+              .filter((i) => i.AMEND_STATUS === "YES")
+              .map((i) => i.PROCESS);
+            nextStep = steps.find((s) => !completed.includes(s.PROCESS));
           } else {
             setIsAmendmentActive(false);
             setAmendmentStatus(null);
             if (fetchedData.length > 0) {
-              const completed = fetchedData.filter(i => i.UPDATED === 'YES').map(i => i.PROCESS);
-              nextStep = steps.find(s => !completed.includes(s.PROCESS));
+              const completed = fetchedData
+                .filter((i) => i.UPDATED === "YES")
+                .map((i) => i.PROCESS);
+              nextStep = steps.find((s) => !completed.includes(s.PROCESS));
             } else {
               nextStep = steps[0]; // Default to the first step if no data exists
             }
@@ -400,7 +440,9 @@ useEffect(() => {
 
             // 4. NOW, fetch the details for the ONE, CORRECT next step
             const nextStepName = nextStep.PROCESS;
-            const detailsUrl = `${API_BASE_URL}/airport-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(nextStepName)}`;
+            const detailsUrl = `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+              selectedPlant
+            )}/${encodeURIComponent(nextStepName)}`;
 
             return axios.get(detailsUrl); // Return this promise for the next .then()
           }
@@ -429,7 +471,7 @@ useEffect(() => {
       setFormData((prev) => ({
         ...prev,
         applyDate: details.APPLY_DT,
-        comments:  "",
+        comments: "",
         // Populate the new amendment fields
         amendComments: details.AMEND_COMMENTS || "",
         amendDate: details.AMEND_DATE || "",
@@ -443,14 +485,15 @@ useEffect(() => {
     } else {
       setFormData((prev) => ({
         ...prev,
-        applyDate: "", comments: "",
+        applyDate: "",
+        comments: "",
         amendComments: "",
         amendDate: "",
         totalPrjArea: "",
         noOfNocs: "",
         prjArea: "",
         nocs: "",
-        STATUS: "YES"
+        STATUS: "YES",
       }));
       setFirstStep(null);
     }
@@ -460,27 +503,32 @@ useEffect(() => {
     const { name, value } = e.target;
 
     // Prevent changing applyDate for already submitted processes
-    if (name === "applyDate" && (isProcessAlreadySubmitted || isProcessAmended)) {
-      toast.info("Application date cannot be changed for already submitted or amended processes");
+    if (
+      name === "applyDate" &&
+      (isProcessAlreadySubmitted || isProcessAmended)
+    ) {
+      toast.info(
+        "Application date cannot be changed for already submitted or amended processes"
+      );
       return;
     }
 
     if (name === "plant") {
       setSelectedPlant(value);
 
-      if (!value || value.trim() === '') {
+      if (!value || value.trim() === "") {
         setFormData((prev) => ({
           ...prev,
-          plant: '',
-          applyDate: '',
-          comments: '',
-          amendComments: '',
-          amendDate: '',
-          totalPrjArea: '',
-          noOfNocs: '',
-          nocs: '',
-          prjArea: '',
-          STATUS: 'YES'
+          plant: "",
+          applyDate: "",
+          comments: "",
+          amendComments: "",
+          amendDate: "",
+          totalPrjArea: "",
+          noOfNocs: "",
+          nocs: "",
+          prjArea: "",
+          STATUS: "YES",
         }));
         return;
       }
@@ -494,24 +542,24 @@ useEffect(() => {
           setFormData((prev) => ({
             ...prev,
             plant: value,
-            applyDate: res.APPLICATION_DATE || '',
-            prjArea: res.TOTAL_PROJECT_AREA || '' || null,
+            applyDate: res.APPLICATION_DATE || "",
+            prjArea: res.TOTAL_PROJECT_AREA || "" || null,
           }));
         } else {
-          console.warn('⚠️ No master data found for location:', value);
+          console.warn("⚠️ No master data found for location:", value);
           setHeaderData(null);
           setFormData((prev) => ({
             ...prev,
             plant: value,
-            applyDate: '',
-            comments: '',
-            amendComments: '',
-            amendDate: '',
-            totalPrjArea: '',
-            prjArea: '',
-            noOfNocs: '',
-            nocs: '',
-            STATUS: ''
+            applyDate: "",
+            comments: "",
+            amendComments: "",
+            amendDate: "",
+            totalPrjArea: "",
+            prjArea: "",
+            noOfNocs: "",
+            nocs: "",
+            STATUS: "",
           }));
         }
       } catch (err) {
@@ -520,15 +568,15 @@ useEffect(() => {
         setFormData((prev) => ({
           ...prev,
           plant: value,
-          applyDate: '',
-          comments: '',
-          amendComments: '',
-          amendDate: '',
-          totalPrjArea: '',
-          prjArea: '',
-          noOfNocs: '',
-          nocs: '',
-          STATUS: ''
+          applyDate: "",
+          comments: "",
+          amendComments: "",
+          amendDate: "",
+          totalPrjArea: "",
+          prjArea: "",
+          noOfNocs: "",
+          nocs: "",
+          STATUS: "",
         }));
       }
 
@@ -543,17 +591,24 @@ useEffect(() => {
 
   const handleConfirmSubmit = async (emails) => {
     if (!formData.plant || !formData.applyDate) {
-      Swal.fire("Validation Error", "Please select a plant and provide a date.", "error");
+      Swal.fire(
+        "Validation Error",
+        "Please select a plant and provide a date.",
+        "error"
+      );
       return;
     }
 
     // Final document validation before submission
     if (!validateDocuments()) {
-      toast.error('Please ensure all uploaded files are PDF format');
+      toast.error("Please ensure all uploaded files are PDF format");
       return;
     }
 
     setIsSubmitting(true);
+
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
 
     const payload = new FormData();
     payload.append("loc", formData.plant);
@@ -563,6 +618,7 @@ useEffect(() => {
     payload.append("totalPrjArea", formData.prjArea || "" || null);
     payload.append("noOfNocs", formData.nocs || "" || null);
     payload.append("STATUS", formData.STATUS);
+    payload.append("username", currentUserName);
 
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
@@ -576,13 +632,19 @@ useEffect(() => {
     });
 
     const existingRecord = storeData.find(
-      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() && item.LOC?.trim() === formData.plant?.trim()
+      (item) =>
+        item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() &&
+        item.LOC?.trim() === formData.plant?.trim()
     );
 
-    const apiUrl = existingRecord ? `${API_BASE_URL}/airport-modify` : `${API_BASE_URL}/airport-submit`;
+    const apiUrl = existingRecord
+      ? `${API_BASE_URL}/airport-modify`
+      : `${API_BASE_URL}/airport-submit`;
 
     try {
-      await axios.post(apiUrl, payload, { headers: { "Content-Type": "multipart/form-data" } });
+      await axios.post(apiUrl, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       Swal.fire({
         icon: "success",
@@ -606,12 +668,17 @@ useEffect(() => {
       setLinkDocs([]);
       setErrors({}); // Clear errors on successful submission
 
-      const res = await axios.get(`${API_BASE_URL}/airport-data?plant=${formData.plant}`);
+      const res = await axios.get(
+        `${API_BASE_URL}/airport-data?plant=${formData.plant}`
+      );
       setStoreData(res.data);
-
     } catch (error) {
       console.error("Submission failed:", error);
-      Swal.fire("Error", "Submission failed. Please check the console.", "error");
+      Swal.fire(
+        "Error",
+        "Submission failed. Please check the console.",
+        "error"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -624,10 +691,12 @@ useEffect(() => {
     }
 
     // Validate amendment documents
-    const invalidAmendFiles = amendLinkDocs.filter(file => !validateFileType(file));
+    const invalidAmendFiles = amendLinkDocs.filter(
+      (file) => !validateFileType(file)
+    );
 
     if (invalidAmendFiles.length > 0) {
-      toast.error('Please ensure all amendment files are PDF format');
+      toast.error("Please ensure all amendment files are PDF format");
       return;
     }
 
@@ -656,20 +725,32 @@ useEffect(() => {
 
     const apiUrl = `${API_BASE_URL}/airport-amendment-submit`;
     try {
-      await axios.post(apiUrl, payload, { headers: { "Content-Type": "multipart/form-data" } });
+      await axios.post(apiUrl, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      await Swal.fire({ icon: "success", title: "Amendment Step Submitted!", showConfirmButton: false, timer: 2000 });
+      await Swal.fire({
+        icon: "success",
+        title: "Amendment Step Submitted!",
+        showConfirmButton: false,
+        timer: 2000,
+      });
 
       // Clear amendment file states after successful submission
       setAmendLinkDocs([]);
 
       // ✅ VERY IMPORTANT: Refreshes the data from the server
-      const res = await axios.get(`${API_BASE_URL}/airport-data?plant=${selectedPlant}`);
+      const res = await axios.get(
+        `${API_BASE_URL}/airport-data?plant=${selectedPlant}`
+      );
       setStoreData(res.data); // This will trigger your useEffect to find the next step
-
     } catch (error) {
       console.error("Amendment submission failed:", error);
-      Swal.fire("Submission Failed", "Please check the console for details.", "error");
+      Swal.fire(
+        "Submission Failed",
+        "Please check the console for details.",
+        "error"
+      );
     }
   };
 
@@ -681,17 +762,20 @@ useEffect(() => {
   const totalProjectArea = stepData?.[0]?.TOTAL_PRJ_AREA;
   const noofNOCS = stepData?.[0]?.NO_OF_NOCS;
 
-  const memoizedStepAmendData = useMemo(() => ({
-    date: formData.amendDate,
-    comments: formData.amendComments,
-    totalPrjArea: formData.totalPrjArea,
-    noOfNocs: formData.noOfNocs
-  }), [
-    formData.amendDate,
-    formData.amendComments,
-    formData.totalPrjArea,
-    formData.noOfNocs
-  ]);
+  const memoizedStepAmendData = useMemo(
+    () => ({
+      date: formData.amendDate,
+      comments: formData.amendComments,
+      totalPrjArea: formData.totalPrjArea,
+      noOfNocs: formData.noOfNocs,
+    }),
+    [
+      formData.amendDate,
+      formData.amendComments,
+      formData.totalPrjArea,
+      formData.noOfNocs,
+    ]
+  );
 
   return (
     <>
@@ -707,7 +791,9 @@ useEffect(() => {
                 let statusIcon = "⏸️";
 
                 const isCompleted = storeData.some(
-                  (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
+                  (item) =>
+                    item.PROCESS?.toLowerCase().trim() ===
+                      step.PROCESS?.toLowerCase().trim() &&
                     item.UPDATED === "YES"
                 );
 
@@ -740,89 +826,116 @@ useEffect(() => {
                     </Nav.Link> */}
                     {/* added on 23-12-2025 by rajakumari.m-------------------- */}
                     <Nav.Link
-  eventKey={idx}
-  disabled={!clickable}
-  onClick={() => {
-    if (!clickable) return;
-    setActiveStep(idx);
-  }}
-  className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-  style={{
-    cursor: clickable ? "pointer" : "not-allowed"
-  }}
->
-  {statusIcon}
-  <span
-    onClick={(e) => {
-      if (isCompleted) {
-        handleProcessClick(e, step.PROCESS);
-      }
-    }}
-    style={{
-      cursor: isCompleted ? "pointer" : "default",
-      textDecoration: isCompleted ? "underline" : "none"
-    }}
-  >
-    {step.PROCESS}
-  </span>
-</Nav.Link>
-{/* ----------------------------------------------------------------------------------------------------------------- */}
+                      eventKey={idx}
+                      disabled={!clickable}
+                      onClick={() => {
+                        if (!clickable) return;
+                        setActiveStep(idx);
+                      }}
+                      className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+                      style={{
+                        cursor: clickable ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      {statusIcon}
+                      <span
+                        onClick={(e) => {
+                          if (isCompleted) {
+                            handleProcessClick(e, step.PROCESS);
+                          }
+                        }}
+                        style={{
+                          cursor: isCompleted ? "pointer" : "default",
+                          textDecoration: isCompleted ? "underline" : "none",
+                        }}
+                      >
+                        {step.PROCESS}
+                      </span>
+                    </Nav.Link>
+                    {/* ----------------------------------------------------------------------------------------------------------------- */}
                   </Nav.Item>
                 );
               })}
             </Nav>
           </div>
         </Col>
-{/* added on 23-12-2025 by rajakumari.m-------------------------------------------------------------[] */}
+        {/* added on 23-12-2025 by rajakumari.m-------------------------------------------------------------[] */}
         <Col md={6} className="d-flex flex-column">
-  {allStepsCompleted && !amendmentStatus && !selectedProcessDetails ? (
-    renderCompletionMessage()
-  ) : (
-    <div style={{
-      height: "calc(100vh - 380px)",
-    }}>
-      <Form className="p-3 border rounded bg-light" style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column"
-      }}>
-        {/* Form header showing current view */}
-        {selectedProcessDetails ? (
-          <div className="mb-3">
-            <h4 className="mb-2 text-info fw-bold">
-              Viewing: {selectedProcessDetails.PROCESS} (Completed)
-            </h4>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={handleViewNextStep}
-              disabled={!immediateNextStep}
+          {allStepsCompleted && !amendmentStatus && !selectedProcessDetails ? (
+            renderCompletionMessage()
+          ) : (
+            <div
+              style={{
+                height: "calc(100vh - 380px)",
+              }}
             >
-              View Next Step
-            </Button>
-          </div>
-        ) : immediateNextStep ? (
-          <h4 className="mb-3 text-primary fw-bold">
-            {immediateNextStep.PROCESS}
-            {totalProjectArea && <> | Area: <span className="text-dark">{totalProjectArea}</span></>}
-            {noofNOCS && <> | NOCs: <span className="text-dark">{noofNOCS}</span></>}
-          </h4>
-        ) : null}
-        {/* --------------------------------------------------------------------------------------------------------------- */}
+              <Form
+                className="p-3 border rounded bg-light"
+                style={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {/* Form header showing current view */}
+                {selectedProcessDetails ? (
+                  <div className="mb-3">
+                    <h4 className="mb-2 text-info fw-bold">
+                      Viewing: {selectedProcessDetails.PROCESS} (Completed)
+                    </h4>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={handleViewNextStep}
+                      disabled={!immediateNextStep}
+                    >
+                      View Next Step
+                    </Button>
+                  </div>
+                ) : immediateNextStep ? (
+                  <h4 className="mb-3 text-primary fw-bold">
+                    {immediateNextStep.PROCESS}
+                    {totalProjectArea && (
+                      <>
+                        {" "}
+                        | Area:{" "}
+                        <span className="text-dark">{totalProjectArea}</span>
+                      </>
+                    )}
+                    {noofNOCS && (
+                      <>
+                        {" "}
+                        | NOCs: <span className="text-dark">{noofNOCS}</span>
+                      </>
+                    )}
+                  </h4>
+                ) : null}
+                {/* --------------------------------------------------------------------------------------------------------------- */}
                 {/* Scrollable content area */}
-                <div style={{
-                  flex: 1,
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  paddingRight: "5px"
-                }}>
+                <div
+                  style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                    paddingRight: "5px",
+                  }}
+                >
                   <Row className="mb-3">
                     <Col md={6}>
                       <Form.Group>
                         <Form.Label>Plant</Form.Label>
-                        <Form.Select name="plant" value={formData.plant || ""} onChange={handleChange} disabled={!!amendmentStatus}>
+                        <Form.Select
+                          name="plant"
+                          value={formData.plant || ""}
+                          onChange={handleChange}
+                          disabled={!!amendmentStatus}
+                        >
                           <option value="">Select Plant</option>
-                          {plants.map((p, idx) => <option key={idx} value={p.loc}>{p.loc}</option>)}
+                          {plants.map((p, idx) => (
+                            <option key={idx} value={p.loc}>
+                              {p.loc}
+                            </option>
+                          ))}
                         </Form.Select>
                       </Form.Group>
                     </Col>
@@ -840,43 +953,64 @@ useEffect(() => {
                           value={formData.applyDate || ""}
                           onChange={handleChange}
                           max={new Date().toISOString().split("T")[0]}
-                        
-                           disabled={!!amendmentStatus || !formData.plant || (firstStep && firstStep.APPLY_DT)}
+                          disabled={
+                            !!amendmentStatus ||
+                            !formData.plant ||
+                            (firstStep && firstStep.APPLY_DT)
+                          }
                         />
                         {errors.applyDate && (
-                          <p className="error-text text-danger">{errors.applyDate}</p>
+                          <p className="error-text text-danger">
+                            {errors.applyDate}
+                          </p>
                         )}
                         {/* Show info messages */}
                         {isProcessAlreadySubmitted && !isProcessAmended && (
                           <p className="text-info small mt-1 mb-0">
-                            This process has already been submitted. Date cannot be modified.
+                            This process has already been submitted. Date cannot
+                            be modified.
                           </p>
                         )}
                         {isProcessAmended && (
                           <p className="text-info small mt-1 mb-0">
-                            This process has amendments. Date cannot be modified.
+                            This process has amendments. Date cannot be
+                            modified.
                           </p>
                         )}
                       </Form.Group>
                     </Col>
                   </Row>
                   <>
-                    {isFirstProcess &&
+                    {isFirstProcess && (
                       <Row>
                         <Col md={6}>
                           <Form.Group>
                             <Form.Label>Total Project Area</Form.Label>
-                            <Form.Control as="textarea" rows={1} name="prjArea" value={formData.prjArea || ""} onChange={handleChange} disabled={!!amendmentStatus || !formData?.plant} />
+                            <Form.Control
+                              as="textarea"
+                              rows={1}
+                              name="prjArea"
+                              value={formData.prjArea || ""}
+                              onChange={handleChange}
+                              disabled={!!amendmentStatus || !formData?.plant}
+                            />
                           </Form.Group>
                         </Col>
                         <Col md={6}>
                           <Form.Group>
                             <Form.Label>Nocs</Form.Label>
-                            <Form.Control as="textarea" rows={1} name="nocs" value={formData.nocs || ""} onChange={handleChange} disabled={!!amendmentStatus || !formData?.plant} />
+                            <Form.Control
+                              as="textarea"
+                              rows={1}
+                              name="nocs"
+                              value={formData.nocs || ""}
+                              onChange={handleChange}
+                              disabled={!!amendmentStatus || !formData?.plant}
+                            />
                           </Form.Group>
                         </Col>
                       </Row>
-                    }
+                    )}
                   </>
                   <Row>
                     <Col md={6} className="mt-2">
@@ -891,7 +1025,9 @@ useEffect(() => {
                           disabled={!!amendmentStatus || !formData?.plant}
                         />
                         {errors.comments && (
-                          <p className="error-text text-danger">{errors.comments}</p>
+                          <p className="error-text text-danger">
+                            {errors.comments}
+                          </p>
                         )}
                       </Form.Group>
                     </Col>
@@ -922,7 +1058,7 @@ useEffect(() => {
                     </Col>
 
                     <Row className="mt-2 align-items-end">
-                      {immediateNextStep?.PROCESS == 'NOC Received or Not' &&
+                      {immediateNextStep?.PROCESS == "NOC Received or Not" && (
                         <>
                           <Col md={6} className="mb-2">
                             <Form.Group>
@@ -950,7 +1086,7 @@ useEffect(() => {
                             </Form.Group>
                           </Col>
                         </>
-                      }
+                      )}
                     </Row>
                   </Row>
                 </div>
@@ -963,8 +1099,13 @@ useEffect(() => {
                       All steps completed! No further action required.
                     </div>
                   ) : (
-                    <Button variant="primary" size="md" onClick={handleEmailSubmit}
-                      disabled={isSubmitting || !!amendmentStatus || !formData.plant}
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={handleEmailSubmit}
+                      disabled={
+                        isSubmitting || !!amendmentStatus || !formData.plant
+                      }
                     >
                       {isSubmitting ? "Submitting..." : "Submit"}
                     </Button>
@@ -972,7 +1113,6 @@ useEffect(() => {
                 </div>
               </Form>
             </div>
-
           )}
           {amendmentStatus && (
             <div className="mt-4">
@@ -980,7 +1120,7 @@ useEffect(() => {
                 amendmentData={amendmentStatus}
                 onUpdate={handleAmendmentUpdate}
                 setAmendmentStatus={setAmendmentStatus}
-                onUploadClick={() => openUploadModal('amendment')}
+                onUploadClick={() => openUploadModal("amendment")}
                 stepAmendData={memoizedStepAmendData}
               />
             </div>
@@ -989,8 +1129,7 @@ useEffect(() => {
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousUploadedDocsModal firstStep={firstStep}  
-      />
+            <PreviousUploadedDocsModal firstStep={firstStep} />
           </div>
         </Col>
       </Row>
@@ -1015,12 +1154,12 @@ useEffect(() => {
         applyDate={formData.applyDate}
         comments={formData.comments}
       />
-      
+
       <AirportDocUploadModal
         show={showUploadModal}
         onClose={() => setShowUploadModal(false)}
-        linkDocs={modalContext === 'main' ? linkDocs : amendLinkDocs}
-        setLinkDocs={modalContext === 'main' ? setLinkDocs : setAmendLinkDocs}
+        linkDocs={modalContext === "main" ? linkDocs : amendLinkDocs}
+        setLinkDocs={modalContext === "main" ? setLinkDocs : setAmendLinkDocs}
       />
     </>
   );

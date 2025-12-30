@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState, useRef, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import FormGroup from "./FormGroup";
 import { API_BASE_URL } from "../config/Config";
@@ -13,6 +14,8 @@ import { Context } from "../context/ContextData";
 import { FaCheckCircle } from "react-icons/fa";
 
 const AirportUpdateTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const { totalMasterData, setHeaderData, headerData, setMasterGetData, setMasterData } = useContext(Context);
   const [steps, setSteps] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
@@ -37,7 +40,25 @@ const AirportUpdateTable = () => {
   const [allStepsCompleted, setAllStepsCompleted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [processingDt, setProcessingdt] = useState(0);
+  const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
+   
+      // --- 2. Check User Login ---
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+          return;
+        }
+        const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+        if (userString) {
+          try {
+            const userObj = JSON.parse(userString);
+            setLoggedInUser(userObj);
+          } catch (error) {
+            console.error("Error parsing user data:", error);
+          }
+        }
+      }, [token, navigate]);
 
   useEffect(() => {
   setHeaderData(null);
@@ -435,7 +456,9 @@ const AirportUpdateTable = () => {
     }
 
     setIsSubmitting(true);
-
+ 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
     const payload = new FormData();
     payload.append("loc", selectedPlant);
     payload.append("process", immediateNextStep.PROCESS);
@@ -444,6 +467,7 @@ const AirportUpdateTable = () => {
     payload.append("totalPrjArea", formData.prjArea || "");
     payload.append("noOfNocs", formData.nocs || "");
     payload.append("STATUS", formData.STATUS || "");
+    payload.append("username", currentUserName || "");
 
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);

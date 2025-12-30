@@ -778,6 +778,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const EditMasterDetails = () => {
+    const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const { setMasterData, setMasterGetData, masterPostData, totalMasterCode, totalMasterData = [] } = useContext(Context);
 
@@ -788,6 +789,7 @@ const EditMasterDetails = () => {
   const [filteredLocations, setFilteredLocations] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(null);
 
   // Enhanced Address dialog state and validation
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
@@ -816,6 +818,24 @@ const EditMasterDetails = () => {
     pincode: ''
   });
 
+  
+    // --- 2. Check User Login ---
+            useEffect(() => {
+              if (!token) {
+                navigate('/');
+                return;
+              }
+              const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+              if (userString) {
+                try {
+                  const userObj = JSON.parse(userString);
+                  setLoggedInUser(userObj);
+                } catch (error) {
+                  console.error("Error parsing user data:", error);
+                }
+              }
+              
+            }, [token, navigate]);
   // Fetch dependent locations when company code changes
   useEffect(() => {
     const fetchDependentLocations = async () => {
@@ -1025,6 +1045,9 @@ const EditMasterDetails = () => {
     // formData.plantcode = Company Code → COMPANY_CODE in DB (e.g., "2350")
     // formData.loc = Plant Code → LOC in DB (e.g., "235001")
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const formPayload = new FormData();
     formPayload.append('plantcode', formData.plantcode);       // Company Code → COMPANY_CODE
     formPayload.append('loc', formData.loc);                   // Plant Code → LOC
@@ -1040,6 +1063,7 @@ const EditMasterDetails = () => {
     formPayload.append('city', formData.city);
     formPayload.append('mandal', formData.mandal);
     formPayload.append('pincode', formData.pincode);
+    formPayload.append('username', currentUserName);
 
     console.log("=== FORM SUBMISSION START ===");
     console.log("Company Code (COMPANY_CODE):", formData.plantcode);

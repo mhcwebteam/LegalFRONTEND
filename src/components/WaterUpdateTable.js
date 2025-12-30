@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState, useRef, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL } from "../config/Config";
 import Swal from "sweetalert2";
@@ -23,6 +24,8 @@ import PreviousUploadedDocsPanel1 from "./PreviousUploadedDocsPanel1";
 
 
 const WaterUpdateTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const { storeData, setStoreData, plants, totalMasterData, headerData, setHeaderData } = useContext(Context);
 
   const [steps, setSteps] = useState([]);
@@ -36,6 +39,7 @@ const WaterUpdateTable = () => {
   const [loc, setLoc] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
   const [showEmailModal, setShowEmailModal] = useState(false);
+      const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
   const [dialogConfig, setDialogConfig] = useState({
     title: '',
@@ -82,7 +86,24 @@ const WaterUpdateTable = () => {
   const [isFirstProcess, setIsFirstProcess] = useState(true);
     const [allStepsCompleted, setAllStepsCompleted] = useState(false);
 
-    
+  
+     // --- 2. Check User Login ---
+     useEffect(() => {
+       if (!token) {
+         navigate("/");
+         return;
+       }
+       const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+       if (userString) {
+         try {
+           const userObj = JSON.parse(userString);
+           setLoggedInUser(userObj);
+         } catch (error) {
+           console.error("Error parsing user data:", error);
+         }
+       }
+     }, [token, navigate]);
+      
 
      useEffect(() => {
         setHeaderData(null);
@@ -1023,6 +1044,9 @@ if(immediateNextStepIndex === 1) {
   const handleConfirmSubmit = async (emails) => {
     setIsSubmitting(true);
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const payload = new FormData();
     payload.append("loc", formData.loc);
     payload.append("applyDate", formData.applyDate);
@@ -1034,6 +1058,7 @@ if(immediateNextStepIndex === 1) {
     payload.append("OldAmount", formData.OldAmount || "");
     payload.append("Size_Of_Connection", formData.Size || "");
     payload.append("TotalAmount", formData.TotalAmount || "");
+    payload.append("username", currentUserName || "");
     
     linkDocs.forEach(f => payload.append("Plan_Doc[]", f));
     landDocs.forEach(f => payload.append("Title_Doc[]", f));

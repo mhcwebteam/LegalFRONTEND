@@ -42,11 +42,9 @@
 // const [isSubmitting, setIsSubmitting] = useState(false);
 //   // ADD THIS: PDF validation error state
 //   const [uploadError, setUploadError] = useState("");
-  
+
 //   // State to track if Level 4 is completed
 //   const [isLevel4Completed, setIsLevel4Completed] = useState(false);
-  
-
 
 //   const {
 //     storeData,
@@ -56,7 +54,6 @@
 //     headerData,
 //     setRespModifyData,
 //   } = useContext(Context);
-
 
 //        useEffect(() => {
 //           setHeaderData(null);
@@ -68,11 +65,9 @@
 //         .filter((item) => item.UPDATED === "YES")
 //         .map((item) => item.PROCESS?.trim());
 
-//       const allCompleted = steps.every(step => 
+//       const allCompleted = steps.every(step =>
 //         completedProcesses.includes(step.PROCESS?.trim())
 //       );
-
-   
 
 //       setAllStepsCompleted(allCompleted);
 //     } else {
@@ -89,7 +84,7 @@
 //         <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
 //           <Alert.Heading>Project Completion Status</Alert.Heading>
 //           <p>
-//             All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
+//             All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed.
 //             You can review the completed project details.
 //           </p>
 //           <hr />
@@ -104,10 +99,10 @@
 //  const handleEmailSubmit = () => {
 //   // First validate the form
 //   const validationErrors = validateForm();
-  
+
 //   if (Object.keys(validationErrors).length > 0) {
 //     setErrors(validationErrors);
-    
+
 //     // Scroll to the first error
 //     const firstErrorField = Object.keys(validationErrors)[0];
 //     const element = document.querySelector(`[name="${firstErrorField}"]`);
@@ -115,7 +110,7 @@
 //       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 //       element.focus();
 //     }
-    
+
 //     Swal.fire({
 //       icon: 'error',
 //       title: 'Validation Error',
@@ -125,10 +120,10 @@
 //     });
 //     return;
 //   }
-  
+
 //   // Clear any previous errors
 //   setErrors({});
-  
+
 //   // If validation passes, show email modal
 //   setShowEmailModal(true);
 // };
@@ -149,7 +144,7 @@
 //   useEffect(() => {
 //     axios.get(`${API_BASE_URL}/rera-plants`).then((res) => setPlants(res.data)).catch((err) => console.error("Error fetching RERA plants:", err));
 //   }, []);
-  
+
 //   useEffect(() => {
 //      setStoreData([]);
 //   setImmediateNextStep(null);
@@ -171,11 +166,11 @@
 //             const info = { prjName: firstRecord.PROJECT_NAME || "", address: firstRecord.ADDRESS || "" };
 //             setProjectInfo(info);
 //             setFormData(prev => ({   loc: selectedPlant, ...prev, ...info }));
-          
+
 //           }
 //           const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
 //           const nextStep = steps.find(step => !completedProcesses.includes(step.PROCESS));
- 
+
 //           // --- START: CORRECTED LOGIC ---
 //           if (nextStep) {
 //             // This part is for when there IS a next step
@@ -198,7 +193,7 @@
 //         .then(detailsRes => {
 //           if (detailsRes && detailsRes.data) {
 //             setNextStepDetails(detailsRes.data);
-            
+
 //             // Check if Level 4 is completed
 //             if (detailsRes.data.LEVEL === 'Level 4' && detailsRes.data.LEVEL_STATUS === 'Completed') {
 //               setIsLevel4Completed(true);
@@ -214,9 +209,9 @@
 //   if (nextStepDetails && typeof nextStepDetails === 'object' && Object.keys(nextStepDetails).length > 0) {
 //     const details = nextStepDetails;
 
-//     setFormData((prev) => ({ ...prev, 
-//       applyDate: details.APPLY_DT, 
-//       fromDate: details.FRM_DT || "", 
+//     setFormData((prev) => ({ ...prev,
+//       applyDate: details.APPLY_DT,
+//       fromDate: details.FRM_DT || "",
 //       toDate: details.TO_DT || "",
 //       comments:  "",
 //       // CHANGE THIS LINE: Always default to "Yes" when loading data
@@ -230,19 +225,19 @@
 
 // const validateForm = () => {
 //   const newErrors = {};
-  
+
 //   // REMOVE Plant validation - it's not required
 //   // if (!formData.loc) {
 //   //   newErrors.loc = "Plant selection is required";
 //   // }
-  
+
 //   // Apply Date validation (for all steps except step 3)
 //   if (immediateNextStepIndex !== 2) {
 //     if (!formData.applyDate) {
 //       newErrors.applyDate = "Apply Date is required";
 //     }
 //   }
-  
+
 //   // From Date and To Date validation (for step 3)
 //   if (immediateNextStepIndex === 2) {
 //     if (!formData.fromDate) {
@@ -252,12 +247,12 @@
 //       newErrors.toDate = "To Date is required";
 //     }
 //   }
-  
+
 //   // Comments validation
 //   if (!formData.comments || formData.comments.trim() === "") {
 //     newErrors.comments = "Comments are required";
 //   }
-  
+
 //   // REMOVE Project Name and Address validation - they're not required
 //   // if (immediateNextStepIndex === 0) {
 //   //   if (!formData.prjName || formData.prjName.trim() === "") {
@@ -267,7 +262,7 @@
 //   //     newErrors.address = "Address is required";
 //   //   }
 //   // }
-  
+
 //   return newErrors;
 // };
 //   // The activeSubLevelIndex logic is correct and unchanged.
@@ -275,9 +270,9 @@
 //     const currentLevel = nextStepDetails?.LEVEL;
 //     const currentStatus = nextStepDetails?.LEVEL_STATUS;
 //      if (currentLevel === 'Level 4' && currentStatus === 'Completed') {
-//     return SUB_LEVELS.length; 
+//     return SUB_LEVELS.length;
 //   }
-    
+
 //     if (!currentLevel) {
 //       return 0;
 //     }
@@ -327,7 +322,7 @@
 //           setHeaderData(null);
 //           setFormData((prev) => ({
 //             ...prev,
-    
+
 //           }));
 //         }
 //       } catch (err) {
@@ -335,7 +330,7 @@
 //         setHeaderData(null);
 //         setFormData((prev) => ({
 //           ...prev,
-       
+
 //         }));
 //       }
 //     }
@@ -439,7 +434,7 @@
 //       try {
 //         const currentDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
 //         const updatedDocs = currentDocs.filter((doc, i) => i !== index);
-        
+
 //         setNextStepDetails(prev => ({
 //           ...prev,
 //           UPLOAD_DOC: JSON.stringify(updatedDocs)
@@ -460,35 +455,35 @@
 // const handleConfirmSubmit = async (emails) => {
 //   setIsSubmitting(true);
 //   setUploadError(""); // Clear previous upload errors
-  
+
 //   try {
 //     // --- VALIDATION ---
 //     if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
 //       await Swal.fire("Validation Error", "Please provide both a 'From Date' and a 'To Date' for this step.", "error");
 //       return;
 //     }
-    
+
 //     if (immediateNextStepIndex !== 2 && !formData.applyDate) {
 //       await Swal.fire("Validation Error", "Please provide an 'Apply Date' for this step.", "error");
 //       return;
 //     }
-    
+
 //     if (!formData.loc || !immediateNextStep) {
 //       await Swal.fire("Validation Error", "Please select a Plant and ensure a process step is active.", "error");
 //       return;
 //     }
-    
+
 //     if (newDocs.length > 0) {
-//       const nonPDFFiles = newDocs.filter(file => 
+//       const nonPDFFiles = newDocs.filter(file =>
 //         file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
 //       );
-      
+
 //       if (nonPDFFiles.length > 0) {
 //         setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
 //         return;
 //       }
 //     }
-    
+
 //     // --- PREPARE PAYLOAD ---
 //     const payload = new FormData();
 //     payload.append("loc", formData.loc);
@@ -506,7 +501,7 @@
 //       payload.append("prjName", projectInfo.prjName || "");
 //       payload.append("address", projectInfo.address || "");
 //     }
-    
+
 //     // Determine which date to use as the primary 'applyDate'
 //     const applyDateToSend = immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
 //     payload.append("applyDate", applyDateToSend);
@@ -518,38 +513,38 @@
 //       payload.append("pending_task", levelToSubmit);
 //       payload.append("task_status", taskStatus);
 //     }
-    
+
 //     newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
-    
+
 //     console.log("--- Submitting Payload ---");
 //     for (const [key, value] of payload.entries()) {
 //       console.log(`${key}:`, value);
 //     }
 //     console.log("--------------------------");
-    
+
 //     // --- SUBMIT TO API ---
 //     const existingRecord = storeData.find((item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim());
 //     const apiUrl = existingRecord ? `${API_BASE_URL}/rera-modify` : `${API_BASE_URL}/rera-submit`;
-    
+
 //     await axios.post(apiUrl, payload);
-    
-//     await Swal.fire({ 
-//       icon: 'success', 
-//       title: existingRecord ? "Updated!" : "Submitted!", 
-//       text: "Your data has been saved successfully.", 
-//       timer: 1500, 
-//       showConfirmButton: false 
+
+//     await Swal.fire({
+//       icon: 'success',
+//       title: existingRecord ? "Updated!" : "Submitted!",
+//       text: "Your data has been saved successfully.",
+//       timer: 1500,
+//       showConfirmButton: false
 //     });
-    
+
 //     // --- RESET STATE AFTER SUCCESSFUL SUBMISSION ---
-//     setFormData({ 
-//       loc: "", 
-//       applyDate: "", 
-//       fromDate: "", 
-//       toDate: "", 
-//       comments: "", 
-//       prjName: "", 
-//       address: "" 
+//     setFormData({
+//       loc: "",
+//       applyDate: "",
+//       fromDate: "",
+//       toDate: "",
+//       comments: "",
+//       prjName: "",
+//       address: ""
 //     });
 //     setNewDocs([]);
 //     setSelectedPlant("");
@@ -559,7 +554,7 @@
 //     setNextStepDetails(null);
 //     setProjectInfo({ prjName: "", address: "" });
 //     setIsLevel4Completed(false);
-    
+
 //   } catch (error) {
 //     console.error("Submission failed:", error);
 //     await Swal.fire("Submission Failed", "Please check the console for details.", "error");
@@ -583,10 +578,10 @@
 //   //     return;
 //   //   }
 //   //   if (newDocs.length > 0) {
-//   //     const nonPDFFiles = newDocs.filter(file => 
+//   //     const nonPDFFiles = newDocs.filter(file =>
 //   //       file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
 //   //     );
-      
+
 //   //     if (nonPDFFiles.length > 0) {
 //   //       // Show error message instead of popup
 //   //       setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
@@ -610,9 +605,9 @@
 //   //     payload.append("prjName", projectInfo.prjName || "");
 //   //     payload.append("address", projectInfo.address || "");
 //   //   }
-    
+
 //   //   // ✅ START: CORRECTED PAYLOAD LOGIC
-    
+
 //   //   // Determine which date to use as the primary 'applyDate'.
 //   //   // For step 3, use fromDate. For all other steps, use applyDate.
 //   //   const applyDateToSend = immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
@@ -624,9 +619,9 @@
 //   //   //   payload.append("fromDate", formData.fromDate);
 //   //   //   payload.append("toDate", formData.toDate);
 //   //   //   console.log("formData.fromDate", formData.fromDate);
-      
+
 //   //   // }
-    
+
 //   //   // ✅ END: CORRECTED PAYLOAD LOGIC
 
 //   //   if (immediateNextStepIndex === 1) {
@@ -634,22 +629,22 @@
 //   //     payload.append("pending_task", levelToSubmit);
 //   //     payload.append("task_status", taskStatus);
 //   //   }
-    
+
 //   //   newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
-    
+
 //   //   console.log("--- Submitting Payload ---");
 //   //   for (const [key, value] of payload.entries()) {
 //   //     console.log(`${key}:`, value);
 //   //   }
 //   //   console.log("--------------------------");
-    
+
 //   //   const existingRecord = storeData.find((item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim());
 //   //   const apiUrl = existingRecord ? `${API_BASE_URL}/rera-modify` : `${API_BASE_URL}/rera-submit`;
-    
+
 //   //   try {
 //   //     await axios.post(apiUrl, payload);
 //   //     await Swal.fire({ icon: 'success', title: existingRecord ? "Updated!" : "Submitted!", text: "Your data has been saved successfully.", timer: 1500, showConfirmButton: false });
-      
+
 //   //     // Reset state after submission
 //   //     setFormData({ loc: "", applyDate: "", fromDate: "", toDate: "", comments: "", prjName: "", address: "" });
 //   //     setNewDocs([]);
@@ -669,7 +664,7 @@
 //   //     setIsSubmitting(false);
 //   //   }
 //   // };
-  
+
 //   // 08-12-2025: Updated renderDocumentHistory to use ListGroup like GHMC component
 //    const renderDocumentHistory = () => {
 //     if (
@@ -708,8 +703,8 @@
 //         style={{ minWidth: 0 }}
 //       >
 //         <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
-//         <span 
-//           className="text-truncate" 
+//         <span
+//           className="text-truncate"
 //           style={{ maxWidth: "250px" }}
 //           title={doc.name}
 //         >
@@ -795,7 +790,7 @@
 //             </Nav>
 //           </div>
 //         </Col>
-        
+
 //         {/* The rest of the JSX is correct and unchanged */}
 //         <Col md={6} className="d-flex flex-column">
 //         {allStepsCompleted  ? (
@@ -823,10 +818,10 @@
 //     <Form.Label>
 //       From Date <span className="text-danger">*</span>
 //     </Form.Label>
-//     <Form.Control 
-//       type="date" 
-//       name="fromDate" 
-//       value={formData.fromDate || ""} 
+//     <Form.Control
+//       type="date"
+//       name="fromDate"
+//       value={formData.fromDate || ""}
 //       onChange={handleChange}
 //       isInvalid={!!errors.fromDate}  // ADD THIS
 //       max={new Date().toISOString().split("T")[0]}
@@ -841,13 +836,13 @@
 //     <Form.Label>
 //       To Date <span className="text-danger">*</span>
 //     </Form.Label>
-//     <Form.Control 
-//       type="date" 
-//       name="toDate" 
-//       value={formData.toDate || ""} 
+//     <Form.Control
+//       type="date"
+//       name="toDate"
+//       value={formData.toDate || ""}
 //       onChange={handleChange}
 //       isInvalid={!!errors.toDate}  // ADD THIS
-      
+
 //     />
 //     <Form.Control.Feedback type="invalid">  {/* ADD THIS */}
 //       {errors.toDate}
@@ -862,10 +857,10 @@
 //   <Form.Label>
 //     Apply Date <span className="text-danger">*</span>
 //   </Form.Label>
-//   <Form.Control 
-//     type="date" 
-//     name="applyDate" 
-//     value={formData.applyDate || ""} 
+//   <Form.Control
+//     type="date"
+//     name="applyDate"
+//     value={formData.applyDate || ""}
 //     onChange={handleChange}
 //     isInvalid={!!errors.applyDate}  // ADD THIS
 //     max={new Date().toISOString().split("T")[0]}
@@ -883,9 +878,9 @@
 //                 <Col md={6}>
 //                   <Form.Group>
 //                     <Form.Label>Pending Task</Form.Label>
-//                     <Form.Control 
-//                       type="text" 
-//                       disabled 
+//                     <Form.Control
+//                       type="text"
+//                       disabled
 //                       value={SUB_LEVELS[activeSubLevelIndex] || 'All Levels Complete'}
 //                       className="fw-bold"
 //                     />
@@ -957,11 +952,11 @@
 //   <Form.Label>
 //     Comments <span className="text-danger">*</span>
 //   </Form.Label>
-//   <Form.Control 
-//     as="textarea" 
-//     rows={1} 
-//     name="comments" 
-//     value={formData.comments || ""} 
+//   <Form.Control
+//     as="textarea"
+//     rows={1}
+//     name="comments"
+//     value={formData.comments || ""}
 //     onChange={handleChange}
 //     isInvalid={!!errors.comments}  // ADD THIS
 //   />
@@ -972,12 +967,12 @@
 //               </Col>
 //             </Row>
 //             <div className="d-grid mt-3">
-//               <Button 
-//                 variant="primary" 
-//                 size="md" 
+//               <Button
+//                 variant="primary"
+//                 size="md"
 //                 onClick={handleEmailSubmit}
 //                 disabled={isLevel4Completed  || isSubmitting || !formData.loc}
-                    
+
 //               >
 //                 {isSubmitting ? "Submitting..." : "Submit"}
 //               </Button>
@@ -985,7 +980,7 @@
 //           </Form>
 //           )}
 //         </Col>
-        
+
 //         {/* 08-12-2025t */}
 //         <Col md={3}>
 //           <div className="d-flex flex-column" style={{ height: '100%' }}>
@@ -996,9 +991,9 @@
 
 //             {/* 08-12-2025: Added View Logs button at bottom */}
 //             <div className="p-2 border-top bg-light text-center">
-//               <Button 
-//                 variant="info" 
-//                 size="sm" 
+//               <Button
+//                 variant="info"
+//                 size="sm"
 //                 onClick={() => {
 //                   // 08-12-2025: Parse logs from nextStepDetails
 //                   let logs = [];
@@ -1029,7 +1024,7 @@
 //           <p>Since the task was not completed, please select the correct current level to reset to.</p>
 //           <Form.Group>
 //             <Form.Label className="fw-bold">Choose the correct level:</Form.Label>
-//             <Form.Select 
+//             <Form.Select
 //               onChange={(e) => handleDemoteConfirm(e.target.value)}
 //               defaultValue=""
 //             >
@@ -1056,7 +1051,7 @@
 //         applyDate={formData.applyDate}
 //         comments={formData.comments}
 //       />
-      
+
 //       <ReraDocUploadModal
 //         show={showUploadModal}
 //         onClose={() => setShowUploadModal(false)}
@@ -1095,9 +1090,20 @@
 
 // export default ReraModifyTable;
 
-
 import React, { useEffect, useState, useMemo, useContext } from "react";
-import { Nav, Form, Button, Row, Col, Badge, Modal, Card, Alert, ListGroup } from "react-bootstrap"; // 08-12-2025: Added ListGroup
+import {
+  Nav,
+  Form,
+  Button,
+  Row,
+  Col,
+  Badge,
+  Modal,
+  Card,
+  Alert,
+  ListGroup,
+} from "react-bootstrap"; // 08-12-2025: Added ListGroup
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
@@ -1111,15 +1117,26 @@ import { getMasterByLoc } from "../api/Api";
 import EmailSelectionModal from "./EmailModal";
 
 // Define the sub-levels as a constant
-const SUB_LEVELS = ['Level 1', 'Level 2', 'Level 3', 'Level 4'];
+const SUB_LEVELS = ["Level 1", "Level 2", "Level 3", "Level 4"];
 
 const ReraModifyTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   // All state and logic remains exactly the same.
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
   // const [storeData, setStoreData] = useState([]);
-  const [formData, setFormData] = useState({ loc: "", applyDate: "", comments: "", prjName: "", address: "",fromDate:"", toDate:"" ,subLevelStatus: "Yes"  });
+  const [formData, setFormData] = useState({
+    loc: "",
+    applyDate: "",
+    comments: "",
+    prjName: "",
+    address: "",
+    fromDate: "",
+    toDate: "",
+    subLevelStatus: "Yes",
+  });
   const [newDocs, setNewDocs] = useState([]);
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
@@ -1137,17 +1154,18 @@ const ReraModifyTable = () => {
   // 08-12-2025: Added state for logs modal
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
-const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // ADD THIS: PDF validation error state
   const [uploadError, setUploadError] = useState("");
-  
+
   // State to track if Level 4 is completed
   const [isLevel4Completed, setIsLevel4Completed] = useState(false);
-  
-//-----updated on 26-12-2025 by rajakumari.m--------------------------------------------------------------------
-const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
-const [activeStep, setActiveStep] = useState(0); 
-//-----------------------------------------------------------------------------------------------------------
+
+  const [loggedInUser, setLoggedInUser] = useState(null);  //-----------login userstate
+  //-----updated on 26-12-2025 by rajakumari.m--------------------------------------------------------------------
+  const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
+  //-----------------------------------------------------------------------------------------------------------
 
   const {
     storeData,
@@ -1158,10 +1176,26 @@ const [activeStep, setActiveStep] = useState(0);
     setRespModifyData,
   } = useContext(Context);
 
+  useEffect(() => {
+    setHeaderData(null);
+  }, []);
 
-       useEffect(() => {
-          setHeaderData(null);
-        }, []);
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
 
   useEffect(() => {
     if (steps.length > 0 && storeData.length > 0) {
@@ -1169,11 +1203,9 @@ const [activeStep, setActiveStep] = useState(0);
         .filter((item) => item.UPDATED === "YES")
         .map((item) => item.PROCESS?.trim());
 
-      const allCompleted = steps.every(step => 
+      const allCompleted = steps.every((step) =>
         completedProcesses.includes(step.PROCESS?.trim())
       );
-
-   
 
       setAllStepsCompleted(allCompleted);
     } else {
@@ -1186,12 +1218,18 @@ const [activeStep, setActiveStep] = useState(0);
       <div className="text-center py-5">
         <FaCheckCircle size={64} className="text-success mb-3" />
         <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-        <Alert variant="success" className="mx-auto" style={{ maxWidth: '500px' }}>
+        <h5 className="text-muted mb-4">
+          All process steps have been completed successfully!
+        </h5>
+        <Alert
+          variant="success"
+          className="mx-auto"
+          style={{ maxWidth: "500px" }}
+        >
           <Alert.Heading>Project Completion Status</Alert.Heading>
           <p>
-            All {steps.length} steps for <strong>{selectedPlant}</strong> have been completed. 
-            You can review the completed project details.
+            All {steps.length} steps for <strong>{selectedPlant}</strong> have
+            been completed. You can review the completed project details.
           </p>
           <hr />
           <p className="mb-0">
@@ -1202,114 +1240,116 @@ const [activeStep, setActiveStep] = useState(0);
     );
   };
 
- const handleEmailSubmit = () => {
-  // First validate the form
+  const handleEmailSubmit = () => {
+    // First validate the form
 
-//-----------------------added on 26-12-2025 by rajakumari.m----------------------------------------------
-if (selectedProcessDetails) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Viewing Completed Step',
-      text: 'You are viewing a completed step. No updates can be made.',
-      timer: 2000
-    });
-    return;
-  }
-//--------------------------------------------------------------------------------------------------------
-
-
-  const validationErrors = validateForm();
-  
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    
-    // Scroll to the first error
-    const firstErrorField = Object.keys(validationErrors)[0];
-    const element = document.querySelector(`[name="${firstErrorField}"]`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.focus();
+    //-----------------------added on 26-12-2025 by rajakumari.m----------------------------------------------
+    if (selectedProcessDetails) {
+      Swal.fire({
+        icon: "info",
+        title: "Viewing Completed Step",
+        text: "You are viewing a completed step. No updates can be made.",
+        timer: 2000,
+      });
+      return;
     }
-    
-    Swal.fire({
-      icon: 'error',
-      title: 'Validation Error',
-      text: 'Please fill in all required fields marked with *',
-      timer: 2000,
-      showConfirmButton: false
-    });
-    return;
-  }
-  
-  // Clear any previous errors
-  setErrors({});
-  
-  // If validation passes, show email modal
-  setShowEmailModal(true);
-};
+    //--------------------------------------------------------------------------------------------------------
 
-//-------------added on 26-12-2025 by rajakumari.m----------------------------------------------------------------------
-const handleProcessClick = (e, process) => {
-  e.stopPropagation();
-  console.log("Clicked:", process);
+    const validationErrors = validateForm();
 
-  // Find the process details from storeData
-  const processDetails = storeData.find(
-    (item) => item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
-  );
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
 
-  setSelectedProcessDetails(processDetails || null);
+      // Scroll to the first error
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const element = document.querySelector(`[name="${firstErrorField}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+      }
 
-  // If process details found, also set it as the active step
-  if (processDetails) {
-    const stepIndex = steps.findIndex(step =>
-      step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+      Swal.fire({
+        icon: "error",
+        title: "Validation Error",
+        text: "Please fill in all required fields marked with *",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
+    // Clear any previous errors
+    setErrors({});
+
+    // If validation passes, show email modal
+    setShowEmailModal(true);
+  };
+
+  //-------------added on 26-12-2025 by rajakumari.m----------------------------------------------------------------------
+  const handleProcessClick = (e, process) => {
+    e.stopPropagation();
+    console.log("Clicked:", process);
+
+    // Find the process details from storeData
+    const processDetails = storeData.find(
+      (item) =>
+        item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
     );
-    if (stepIndex !== -1) {
-      setActiveStep(stepIndex);
+
+    setSelectedProcessDetails(processDetails || null);
+
+    // If process details found, also set it as the active step
+    if (processDetails) {
+      const stepIndex = steps.findIndex(
+        (step) =>
+          step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+      );
+      if (stepIndex !== -1) {
+        setActiveStep(stepIndex);
+      }
     }
-  }
-};
+  };
 
-const handleViewNextStep = () => {
-  setSelectedProcessDetails(null);
+  const handleViewNextStep = () => {
+    setSelectedProcessDetails(null);
 
-  if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
-    const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+    if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+      const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
 
-    if (nextStepName) {
-      axios
-        .get(
-          `${API_BASE_URL}/rera-step-details/${encodeURIComponent(
-            selectedPlant
-          )}/${encodeURIComponent(nextStepName)}`
-        )
-        .then((res) => {
-          setNextStepDetails(res.data);
-        })
-        .catch((err) =>
-          console.error("Error fetching next step details:", err)
-        );
+      if (nextStepName) {
+        axios
+          .get(
+            `${API_BASE_URL}/rera-step-details/${encodeURIComponent(
+              selectedPlant
+            )}/${encodeURIComponent(nextStepName)}`
+          )
+          .then((res) => {
+            setNextStepDetails(res.data);
+          })
+          .catch((err) =>
+            console.error("Error fetching next step details:", err)
+          );
+      }
     }
-  }
-};
+  };
 
-useEffect(() => {
-  if (selectedProcessDetails) {
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      applyDate: selectedProcessDetails.APPLY_DT,
-      comments: selectedProcessDetails.COMMENTS || "",
-      fromDate: selectedProcessDetails.FRM_DT || "",
-      toDate: selectedProcessDetails.TO_DT || "",
-      prjName: selectedProcessDetails.PROJECT_NAME || "",
-      address: selectedProcessDetails.ADDRESS || "",
-      subLevelStatus: selectedProcessDetails.LEVEL_STATUS === "No" ? "No" : "Yes"
-    }));
-  }
-}, [selectedProcessDetails]);
+  useEffect(() => {
+    if (selectedProcessDetails) {
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        applyDate: selectedProcessDetails.APPLY_DT,
+        comments: selectedProcessDetails.COMMENTS || "",
+        fromDate: selectedProcessDetails.FRM_DT || "",
+        toDate: selectedProcessDetails.TO_DT || "",
+        prjName: selectedProcessDetails.PROJECT_NAME || "",
+        address: selectedProcessDetails.ADDRESS || "",
+        subLevelStatus:
+          selectedProcessDetails.LEVEL_STATUS === "No" ? "No" : "Yes",
+      }));
+    }
+  }, [selectedProcessDetails]);
 
-//-----------------------------------------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------------------------
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
@@ -1320,50 +1360,77 @@ useEffect(() => {
 
   // All useEffect hooks for data fetching are correct and unchanged.
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/rera-process`).then((res) => setSteps(res.data)).catch((err) => console.error("Error fetching RERA processes:", err));
+    axios
+      .get(`${API_BASE_URL}/rera-process`)
+      .then((res) => setSteps(res.data))
+      .catch((err) => console.error("Error fetching RERA processes:", err));
   }, []);
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/rera-plants`).then((res) => setPlants(res.data)).catch((err) => console.error("Error fetching RERA plants:", err));
+    axios
+      .get(`${API_BASE_URL}/rera-plants`)
+      .then((res) => setPlants(res.data))
+      .catch((err) => console.error("Error fetching RERA plants:", err));
   }, []);
-  
+
   useEffect(() => {
-     setStoreData([]);
-  setImmediateNextStep(null);
-  setImmediateNextStepIndex(-1);
-  setNextStepDetails(null);
-  setProjectInfo({ prjName: "", address: "" });
-  // CHANGE THIS: Always set subLevelStatus to "Yes" when resetting
-  setFormData({ loc: selectedPlant, applyDate: "", comments: "", prjName: "", address: "", fromDate: "", toDate: "", subLevelStatus: "Yes" });
-  setIsLevel4Completed(false);
+    setStoreData([]);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null);
+    setProjectInfo({ prjName: "", address: "" });
+    // CHANGE THIS: Always set subLevelStatus to "Yes" when resetting
+    setFormData({
+      loc: selectedPlant,
+      applyDate: "",
+      comments: "",
+      prjName: "",
+      address: "",
+      fromDate: "",
+      toDate: "",
+      subLevelStatus: "Yes",
+    });
+    setIsLevel4Completed(false);
 
     if (selectedPlant && steps.length > 0) {
-      axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`)
-        .then(res => {
+      axios
+        .get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`)
+        .then((res) => {
           const fetchedData = res.data;
 
           setStoreData(fetchedData);
           if (fetchedData && fetchedData.length > 0) {
             const firstRecord = fetchedData[0];
-            const info = { prjName: firstRecord.PROJECT_NAME || "", address: firstRecord.ADDRESS || "" };
+            const info = {
+              prjName: firstRecord.PROJECT_NAME || "",
+              address: firstRecord.ADDRESS || "",
+            };
             setProjectInfo(info);
-            setFormData(prev => ({   loc: selectedPlant, ...prev, ...info }));
-          
+            setFormData((prev) => ({ loc: selectedPlant, ...prev, ...info }));
           }
-          const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
-          const nextStep = steps.find(step => !completedProcesses.includes(step.PROCESS));
- 
+          const completedProcesses = fetchedData
+            .filter((item) => item.UPDATED === "YES")
+            .map((item) => item.PROCESS);
+          const nextStep = steps.find(
+            (step) => !completedProcesses.includes(step.PROCESS)
+          );
+
           // --- START: CORRECTED LOGIC ---
           if (nextStep) {
             // This part is for when there IS a next step
             setImmediateNextStep(nextStep);
             setImmediateNextStepIndex(steps.indexOf(nextStep));
-            const apiUrl = `${API_BASE_URL}/rera-step-details/${encodeURIComponent(selectedPlant)}/${encodeURIComponent(nextStep.PROCESS)}`;
+            const apiUrl = `${API_BASE_URL}/rera-step-details/${encodeURIComponent(
+              selectedPlant
+            )}/${encodeURIComponent(nextStep.PROCESS)}`;
             return axios.get(apiUrl);
           } else {
             // ✅ NEW LOGIC: This runs when `nextStep` is undefined, meaning all steps are complete.
             // We check if there are any completed processes to ensure we don't do this on an empty project.
-            if (completedProcesses.length === steps.length && steps.length > 0) {
+            if (
+              completedProcesses.length === steps.length &&
+              steps.length > 0
+            ) {
               // Set the index to a number higher than any possible step index.
               // This will cause the rendering logic `(idx < immediateNextStepIndex)` to be true for all steps.
               setImmediateNextStepIndex(steps.length);
@@ -1372,89 +1439,105 @@ useEffect(() => {
           }
           // --- END: CORRECTED LOGIC ---
         })
-        .then(detailsRes => {
+        .then((detailsRes) => {
           if (detailsRes && detailsRes.data) {
             setNextStepDetails(detailsRes.data);
-            
+
             // Check if Level 4 is completed
-            if (detailsRes.data.LEVEL === 'Level 4' && detailsRes.data.LEVEL_STATUS === 'Completed') {
+            if (
+              detailsRes.data.LEVEL === "Level 4" &&
+              detailsRes.data.LEVEL_STATUS === "Completed"
+            ) {
               setIsLevel4Completed(true);
             } else {
               setIsLevel4Completed(false);
             }
           }
         })
-        .catch(err => console.error("Error during data fetching process:", err));
+        .catch((err) =>
+          console.error("Error during data fetching process:", err)
+        );
     }
   }, [selectedPlant, steps]);
-useEffect(() => {
-  if (nextStepDetails && typeof nextStepDetails === 'object' && Object.keys(nextStepDetails).length > 0) {
-    const details = nextStepDetails;
+  useEffect(() => {
+    if (
+      nextStepDetails &&
+      typeof nextStepDetails === "object" &&
+      Object.keys(nextStepDetails).length > 0
+    ) {
+      const details = nextStepDetails;
 
-    setFormData((prev) => ({ ...prev, 
-      applyDate: details.APPLY_DT, 
-      fromDate: details.FRM_DT || "", 
-      toDate: details.TO_DT || "",
-      comments:  "",
-      // CHANGE THIS LINE: Always default to "Yes" when loading data
-      subLevelStatus: "Yes"  // Changed from: details.LEVEL_STATUS === "No" ? "No" : "Yes"
-    }));
-  } else {
-    setFormData((prev) => ({ ...prev, applyDate: "", fromDate: "", toDate: "", comments: "" }));
-  }
-}, [nextStepDetails]);
-// Validation function
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: details.APPLY_DT,
+        fromDate: details.FRM_DT || "",
+        toDate: details.TO_DT || "",
+        comments: "",
+        // CHANGE THIS LINE: Always default to "Yes" when loading data
+        subLevelStatus: "Yes", // Changed from: details.LEVEL_STATUS === "No" ? "No" : "Yes"
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "",
+        fromDate: "",
+        toDate: "",
+        comments: "",
+      }));
+    }
+  }, [nextStepDetails]);
+  // Validation function
 
-const validateForm = () => {
-  const newErrors = {};
-  
-  // REMOVE Plant validation - it's not required
-  // if (!formData.loc) {
-  //   newErrors.loc = "Plant selection is required";
-  // }
-  
-  // Apply Date validation (for all steps except step 3)
-  if (immediateNextStepIndex !== 2) {
-    if (!formData.applyDate) {
-      newErrors.applyDate = "Apply Date is required";
+  const validateForm = () => {
+    const newErrors = {};
+
+    // REMOVE Plant validation - it's not required
+    // if (!formData.loc) {
+    //   newErrors.loc = "Plant selection is required";
+    // }
+
+    // Apply Date validation (for all steps except step 3)
+    if (immediateNextStepIndex !== 2) {
+      if (!formData.applyDate) {
+        newErrors.applyDate = "Apply Date is required";
+      }
     }
-  }
-  
-  // From Date and To Date validation (for step 3)
-  if (immediateNextStepIndex === 2) {
-    if (!formData.fromDate) {
-      newErrors.fromDate = "From Date is required";
+
+    // From Date and To Date validation (for step 3)
+    if (immediateNextStepIndex === 2) {
+      if (!formData.fromDate) {
+        newErrors.fromDate = "From Date is required";
+      }
+      if (!formData.toDate) {
+        newErrors.toDate = "To Date is required";
+      }
     }
-    if (!formData.toDate) {
-      newErrors.toDate = "To Date is required";
+
+    // Comments validation
+    if (!formData.comments || formData.comments.trim() === "") {
+      newErrors.comments = "Comments are required";
     }
-  }
-  
-  // Comments validation
-  if (!formData.comments || formData.comments.trim() === "") {
-    newErrors.comments = "Comments are required";
-  }
-  
-  // REMOVE Project Name and Address validation - they're not required
-  // if (immediateNextStepIndex === 0) {
-  //   if (!formData.prjName || formData.prjName.trim() === "") {
-  //     newErrors.prjName = "Project Name is required";
-  //   }
-  //   if (!formData.address || formData.address.trim() === "") {
-  //     newErrors.address = "Address is required";
-  //   }
-  // }
-  
-  return newErrors;
-};
+
+    // REMOVE Project Name and Address validation - they're not required
+    // if (immediateNextStepIndex === 0) {
+    //   if (!formData.prjName || formData.prjName.trim() === "") {
+    //     newErrors.prjName = "Project Name is required";
+    //   }
+    //   if (!formData.address || formData.address.trim() === "") {
+    //     newErrors.address = "Address is required";
+    //   }
+    // }
+
+    return newErrors;
+  };
   // The activeSubLevelIndex logic is correct and unchanged.
   const activeSubLevelIndex = useMemo(() => {
     const currentLevel = nextStepDetails?.LEVEL;
     const currentStatus = nextStepDetails?.LEVEL_STATUS;
-     if (currentLevel === 'Level 4' && currentStatus === 'Completed') {
-    return SUB_LEVELS.length; 
-  }
-    
+    if (currentLevel === "Level 4" && currentStatus === "Completed") {
+      return SUB_LEVELS.length;
+    }
+
     if (!currentLevel) {
       return 0;
     }
@@ -1479,13 +1562,13 @@ const validateForm = () => {
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
-      if (errors[name]) {
-    setErrors(prev => ({
-      ...prev,
-      [name]: null
-    }));
-  }
-    if (name === 'loc') {
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
+    if (name === "loc") {
       setSelectedPlant(value);
 
       try {
@@ -1504,7 +1587,6 @@ const validateForm = () => {
           setHeaderData(null);
           setFormData((prev) => ({
             ...prev,
-    
           }));
         }
       } catch (err) {
@@ -1512,47 +1594,47 @@ const validateForm = () => {
         setHeaderData(null);
         setFormData((prev) => ({
           ...prev,
-       
         }));
       }
     }
 
     // ✅ FIX: Reset levelToSubmit when changing from "No" back to "Yes"
-    if (name === 'subLevelStatus' && value === 'Yes') {
+    if (name === "subLevelStatus" && value === "Yes") {
       // Reset to the current active level when user selects "Yes"
       setLevelToSubmit(SUB_LEVELS[activeSubLevelIndex]);
-      setFormData(prev => ({ ...prev, subLevelStatus: 'Yes' }));
+      setFormData((prev) => ({ ...prev, subLevelStatus: "Yes" }));
       return;
     }
 
-    if (name === 'subLevelStatus' && value === 'No') {
+    if (name === "subLevelStatus" && value === "No") {
       if (activeSubLevelIndex === 1) {
         Swal.fire({
-          title: 'Confirm Demotion',
+          title: "Confirm Demotion",
           text: "This will reset the task to Level 1. Are you sure?",
-          icon: 'warning',
+          icon: "warning",
           showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#3085d6',
-          confirmButtonText: 'Yes, reset to Level 1',
-          cancelButtonText: 'Cancel'
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          confirmButtonText: "Yes, reset to Level 1",
+          cancelButtonText: "Cancel",
         }).then((result) => {
           if (result.isConfirmed) {
-            setLevelToSubmit('Level 1');
-            setFormData(prev => ({ ...prev, subLevelStatus: 'No' }));
+            setLevelToSubmit("Level 1");
+            setFormData((prev) => ({ ...prev, subLevelStatus: "No" }));
             Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'info',
-                title: 'Task will be reset to Level 1 on submit.',
-                showConfirmButton: false,
-                timer: 3000
+              toast: true,
+              position: "top-end",
+              icon: "info",
+              title: "Task will be reset to Level 1 on submit.",
+              showConfirmButton: false,
+              timer: 3000,
             });
           }
         });
         return;
       }
-      const isLevel3Or4 = activeSubLevelIndex === 2 || activeSubLevelIndex === 3;
+      const isLevel3Or4 =
+        activeSubLevelIndex === 2 || activeSubLevelIndex === 3;
       if (isLevel3Or4) {
         const options = SUB_LEVELS.slice(0, activeSubLevelIndex).reverse();
         setDemoteOptions(options);
@@ -1560,190 +1642,220 @@ const validateForm = () => {
         return;
       }
     }
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleDemoteConfirm = (newLevel) => {
     if (newLevel) {
-        setLevelToSubmit(newLevel);
-        setFormData(prev => ({ ...prev, subLevelStatus: 'No' }));
-        Swal.fire({
-            icon: 'info',
-            title: 'Level Changed',
-            text: `The task will be reset to ${newLevel}. Click the main 'Submit' button to save this change.`,
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3500
-        });
+      setLevelToSubmit(newLevel);
+      setFormData((prev) => ({ ...prev, subLevelStatus: "No" }));
+      Swal.fire({
+        icon: "info",
+        title: "Level Changed",
+        text: `The task will be reset to ${newLevel}. Click the main 'Submit' button to save this change.`,
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3500,
+      });
     }
     setShowDemoteModal(false);
   };
-const handleDeleteDocument = async (docType, fileName, index) => {
-  try {
-    const result = await Swal.fire({
-      title: 'Delete Document?',
-      text: `Are you sure you want to delete ${fileName}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!'
-    });
+  const handleDeleteDocument = async (docType, fileName, index) => {
+    try {
+      const result = await Swal.fire({
+        title: "Delete Document?",
+        text: `Are you sure you want to delete ${fileName}?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!",
+      });
 
-    if (!result.isConfirmed) return;
+      if (!result.isConfirmed) return;
 
-    const response = await axios.delete(`${API_BASE_URL}/rera-docu-delete`, {
-      data: {
-        loc: formData.loc,
-        process: immediateNextStep?.PROCESS || "",
-        doc_type: docType,
-        file_name: fileName,
-      },
-    });
+      const response = await axios.delete(`${API_BASE_URL}/rera-docu-delete`, {
+        data: {
+          loc: formData.loc,
+          process: immediateNextStep?.PROCESS || "",
+          doc_type: docType,
+          file_name: fileName,
+        },
+      });
 
-    console.log("Delete response:", response);
+      console.log("Delete response:", response);
 
-    // ✅ Remove deleted item from BOTH formData AND nextStepDetails
-    setFormData(prev => ({
-      ...prev,
-      existingDocs: prev.existingDocs?.filter((_, i) => i !== index) || [],
-      existingNames: prev.existingNames?.filter((_, i) => i !== index) || []
-    }));
+      // ✅ Remove deleted item from BOTH formData AND nextStepDetails
+      setFormData((prev) => ({
+        ...prev,
+        existingDocs: prev.existingDocs?.filter((_, i) => i !== index) || [],
+        existingNames: prev.existingNames?.filter((_, i) => i !== index) || [],
+      }));
 
-    // ✅ ALSO update nextStepDetails to reflect the deletion without refresh
-    if (nextStepDetails?.UPLOAD_DOC) {
-      try {
-        const currentDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-        const updatedDocs = currentDocs.filter((doc, i) => i !== index);
-        
-        setNextStepDetails(prev => ({
-          ...prev,
-          UPLOAD_DOC: JSON.stringify(updatedDocs)
-        }));
-      } catch (error) {
-        console.error('Error updating nextStepDetails:', error);
+      // ✅ ALSO update nextStepDetails to reflect the deletion without refresh
+      if (nextStepDetails?.UPLOAD_DOC) {
+        try {
+          const currentDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
+          const updatedDocs = currentDocs.filter((doc, i) => i !== index);
+
+          setNextStepDetails((prev) => ({
+            ...prev,
+            UPLOAD_DOC: JSON.stringify(updatedDocs),
+          }));
+        } catch (error) {
+          console.error("Error updating nextStepDetails:", error);
+        }
       }
-    }
 
-    Swal.fire('Deleted!', 'Document has been deleted.', 'success');
+      Swal.fire("Deleted!", "Document has been deleted.", "success");
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      Swal.fire("Error!", "Failed to delete document.", "error");
+    }
+  };
 
-  } catch (error) {
-    console.error('Error deleting document:', error);
-    Swal.fire('Error!', 'Failed to delete document.', 'error');
-  }
-};
+  const handleConfirmSubmit = async (emails) => {
+    setIsSubmitting(true);
+    setUploadError(""); // Clear previous upload errors
 
-const handleConfirmSubmit = async (emails) => {
-  setIsSubmitting(true);
-  setUploadError(""); // Clear previous upload errors
-  
-  try {
-    // --- VALIDATION ---
-    if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
-      await Swal.fire("Validation Error", "Please provide both a 'From Date' and a 'To Date' for this step.", "error");
-      return;
-    }
-    
-    if (immediateNextStepIndex !== 2 && !formData.applyDate) {
-      await Swal.fire("Validation Error", "Please provide an 'Apply Date' for this step.", "error");
-      return;
-    }
-    
-    if (!formData.loc || !immediateNextStep) {
-      await Swal.fire("Validation Error", "Please select a Plant and ensure a process step is active.", "error");
-      return;
-    }
-    
-    if (newDocs.length > 0) {
-      const nonPDFFiles = newDocs.filter(file => 
-        file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
-      );
-      
-      if (nonPDFFiles.length > 0) {
-        setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
+    try {
+      // --- VALIDATION ---
+      if (
+        immediateNextStepIndex === 2 &&
+        (!formData.fromDate || !formData.toDate)
+      ) {
+        await Swal.fire(
+          "Validation Error",
+          "Please provide both a 'From Date' and a 'To Date' for this step.",
+          "error"
+        );
         return;
       }
-    }
-    
-    // --- PREPARE PAYLOAD ---
-    const payload = new FormData();
-    payload.append("loc", formData.loc);
-    payload.append("process", immediateNextStep.PROCESS);
-    payload.append("comments", formData.comments || "");
 
-    emails.forEach((email, i) => {
-      payload.append(`emails[${i}]`, email);
-    });
+      if (immediateNextStepIndex !== 2 && !formData.applyDate) {
+        await Swal.fire(
+          "Validation Error",
+          "Please provide an 'Apply Date' for this step.",
+          "error"
+        );
+        return;
+      }
 
-    if (immediateNextStepIndex === 0) {
-      payload.append("prjName", formData.prjName || "");
-      payload.append("address", formData.address || "");
-    } else {
-      payload.append("prjName", projectInfo.prjName || "");
-      payload.append("address", projectInfo.address || "");
-    }
-    
-    // Determine which date to use as the primary 'applyDate'
-    const applyDateToSend = immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
-    payload.append("applyDate", applyDateToSend);
-    payload.append("fromDate", formData.fromDate);
-    payload.append("toDate", formData.toDate);
+      if (!formData.loc || !immediateNextStep) {
+        await Swal.fire(
+          "Validation Error",
+          "Please select a Plant and ensure a process step is active.",
+          "error"
+        );
+        return;
+      }
 
-    if (immediateNextStepIndex === 1) {
-      const taskStatus = formData.subLevelStatus || "No";
-      payload.append("pending_task", levelToSubmit);
-      payload.append("task_status", taskStatus);
+      if (newDocs.length > 0) {
+        const nonPDFFiles = newDocs.filter(
+          (file) =>
+            file.type !== "application/pdf" &&
+            !file.name.toLowerCase().endsWith(".pdf")
+        );
+
+        if (nonPDFFiles.length > 0) {
+          setUploadError(
+            "Only PDF files are allowed. Please remove non-PDF files."
+          );
+          return;
+        }
+      }
+
+      //  --- : 'fetch User';
+      let currentUserName = loggedInUser.username;
+
+      // --- PREPARE PAYLOAD ---
+      const payload = new FormData();
+      payload.append("loc", formData.loc);
+      payload.append("process", immediateNextStep.PROCESS);
+      payload.append("comments", formData.comments || "");
+      payload.append("username", currentUserName || "");
+
+      emails.forEach((email, i) => {
+        payload.append(`emails[${i}]`, email);
+      });
+
+      if (immediateNextStepIndex === 0) {
+        payload.append("prjName", formData.prjName || "");
+        payload.append("address", formData.address || "");
+      } else {
+        payload.append("prjName", projectInfo.prjName || "");
+        payload.append("address", projectInfo.address || "");
+      }
+
+      // Determine which date to use as the primary 'applyDate'
+      const applyDateToSend =
+        immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
+      payload.append("applyDate", applyDateToSend);
+      payload.append("fromDate", formData.fromDate);
+      payload.append("toDate", formData.toDate);
+
+      if (immediateNextStepIndex === 1) {
+        const taskStatus = formData.subLevelStatus || "No";
+        payload.append("pending_task", levelToSubmit);
+        payload.append("task_status", taskStatus);
+      }
+
+      newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
+
+      console.log("--- Submitting Payload ---");
+      for (const [key, value] of payload.entries()) {
+        console.log(`${key}:`, value);
+      }
+      console.log("--------------------------");
+
+      // --- SUBMIT TO API ---
+      const existingRecord = storeData.find(
+        (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim()
+      );
+      const apiUrl = existingRecord
+        ? `${API_BASE_URL}/rera-modify`
+        : `${API_BASE_URL}/rera-submit`;
+
+      await axios.post(apiUrl, payload);
+
+      await Swal.fire({
+        icon: "success",
+        title: existingRecord ? "Updated!" : "Submitted!",
+        text: "Your data has been saved successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      // --- RESET STATE AFTER SUCCESSFUL SUBMISSION ---
+      setFormData({
+        loc: "",
+        applyDate: "",
+        fromDate: "",
+        toDate: "",
+        comments: "",
+        prjName: "",
+        address: "",
+      });
+      setNewDocs([]);
+      setSelectedPlant("");
+      setStoreData([]);
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setNextStepDetails(null);
+      setProjectInfo({ prjName: "", address: "" });
+      setIsLevel4Completed(false);
+    } catch (error) {
+      console.error("Submission failed:", error);
+      await Swal.fire(
+        "Submission Failed",
+        "Please check the console for details.",
+        "error"
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
-    
-    console.log("--- Submitting Payload ---");
-    for (const [key, value] of payload.entries()) {
-      console.log(`${key}:`, value);
-    }
-    console.log("--------------------------");
-    
-    // --- SUBMIT TO API ---
-    const existingRecord = storeData.find((item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim());
-    const apiUrl = existingRecord ? `${API_BASE_URL}/rera-modify` : `${API_BASE_URL}/rera-submit`;
-    
-    await axios.post(apiUrl, payload);
-    
-    await Swal.fire({ 
-      icon: 'success', 
-      title: existingRecord ? "Updated!" : "Submitted!", 
-      text: "Your data has been saved successfully.", 
-      timer: 1500, 
-      showConfirmButton: false 
-    });
-    
-    // --- RESET STATE AFTER SUCCESSFUL SUBMISSION ---
-    setFormData({ 
-      loc: "", 
-      applyDate: "", 
-      fromDate: "", 
-      toDate: "", 
-      comments: "", 
-      prjName: "", 
-      address: "" 
-    });
-    setNewDocs([]);
-    setSelectedPlant("");
-    setStoreData([]);
-    setImmediateNextStep(null);
-    setImmediateNextStepIndex(-1);
-    setNextStepDetails(null);
-    setProjectInfo({ prjName: "", address: "" });
-    setIsLevel4Completed(false);
-    
-  } catch (error) {
-    console.error("Submission failed:", error);
-    await Swal.fire("Submission Failed", "Please check the console for details.", "error");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
   // const handleConfirmSubmit = async (emails) => {
   //     setIsSubmitting(true);
   //   // --- VALIDATION (No changes needed here, it's correct for the UI) ---
@@ -1760,10 +1872,10 @@ const handleConfirmSubmit = async (emails) => {
   //     return;
   //   }
   //   if (newDocs.length > 0) {
-  //     const nonPDFFiles = newDocs.filter(file => 
+  //     const nonPDFFiles = newDocs.filter(file =>
   //       file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')
   //     );
-      
+
   //     if (nonPDFFiles.length > 0) {
   //       // Show error message instead of popup
   //       setUploadError("Only PDF files are allowed. Please remove non-PDF files.");
@@ -1787,9 +1899,9 @@ const handleConfirmSubmit = async (emails) => {
   //     payload.append("prjName", projectInfo.prjName || "");
   //     payload.append("address", projectInfo.address || "");
   //   }
-    
+
   //   // ✅ START: CORRECTED PAYLOAD LOGIC
-    
+
   //   // Determine which date to use as the primary 'applyDate'.
   //   // For step 3, use fromDate. For all other steps, use applyDate.
   //   const applyDateToSend = immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
@@ -1801,9 +1913,9 @@ const handleConfirmSubmit = async (emails) => {
   //   //   payload.append("fromDate", formData.fromDate);
   //   //   payload.append("toDate", formData.toDate);
   //   //   console.log("formData.fromDate", formData.fromDate);
-      
+
   //   // }
-    
+
   //   // ✅ END: CORRECTED PAYLOAD LOGIC
 
   //   if (immediateNextStepIndex === 1) {
@@ -1811,22 +1923,22 @@ const handleConfirmSubmit = async (emails) => {
   //     payload.append("pending_task", levelToSubmit);
   //     payload.append("task_status", taskStatus);
   //   }
-    
+
   //   newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
-    
+
   //   console.log("--- Submitting Payload ---");
   //   for (const [key, value] of payload.entries()) {
   //     console.log(`${key}:`, value);
   //   }
   //   console.log("--------------------------");
-    
+
   //   const existingRecord = storeData.find((item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim());
   //   const apiUrl = existingRecord ? `${API_BASE_URL}/rera-modify` : `${API_BASE_URL}/rera-submit`;
-    
+
   //   try {
   //     await axios.post(apiUrl, payload);
   //     await Swal.fire({ icon: 'success', title: existingRecord ? "Updated!" : "Submitted!", text: "Your data has been saved successfully.", timer: 1500, showConfirmButton: false });
-      
+
   //     // Reset state after submission
   //     setFormData({ loc: "", applyDate: "", fromDate: "", toDate: "", comments: "", prjName: "", address: "" });
   //     setNewDocs([]);
@@ -1846,15 +1958,19 @@ const handleConfirmSubmit = async (emails) => {
   //     setIsSubmitting(false);
   //   }
   // };
-  
+
   // 08-12-2025: Updated renderDocumentHistory to use ListGroup like GHMC component
-   const renderDocumentHistory = () => {
+  const renderDocumentHistory = () => {
     if (
       !nextStepDetails ||
       typeof nextStepDetails !== "object" ||
       !nextStepDetails.UPLOAD_DOC
     ) {
-      return <p className="text-muted text-center mb-0">No previous documents for this step.</p>;
+      return (
+        <p className="text-muted text-center mb-0">
+          No previous documents for this step.
+        </p>
+      );
     }
 
     let documents = [];
@@ -1870,50 +1986,49 @@ const handleConfirmSubmit = async (emails) => {
     }
 
     return documents.length > 0 ? (
-   <ListGroup variant="flush">
-     <h6 className="text-primary">Uploaded Documents</h6>
-  {documents.map((doc, idx) => (
-    <ListGroup.Item
-      key={idx}
-      className="d-flex align-items-center"
-    >
-      <a
-        href={doc.url}
-        target="_blank"
-        rel="noreferrer"
-        className="text-decoration-none d-flex align-items-center w-100"
-        style={{ minWidth: 0 }}
-      >
-        <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
-        <span 
-          className="text-truncate" 
-          style={{ maxWidth: "250px" }}
-          title={doc.name}
-        >
-          {doc.name}
-        </span>
-      </a>
+      <ListGroup variant="flush">
+        <h6 className="text-primary">Uploaded Documents</h6>
+        {documents.map((doc, idx) => (
+          <ListGroup.Item key={idx} className="d-flex align-items-center">
+            <a
+              href={doc.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-decoration-none d-flex align-items-center w-100"
+              style={{ minWidth: 0 }}
+            >
+              <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
+              <span
+                className="text-truncate"
+                style={{ maxWidth: "250px" }}
+                title={doc.name}
+              >
+                {doc.name}
+              </span>
+            </a>
 
-      <Button
-        variant="outline-danger"
-        size="sm"
-        className="flex-shrink-0 ms-2"
-        style={{
-          padding: "2px 6px",
-          fontSize: "11px",
-          minWidth: "30px",
-          height: "24px"
-        }}
-        onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
-        title="Delete document"
-      >
-        <i className="fas fa-trash-alt"></i>
-      </Button>
-    </ListGroup.Item>
-  ))}
-</ListGroup>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              className="flex-shrink-0 ms-2"
+              style={{
+                padding: "2px 6px",
+                fontSize: "11px",
+                minWidth: "30px",
+                height: "24px",
+              }}
+              onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
+              title="Delete document"
+            >
+              <i className="fas fa-trash-alt"></i>
+            </Button>
+          </ListGroup.Item>
+        ))}
+      </ListGroup>
     ) : (
-      <p className="text-muted text-center mb-0">No documents uploaded for this step.</p>
+      <p className="text-muted text-center mb-0">
+        No documents uploaded for this step.
+      </p>
     );
   };
 
@@ -1926,53 +2041,59 @@ const handleConfirmSubmit = async (emails) => {
             <h6 className="text-center mb-3">Process Steps</h6>
             <Nav variant="pills" className="flex-column">
               {steps.map((step, idx) => {
-                let variant = "secondary", clickable = false, statusIcon = "⏸️";
+                let variant = "secondary",
+                  clickable = false,
+                  statusIcon = "⏸️";
 
                 const isCompleted = storeData.some(
-                  (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
+                  (item) =>
+                    item.PROCESS?.toLowerCase().trim() ===
+                      step.PROCESS?.toLowerCase().trim() &&
                     item.UPDATED === "YES"
                 );
                 if (isCompleted) {
-                  console.log("iosssssssssssssssss",isCompleted)
-                  variant = "success"; clickable = true; statusIcon = "✅";
+                  console.log("iosssssssssssssssss", isCompleted);
+                  variant = "success";
+                  clickable = true;
+                  statusIcon = "✅";
                 } else if (idx === immediateNextStepIndex) {
-                  variant = "warning"; clickable = true; statusIcon = "⚠️";
+                  variant = "warning";
+                  clickable = true;
+                  statusIcon = "⚠️";
                 }
 
                 return (
                   <React.Fragment key={idx}>
                     <Nav.Item className="mb-2">
-                     {/* <Nav.Link  eventKey={idx} disabled={!clickable} className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`} style={{ cursor: clickable ? "pointer" : "not-allowed" }}>
+                      {/* <Nav.Link  eventKey={idx} disabled={!clickable} className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`} style={{ cursor: clickable ? "pointer" : "not-allowed" }}>
                         {statusIcon}<span>{step.PROCESS}</span>
                       </Nav.Link> */}
 
                       {/* updated on 26-12-2025 by rajakumari.m--------------------------------------------------------- */}
-<Nav.Link
-  eventKey={idx}
-  disabled={!clickable}
-  className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-  style={{
-    cursor: clickable ? "pointer" : "not-allowed"
-  }}
->
-  {statusIcon}
-  <span
-    onClick={(e) => {
-      if (isCompleted) {
-        handleProcessClick(e, step.PROCESS);
-      }
-    }}
-    style={{
-      cursor: isCompleted ? "pointer" : "default",
-      textDecoration: isCompleted ? "underline" : "none"
-    }}
-  >
-    {step.PROCESS}
-  </span>
-</Nav.Link>
-{/* ---------------------------------------------------------------------------------------------------------- */}
-
-
+                      <Nav.Link
+                        eventKey={idx}
+                        disabled={!clickable}
+                        className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+                        style={{
+                          cursor: clickable ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        {statusIcon}
+                        <span
+                          onClick={(e) => {
+                            if (isCompleted) {
+                              handleProcessClick(e, step.PROCESS);
+                            }
+                          }}
+                          style={{
+                            cursor: isCompleted ? "pointer" : "default",
+                            textDecoration: isCompleted ? "underline" : "none",
+                          }}
+                        >
+                          {step.PROCESS}
+                        </span>
+                      </Nav.Link>
+                      {/* ---------------------------------------------------------------------------------------------------------- */}
                     </Nav.Item>
 
                     {/* ✅ THE ONLY CHANGE IS HERE: Changed >= to === */}
@@ -1987,7 +2108,11 @@ const handleConfirmSubmit = async (emails) => {
                             badgeVariant = "warning"; // Active
                           }
                           return (
-                            <Badge bg={badgeVariant} key={subIdx} className="shadow-sm">
+                            <Badge
+                              bg={badgeVariant}
+                              key={subIdx}
+                              className="shadow-sm"
+                            >
                               {level}
                             </Badge>
                           );
@@ -2000,238 +2125,270 @@ const handleConfirmSubmit = async (emails) => {
             </Nav>
           </div>
         </Col>
-        
+
         {/* The rest of the JSX is correct and unchanged */}
         <Col md={6} className="d-flex flex-column">
-        {allStepsCompleted && !selectedProcessDetails ? (
-  renderCompletionMessage()
-) : (
-         <Form className="p-3 border rounded bg-light">
-      
-      {/* ADD THIS CODE HERE - Right after Form opening tag */}
-      {selectedProcessDetails ? (
-        <div className="mb-3">
-          <h4 className="mb-2 text-info fw-bold">
-            Viewing: {selectedProcessDetails.PROCESS} (Completed)
-          </h4>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={handleViewNextStep}
-            disabled={!immediateNextStep}
-          >
-            View Next Step
-          </Button>
-        </div>
-      ) : immediateNextStep ? (
-        <h4 className="mb-3 text-primary fw-bold">
-          {immediateNextStep.PROCESS}
-        </h4>
-      ) : null}
-      {/* END OF ADDED CODE */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Plant</Form.Label>
-                  <Form.Select name="loc" value={formData.loc} onChange={handleChange}>
-                    <option value="">Select Plant</option>
-                    {plants.map((p, idx) => <option key={idx} value={p.loc}>{p.loc}</option>)}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-               {/* ✅ 2. CORRECTED CONDITIONAL DATE FIELDS */}
-              {immediateNextStepIndex === 2 ? (
-                // Show "From" and "To" date for the THIRD step (index 2)
-                <>
-                  <Col md={3}>
-  <Form.Group>
-    <Form.Label>
-      From Date <span className="text-danger">*</span>
-    </Form.Label>
-   <Form.Control 
-  type="date" 
-  name="fromDate" 
-  value={formData.fromDate || ""} 
-  onChange={handleChange}
-  isInvalid={!!errors.fromDate}
-  max={new Date().toISOString().split("T")[0]}
-  disabled={!!selectedProcessDetails}  // ADD THIS
-/>
-    <Form.Control.Feedback type="invalid">  {/* ADD THIS */}
-      {errors.fromDate}
-    </Form.Control.Feedback>
-  </Form.Group>
-</Col>
-<Col md={3}>
-  <Form.Group>
-    <Form.Label>
-      To Date <span className="text-danger">*</span>
-    </Form.Label>
-    <Form.Control 
-      type="date" 
-      name="toDate" 
-      value={formData.toDate || ""} 
-      onChange={handleChange}
-      isInvalid={!!errors.toDate}  // ADD THIS
-      disabled={!!selectedProcessDetails}
-    />
-    <Form.Control.Feedback type="invalid">  {/* ADD THIS */}
-      {errors.toDate}
-    </Form.Control.Feedback>
-  </Form.Group>
-</Col>
-                </>
-              ) : (
-                // Show a single "Apply Date" for ALL OTHER steps
-                <Col md={6}>
-                  <Form.Group>
-  <Form.Label>
-    Apply Date <span className="text-danger">*</span>
-  </Form.Label>
-  <Form.Control 
-    type="date" 
-    name="applyDate" 
-    value={formData.applyDate || ""} 
-    onChange={handleChange}
-    isInvalid={!!errors.applyDate}  // ADD THIS
-    max={new Date().toISOString().split("T")[0]}
-    disabled={!!selectedProcessDetails}
-  />
-  <Form.Control.Feedback type="invalid">  {/* ADD THIS */}
-    {errors.applyDate}
-  </Form.Control.Feedback>
-</Form.Group>
-                </Col>
-              )}
-            </Row>
-
-            {immediateNextStepIndex === 1 && (
+          {allStepsCompleted && !selectedProcessDetails ? (
+            renderCompletionMessage()
+          ) : (
+            <Form className="p-3 border rounded bg-light">
+              {/* ADD THIS CODE HERE - Right after Form opening tag */}
+              {selectedProcessDetails ? (
+                <div className="mb-3">
+                  <h4 className="mb-2 text-info fw-bold">
+                    Viewing: {selectedProcessDetails.PROCESS} (Completed)
+                  </h4>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={handleViewNextStep}
+                    disabled={!immediateNextStep}
+                  >
+                    View Next Step
+                  </Button>
+                </div>
+              ) : immediateNextStep ? (
+                <h4 className="mb-3 text-primary fw-bold">
+                  {immediateNextStep.PROCESS}
+                </h4>
+              ) : null}
+              {/* END OF ADDED CODE */}
               <Row className="mb-3">
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Pending Task</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      disabled 
-                      value={SUB_LEVELS[activeSubLevelIndex] || 'All Levels Complete'}
-                      className="fw-bold"
-                      
-                    />
+                    <Form.Label>Plant</Form.Label>
+                    <Form.Select
+                      name="loc"
+                      value={formData.loc}
+                      onChange={handleChange}
+                    >
+                      <option value="">Select Plant</option>
+                      {plants.map((p, idx) => (
+                        <option key={idx} value={p.loc}>
+                          {p.loc}
+                        </option>
+                      ))}
+                    </Form.Select>
                   </Form.Group>
                 </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Status</Form.Label>
-                    <div className="d-flex align-items-center h-100 gap-3">
-                      <Form.Check
-                        type="radio"
-                        label="Yes"
-                        name="subLevelStatus"
-                        value="Yes"
-                        checked={formData.subLevelStatus === 'Yes'}
+                {/* ✅ 2. CORRECTED CONDITIONAL DATE FIELDS */}
+                {immediateNextStepIndex === 2 ? (
+                  // Show "From" and "To" date for the THIRD step (index 2)
+                  <>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label>
+                          From Date <span className="text-danger">*</span>
+                        </Form.Label>
+                        <Form.Control
+                          type="date"
+                          name="fromDate"
+                          value={formData.fromDate || ""}
+                          onChange={handleChange}
+                          isInvalid={!!errors.fromDate}
+                          max={new Date().toISOString().split("T")[0]}
+                          disabled={!!selectedProcessDetails} // ADD THIS
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {" "}
+                          {/* ADD THIS */}
+                          {errors.fromDate}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label>
+                          To Date <span className="text-danger">*</span>
+                        </Form.Label>
+                        <Form.Control
+                          type="date"
+                          name="toDate"
+                          value={formData.toDate || ""}
+                          onChange={handleChange}
+                          isInvalid={!!errors.toDate} // ADD THIS
+                          disabled={!!selectedProcessDetails}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {" "}
+                          {/* ADD THIS */}
+                          {errors.toDate}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                  </>
+                ) : (
+                  // Show a single "Apply Date" for ALL OTHER steps
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>
+                        Apply Date <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="date"
+                        name="applyDate"
+                        value={formData.applyDate || ""}
                         onChange={handleChange}
-                        id="status-yes"
-                        disabled={!!selectedProcessDetails}
-                        
-                      />
-                      <Form.Check
-                        type="radio"
-                        label="No"
-                        name="subLevelStatus"
-                        value="No"
-                        checked={formData.subLevelStatus === 'No'}
-                        onChange={handleChange}
-                        id="status-no"
+                        isInvalid={!!errors.applyDate} // ADD THIS
+                        max={new Date().toISOString().split("T")[0]}
                         disabled={!!selectedProcessDetails}
                       />
-                    </div>
-                  </Form.Group>
-                </Col>
-              </Row>
-            )}
-
-            {immediateNextStepIndex === 0 && (
-              <Row className="mb-3">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Project Name</Form.Label>
-                    <Form.Control type="text" name="prjName" value={formData.prjName || ""} onChange={handleChange} />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Address</Form.Label>
-                    <Form.Control type="text" name="address" value={formData.address || ""} onChange={handleChange} />
-                  </Form.Group>
-                </Col>
-              </Row>
-            )}
-           <Row className="mb-3">
-              <Col md={6}>
-                <Form.Label>Upload New Documents</Form.Label>
-                <Button variant="outline-secondary" className="form-control" onClick={() => setShowUploadModal(true)}
-                  disabled={!!selectedProcessDetails}>
-                  Upload Docs
-                </Button>
-                {/* Add this error display */}
-                {uploadError && (
-                  <div className="text-danger small mt-1">
-                    {uploadError}
-                  </div>
+                      <Form.Control.Feedback type="invalid">
+                        {" "}
+                        {/* ADD THIS */}
+                        {errors.applyDate}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
                 )}
-                {/* You can also add this hint text */}
-                <Form.Text className="text-muted d-block mt-1">
-                  Only PDF files are allowed
-                </Form.Text>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-  <Form.Label>
-    Comments <span className="text-danger">*</span>
-  </Form.Label>
-  <Form.Control 
-    as="textarea" 
-    rows={1} 
-    name="comments" 
-    value={formData.comments || ""} 
-    onChange={handleChange}
-    isInvalid={!!errors.comments}  // ADD THIS
-    disabled={!!selectedProcessDetails}
-  />
-  <Form.Control.Feedback type="invalid">  {/* ADD THIS */}
-    {errors.comments}
-  </Form.Control.Feedback>
-</Form.Group>
-              </Col>
-            </Row>
-            <div className="d-grid mt-3">
-              <Button 
-                variant="primary" 
-                size="md" 
-                onClick={handleEmailSubmit}
-                disabled={isLevel4Completed  || isSubmitting || !formData.loc}
-                    
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            </div>
-          </Form>
+              </Row>
+
+              {immediateNextStepIndex === 1 && (
+                <Row className="mb-3">
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Pending Task</Form.Label>
+                      <Form.Control
+                        type="text"
+                        disabled
+                        value={
+                          SUB_LEVELS[activeSubLevelIndex] ||
+                          "All Levels Complete"
+                        }
+                        className="fw-bold"
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Status</Form.Label>
+                      <div className="d-flex align-items-center h-100 gap-3">
+                        <Form.Check
+                          type="radio"
+                          label="Yes"
+                          name="subLevelStatus"
+                          value="Yes"
+                          checked={formData.subLevelStatus === "Yes"}
+                          onChange={handleChange}
+                          id="status-yes"
+                          disabled={!!selectedProcessDetails}
+                        />
+                        <Form.Check
+                          type="radio"
+                          label="No"
+                          name="subLevelStatus"
+                          value="No"
+                          checked={formData.subLevelStatus === "No"}
+                          onChange={handleChange}
+                          id="status-no"
+                          disabled={!!selectedProcessDetails}
+                        />
+                      </div>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              )}
+
+              {immediateNextStepIndex === 0 && (
+                <Row className="mb-3">
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Project Name</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="prjName"
+                        value={formData.prjName || ""}
+                        onChange={handleChange}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Address</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="address"
+                        value={formData.address || ""}
+                        onChange={handleChange}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+              )}
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Label>Upload New Documents</Form.Label>
+                  <Button
+                    variant="outline-secondary"
+                    className="form-control"
+                    onClick={() => setShowUploadModal(true)}
+                    disabled={!!selectedProcessDetails}
+                  >
+                    Upload Docs
+                  </Button>
+                  {/* Add this error display */}
+                  {uploadError && (
+                    <div className="text-danger small mt-1">{uploadError}</div>
+                  )}
+                  {/* You can also add this hint text */}
+                  <Form.Text className="text-muted d-block mt-1">
+                    Only PDF files are allowed
+                  </Form.Text>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>
+                      Comments <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={1}
+                      name="comments"
+                      value={formData.comments || ""}
+                      onChange={handleChange}
+                      isInvalid={!!errors.comments} // ADD THIS
+                      disabled={!!selectedProcessDetails}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {" "}
+                      {/* ADD THIS */}
+                      {errors.comments}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+              </Row>
+              <div className="d-grid mt-3">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleEmailSubmit}
+                  disabled={isLevel4Completed || isSubmitting || !formData.loc}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </Button>
+              </div>
+            </Form>
           )}
         </Col>
-        
+
         {/* 08-12-2025t */}
         <Col md={3}>
-          <div className="d-flex flex-column" style={{ height: '100%' }}>
-            <Card className="p-3 mb-2" style={{ height: '80%', overflow: 'auto' }}>
-              <h6 className="text-center mb-3">Previously Uploaded Documents</h6>
+          <div className="d-flex flex-column" style={{ height: "100%" }}>
+            <Card
+              className="p-3 mb-2"
+              style={{ height: "80%", overflow: "auto" }}
+            >
+              <h6 className="text-center mb-3">
+                Previously Uploaded Documents
+              </h6>
               {renderDocumentHistory()}
             </Card>
 
             {/* 08-12-2025: Added View Logs button at bottom */}
             <div className="p-2 border-top bg-light text-center">
-              <Button 
-                variant="info" 
-                size="sm" 
+              <Button
+                variant="info"
+                size="sm"
                 onClick={() => {
                   // 08-12-2025: Parse logs from nextStepDetails
                   let logs = [];
@@ -2251,24 +2408,36 @@ const handleConfirmSubmit = async (emails) => {
             </div>
           </div>
         </Col>
-
       </Row>
 
-      <Modal show={showDemoteModal} onHide={() => setShowDemoteModal(false)} centered>
+      <Modal
+        show={showDemoteModal}
+        onHide={() => setShowDemoteModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Reset Task Level</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Since the task was not completed, please select the correct current level to reset to.</p>
+          <p>
+            Since the task was not completed, please select the correct current
+            level to reset to.
+          </p>
           <Form.Group>
-            <Form.Label className="fw-bold">Choose the correct level:</Form.Label>
-            <Form.Select 
+            <Form.Label className="fw-bold">
+              Choose the correct level:
+            </Form.Label>
+            <Form.Select
               onChange={(e) => handleDemoteConfirm(e.target.value)}
               defaultValue=""
             >
-              <option value="" disabled>Select a level...</option>
-              {demoteOptions.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
+              <option value="" disabled>
+                Select a level...
+              </option>
+              {demoteOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
               ))}
             </Form.Select>
           </Form.Group>
@@ -2289,7 +2458,7 @@ const handleConfirmSubmit = async (emails) => {
         applyDate={formData.applyDate}
         comments={formData.comments}
       />
-      
+
       <ReraDocUploadModal
         show={showUploadModal}
         onClose={() => setShowUploadModal(false)}
@@ -2298,7 +2467,11 @@ const handleConfirmSubmit = async (emails) => {
       />
 
       {/* 08-12-2025: Added Logs Modal */}
-      <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} centered>
+      <Modal
+        show={showLogsModal}
+        onHide={() => setShowLogsModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Logs</Modal.Title>
         </Modal.Header>
@@ -2327,5 +2500,3 @@ const handleConfirmSubmit = async (emails) => {
 };
 
 export default ReraModifyTable;
-
-

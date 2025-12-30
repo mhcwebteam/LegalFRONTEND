@@ -10,7 +10,7 @@
 // import CardWithHeader from "../components/CardWithHeader";
 // import { useRef } from "react";
 // import Swal from "sweetalert2";
-// import { Context } from "../context/ContextData"; 
+// import { Context } from "../context/ContextData";
 // import { getMasterByLoc } from "../api/Api";
 // import ProjectInfoHeader from "./ProjectInfoHeader";
 // import { Mail, Send } from "lucide-react";
@@ -74,10 +74,6 @@
 //     logs: "", // Added logs to modalData state
 //   });
 
-
-
-
- 
 //   const [showAmendModal, setShowAmendModal] = useState(false);
 //   const [amendData, setAmendData] = useState({
 //     plant: "",
@@ -103,12 +99,9 @@
 // const [selectedAmendEmails, setSelectedAmendEmails] = useState([]);
 // const [showAmendEmailModal, setShowAmendEmailModal] = useState(false);
 
-
 // //         useEffect(() => {
 // //   setHeaderData(null); // Reset header data when component loads
 // // }, [setHeaderData]);
-
-
 
 // useEffect(() => {
 //   axios
@@ -181,7 +174,7 @@
 //       axios
 //         .get(`${API_BASE_URL}/pcb-store/${selectedPlant}`)
 //         .then((res) => {
-    
+
 //           setStoreData(res.data);
 
 //           console.log(res.data,"pcb----------------store");
@@ -348,14 +341,11 @@
 //     setShowModal(true);
 //   };
 
-
 //   // Handlers for Amend
 //   const handleAmendClick = async (row, category) => {
 //     try {
 //       const storeInfo =
 //         storeData.find((item) => item.PROCESS === row.PROCESS) || {};
-
-      
 
 //       const endpoint = `${API_BASE_URL}/amendment-data/${selectedPlant}/${encodeURIComponent(
 //         row.PROCESS
@@ -376,7 +366,7 @@
 //     //    ? JSON.parse(data[`${prefix}_DOC_NAME`])
 //         : [];
 //       const amendDate = data[`${prefix}_DATE`] || "";
-     
+
 //       const oldComments = data[`${prefix}_COMMENTS`] || "";
 //       const amendreturnsubmit = data[`${prefix}_RETURNS_SUBMITTED`] || "";
 
@@ -395,10 +385,8 @@
 //         oldComments,
 //         amendDecision: "Yes",
 //         amendreturnsSubmitted: amendreturnsubmit,
-    
-//       });
 
-   
+//       });
 
 //       setShowAmendModal(true);
 //     } catch (error) {
@@ -423,15 +411,13 @@
 //       return;
 //     }
 
-//   setLoading(true);          
+//   setLoading(true);
 //     const formData = new FormData();
 //     formData.append("loc", modalData.plant);
 //     formData.append("process", modalData.process);
 //     formData.append("applyDate", modalData.applyDate);
 //        formData.append("receivedDate", modalData.receivedDate || "");
 //           formData.append("comments", modalData.comments);
-
-    
 
 //     selectedEmails.forEach((email, i) => {
 //       formData.append(`emails[${i}]`, email);
@@ -471,12 +457,10 @@
 //         headers: { "Content-Type": "multipart/form-data" },
 //       });
 
-    
 //       setShowModal(false);
 //       setShowEmailModal(false);
-//        setLoading(false);    
+//        setLoading(false);
 //       setSelectedEmails([]);
-
 
 //       const response = await axios.get(
 //         `${API_BASE_URL}/pcb-store/${selectedPlant}`
@@ -520,7 +504,6 @@
 
 //     if (!result.isConfirmed) return;
 
-
 //     try {
 //       await axios.post(`${API_BASE_URL}/delete-edit-file`, {
 //         docPath,
@@ -556,15 +539,14 @@
 //     }
 //   };
 
-
 //   // Add this helper function at the top of your component, after imports
 // const formatDate = (dateString) => {
 //   if (!dateString) return '-';
-  
+
 //   try {
 //     const date = new Date(dateString);
 //     if (isNaN(date.getTime())) return dateString; // Return original if invalid date
-    
+
 //     const day = String(date.getDate()).padStart(2, '0');
 //     const month = String(date.getMonth() + 1).padStart(2, '0');
 //     const year = date.getFullYear();
@@ -641,7 +623,6 @@
 //   //     });
 //   //   }
 //   // };
-
 
 //   const handleAmendSubmit = async () => {
 
@@ -729,15 +710,13 @@
 //   }
 // };
 
-
 //   useEffect(() => {
 //   setHeaderData(null);
 // }, []);
 
-
 // const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
 //  let freshStoreData = [];
-  
+
 //   if (amendDataFromModal.plant) {
 //     try {
 //       const response = await axios.get(`${API_BASE_URL}/pcb-store/${amendDataFromModal.plant}`);
@@ -750,7 +729,7 @@
 //       freshStoreData = storeData;
 //     }
 //   }
- 
+
 //   const payload = new FormData();
 
 //   // Add all normal fields
@@ -762,7 +741,7 @@
 //   payload.append("amendDate", amendDataFromModal.amendDate);
 //   payload.append("comments", amendDataFromModal.comments);
 //   payload.append("category", amendDataFromModal.category);
-  
+
 //   // Emails → convert to JSON
 //   payload.append(
 //     "emails",
@@ -798,7 +777,6 @@
 //     console.log("🔍", key, value);
 //   }
 
-
 //   try {
 
 // console.log("Checking modal process:", amendDataFromModal.process, "amendDataFromModal",amendDataFromModal);
@@ -807,7 +785,7 @@
 //     (item) =>
 //       item.PROCESS?.trim().toLowerCase() === amendDataFromModal.process?.trim().toLowerCase()
 //   );
-  
+
 // console.log("isExistingRecord:", isExistingRecord);
 
 //     const endpoint = isExistingRecord
@@ -821,14 +799,12 @@
 
 //      console.log("✅ Backend response:", response.data);
 //  setShowAmendModal(false);
- 
+
 //     await Swal.fire({
 //       icon: "success",
 //       title: "Email Sent!",
 //       text: `Amendment (${amendDataFromModal.category}) email sent to ${selectedEmails?.selectedAmendEmails} recipient(s).`,
 //     });
-
-
 
 //   } catch (error) {
 //     console.error("❌ Email sending failed:", error);
@@ -840,7 +816,6 @@
 //   }
 // };
 
-
 //   const handleDeleteFile = async (docPath) => {
 //     await axios.post(`${API_BASE_URL}/delete-amendment-file`, {
 //       docPath,
@@ -849,9 +824,6 @@
 //       category: amendData.category,
 //     });
 //   };
-
-
-  
 
 //   const handleSendAmendmentEmail = async (emails, amendData) => {
 //     try {
@@ -1003,7 +975,6 @@
 //       transition: "all 0.3s ease",
 //     },
 //   };
-
 
 //   console.log(modalData.isExistingRecord,"is exist", modalData);
 //   return (
@@ -1316,10 +1287,10 @@
 //             </Form.Group>
 //           <Form.Group className="mb-3">
 //   <Form.Label>
-//     Apply Date 
+//     Apply Date
 //     <span style={{ color: "red" }}>*</span>
 //   </Form.Label>
-  
+
 //   <Form.Control
 //     type="date"
 //     value={modalData.applyDate}
@@ -1336,14 +1307,11 @@
 //     }}
 //     className={modalData.isExistingRecord ? "bg-light" : ""}
 //   />
-  
-  
+
 //   {!modalData.applyDate && errors.applyDate && (
 //     <div className="text-danger" style={{ fontSize: "14px" }}>{errors.applyDate}</div>
-//   )}  
+//   )}
 // </Form.Group>
-
-
 
 //   {receivedDateProcesses.includes(modalData.process) && (
 //   <Form.Group className="mb-3">
@@ -1367,7 +1335,6 @@
 //       // }
 //     }}
 
-
 //       // onChange={(e) =>
 //       //   setModalData((prev) => ({
 //       //     ...prev,
@@ -1376,10 +1343,8 @@
 //       // }
 //     />
 
-  
 //   </Form.Group>
 // )}
-
 
 //             {/* Conditional Radio Button for "Returns Submit" */}
 //             {modalData.process ===
@@ -1522,7 +1487,6 @@
 
 // {/* ////--------------------20/11/2025---------------------- */}
 
-
 //             </div>
 // {/*  20/11/2025--------------/// */}
 //          <Form.Group className="mb-3">
@@ -1541,7 +1505,7 @@
 
 //       if (invalidFiles.length > 0) {
 //         toast.error("Only PDF files are allowed!");
-        
+
 //         // Clear input
 //         if (fileInputRef.current) {
 //           fileInputRef.current.value = null;
@@ -1634,7 +1598,7 @@
 //               />
 //           {errors.comments && (
 //     <div className="text-danger" style={{ fontSize: "14px" }}>{errors.comments}</div>
-//   )}      
+//   )}
 //             </Form.Group>
 //           </Form>
 //         </Modal.Body>
@@ -1642,7 +1606,6 @@
 //           <Button variant="secondary" onClick={() => setShowModal(false)} disabled ={loading}>
 //             Cancel
 //           </Button>
-  
 
 //           <Button variant="primary" onClick={handleEmailSubmit} disabled={loading}>
 //             {loading ? (
@@ -1685,7 +1648,6 @@
 
 // export default PcbModifyTable;
 
-
 import React, { useState, useEffect, useContext } from "react";
 import { Container, Modal, Button, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -1698,7 +1660,7 @@ import AmendModal from "../components/AmendModal";
 import CardWithHeader from "../components/CardWithHeader";
 import { useRef } from "react";
 import Swal from "sweetalert2";
-import { Context } from "../context/ContextData"; 
+import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import { Mail, Send } from "lucide-react";
@@ -1714,7 +1676,7 @@ import EmailSelectionModal from "../components/EmailSelectionModal"; // Adjust p
 import { toast } from "react-toastify";
 
 const PcbModifyTable = () => {
-    const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   const navigate = useNavigate();
   const [key, setKey] = useState("Pollution Control Board");
   const [plants, setPlants] = useState([]);
@@ -1733,12 +1695,12 @@ const PcbModifyTable = () => {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [loading, setLoading] = useState(false);
-      const [loggedInUser, setLoggedInUser] = useState(null);
-const [errors, setErrors] = useState({
-  applyDate: "",
-  comments: "",
-  recievedDate: ""
-});
+  const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
+  const [errors, setErrors] = useState({
+    applyDate: "",
+    comments: "",
+    recievedDate: "",
+  });
 
   const {
     totalMasterData = [],
@@ -1764,10 +1726,6 @@ const [errors, setErrors] = useState({
     logs: "", // Added logs to modalData state
   });
 
-
-
-
- 
   const [showAmendModal, setShowAmendModal] = useState(false);
   const [amendData, setAmendData] = useState({
     plant: "",
@@ -1781,75 +1739,75 @@ const [errors, setErrors] = useState({
     comments: "",
     oldComments: "",
     amendreturnsSubmitted: "",
-
   });
 
-    // --- 2. Check User Login ---
-          useEffect(() => {
-            if (!token) {
-              navigate('/');
-              return;
-            }
-            const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
-            if (userString) {
-              try {
-                const userObj = JSON.parse(userString);
-                setLoggedInUser(userObj);
-              } catch (error) {
-                console.error("Error parsing user data:", error);
-              }
-            }
-            
-          }, [token, navigate]);
-     useEffect(() => {
-        setHeaderData(null);
-      }, []);
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
+
+  useEffect(() => {
+    setHeaderData(null);
+  }, []);
 
   // ---------------------- EMAIL (Amend) HANDLERS ----------------------
-const [emailAmendRecipients, setEmailAmendRecipients] = useState([]);
-const [selectedAmendEmails, setSelectedAmendEmails] = useState([]);
-const [showAmendEmailModal, setShowAmendEmailModal] = useState(false);
+  const [emailAmendRecipients, setEmailAmendRecipients] = useState([]);
+  const [selectedAmendEmails, setSelectedAmendEmails] = useState([]);
+  const [showAmendEmailModal, setShowAmendEmailModal] = useState(false);
 
+  //         useEffect(() => {
+  //   setHeaderData(null); // Reset header data when component loads
+  // }, [setHeaderData]);
 
-//         useEffect(() => {
-//   setHeaderData(null); // Reset header data when component loads
-// }, [setHeaderData]);
-
-
-
-useEffect(() => {
-  axios
-    .get(`${API_BASE_URL}/pcb-emails`)
-    .then((res) => {
-      setEmailAmendRecipients(res.data || []);
-    })
-    .catch((err) => console.error("❌ Error fetching amendment emails:", err));
-}, []);
+  useEffect(() => {
+    axios
+      .get(`${API_BASE_URL}/pcb-emails`)
+      .then((res) => {
+        setEmailAmendRecipients(res.data || []);
+      })
+      .catch((err) =>
+        console.error("❌ Error fetching amendment emails:", err)
+      );
+  }, []);
 
   // Handle Email Submit - Opens Email Modal
 
   const validateForm = () => {
-  let newErrors = {};
+    let newErrors = {};
 
-  if (!modalData.applyDate) {
-    newErrors.applyDate = "Please select Apply Date";
-  }
+    if (!modalData.applyDate) {
+      newErrors.applyDate = "Please select Apply Date";
+    }
 
-  if (!modalData.comments || !modalData.comments.trim()) {
-    newErrors.comments = "Please enter Comments";
-  }
+    if (!modalData.comments || !modalData.comments.trim()) {
+      newErrors.comments = "Please enter Comments";
+    }
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   const handleEmailSubmit = async () => {
-
-   if (!validateForm()) return;
+    if (!validateForm()) return;
 
     try {
       const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
       setEmailRecipients(response.data);
-     console.log(modalData.process,"modalData.processmodalData.processmodalData.process");
+      console.log(
+        modalData.process,
+        "modalData.processmodalData.processmodalData.process"
+      );
 
       // Pre-fill email subject and message
       setEmailSubject(`Process Update: ${modalData.process}`);
@@ -1865,12 +1823,12 @@ useEffect(() => {
     }
   };
 
-const receivedDateProcesses = [
-  "Received TOR",
-  "EC (Environmetal Clearance)",
-  "Application for CFE",
-  "Received CFE",
-]
+  const receivedDateProcesses = [
+    "Received TOR",
+    "EC (Environmetal Clearance)",
+    "Application for CFE",
+    "Received CFE",
+  ];
 
   // Handle Email Checkbox Toggle
 
@@ -1888,10 +1846,9 @@ const receivedDateProcesses = [
       axios
         .get(`${API_BASE_URL}/pcb-store/${selectedPlant}`)
         .then((res) => {
-    
           setStoreData(res.data);
 
-          console.log(res.data,"pcb----------------store");
+          console.log(res.data, "pcb----------------store");
         })
         .catch((err) => console.error(err));
     } else {
@@ -2025,11 +1982,10 @@ const receivedDateProcesses = [
 
   // Handlers for Edit
   const handleEditClick = (row) => {
-
     const storeInfo =
       storeData.find((item) => item.PROCESS === row.PROCESS) || {};
 
-      console.log(storeInfo,":dddddddddd")
+    console.log(storeInfo, ":dddddddddd");
 
     const existingDocs = storeInfo.DOC_PATH
       ? storeInfo.DOC_PATH.split(",")
@@ -2037,91 +1993,92 @@ const receivedDateProcesses = [
     const existingNames = storeInfo.DOC_NAME
       ? storeInfo.DOC_NAME.split(",")
       : [];
-   const isExistingRecord = storeInfo.UPDATED === "YES" || !!storeInfo.APPLY_DT;
+    const isExistingRecord =
+      storeInfo.UPDATED === "YES" || !!storeInfo.APPLY_DT;
     setModalData({
       plant: selectedPlant,
       process: row.PROCESS,
       applyDate: storeInfo.APPLY_DT || "",
-      receivedDate:storeInfo?.RECEIVED_DT || "",
+      receivedDate: storeInfo?.RECEIVED_DT || "",
       selectedFiles: [],
       existingDocs,
       existingNames,
       comments: "",
       returnsSubmitted: storeInfo.RETURNS_SUBMITTED,
       logs: storeInfo.LOG || "",
-      isExistingRecord
+      isExistingRecord,
     });
 
     setShowModal(true);
   };
 
-
- //------------------updated on 26-12-2025 by rajakumari.m------------------------------------
+  //------------------updated on 26-12-2025 by rajakumari.m------------------------------------
   // Handlers for Amend
-const handleAmendClick = async (row, category) => {
-  try {
-    const storeInfo =
-      storeData.find((item) => item.PROCESS === row.PROCESS) || {};
+  const handleAmendClick = async (row, category) => {
+    try {
+      const storeInfo =
+        storeData.find((item) => item.PROCESS === row.PROCESS) || {};
 
-    const endpoint = `${API_BASE_URL}/amendment-data/${selectedPlant}/${encodeURIComponent(
-      row.PROCESS
-    )}`;
-    const res = await axios.get(endpoint);
+      const endpoint = `${API_BASE_URL}/amendment-data/${selectedPlant}/${encodeURIComponent(
+        row.PROCESS
+      )}`;
+      const res = await axios.get(endpoint);
 
-    console.log("✅ API Response Data for Amendment:", res.data);
+      console.log("✅ API Response Data for Amendment:", res.data);
 
-    const data = res.data;
-    const prefix = `${category}`;
+      const data = res.data;
+      const prefix = `${category}`;
 
-    const existingDocs = data[`${prefix}_DOC_PATH`]
-      ? JSON.parse(data[`${prefix}_DOC_PATH`])
-      : [];
-    const existingNames = data[`${prefix}_DOC_NAME`]
-      ? JSON.parse(data[`${prefix}_DOC_NAME`])
-      : [];
-    const amendDate = data[`${prefix}_DATE`] || "";
-    const oldComments = data[`${prefix}_COMMENTS`] || "";
-    const amendreturnsubmit = data[`${prefix}_RETURNS_SUBMITTED`] || "";
-    
-    // ✅ FIX: Get received date from amendment data first, then fall back to store info
-    const amendReceivedDate = data[`${prefix}_RECEIVED_DT`] || storeInfo.RECEIVED_DT || "";
+      const existingDocs = data[`${prefix}_DOC_PATH`]
+        ? JSON.parse(data[`${prefix}_DOC_PATH`])
+        : [];
+      const existingNames = data[`${prefix}_DOC_NAME`]
+        ? JSON.parse(data[`${prefix}_DOC_NAME`])
+        : [];
+      const amendDate = data[`${prefix}_DATE`] || "";
+      const oldComments = data[`${prefix}_COMMENTS`] || "";
+      const amendreturnsubmit = data[`${prefix}_RETURNS_SUBMITTED`] || "";
 
-    // Check if amendment already exists (has amendDate)
-    const isExistingAmendment = !!amendDate;
+      // ✅ FIX: Get received date from amendment data first, then fall back to store info
+      const amendReceivedDate =
+        data[`${prefix}_RECEIVED_DT`] || storeInfo.RECEIVED_DT || "";
 
-    setAmendData({
-      plant: selectedPlant,
-      process: row.PROCESS,
-      applyDate: storeInfo?.APPLY_DT || "",
-      receivedDate: amendReceivedDate, // ✅ This should now work correctly
-      amendDate,
-      category,
-      selectedFiles: [],
-      existingDocs,
-      existingNames,
-      comments: "",
-      oldComments,
-      amendDecision: "Yes",
-      amendreturnsSubmitted: amendreturnsubmit,
-      isExistingAmendment,
-    });
+      // Check if amendment already exists (has amendDate)
+      const isExistingAmendment = !!amendDate;
 
-    setShowAmendModal(true);
-  } catch (error) {
-    console.error(
-      "❌ handleAmendClick - Failed to fetch amendment data:",
-      error
-    );
-    alert("Failed to load amendment data. Please try again.");
-  }
-};
- //--------------------------------------------------------------------------------------------- 
+      setAmendData({
+        plant: selectedPlant,
+        process: row.PROCESS,
+        applyDate: storeInfo?.APPLY_DT || "",
+        receivedDate: amendReceivedDate, // ✅ This should now work correctly
+        amendDate,
+        category,
+        selectedFiles: [],
+        existingDocs,
+        existingNames,
+        comments: "",
+        oldComments,
+        amendDecision: "Yes",
+        amendreturnsSubmitted: amendreturnsubmit,
+        isExistingAmendment,
+      });
+
+      setShowAmendModal(true);
+    } catch (error) {
+      console.error(
+        "❌ handleAmendClick - Failed to fetch amendment data:",
+        error
+      );
+      alert("Failed to load amendment data. Please try again.");
+    }
+  };
+  //---------------------------------------------------------------------------------------------
 
   // Remove Selected Email
   // const handleRemoveEmail = (email) => {
   //   setSelectedEmails((prev) => prev.filter((e) => e !== email));
   // };
-  
+
   // Submit Edit Modal
   const handleSendEmail = async () => {
     if (selectedEmails.length === 0) {
@@ -2132,18 +2089,16 @@ const handleAmendClick = async (row, category) => {
       return;
     }
 
-        //  --- : 'fetch User';
-        let currentUserName = loggedInUser.username;
-  setLoading(true);          
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+    setLoading(true);
     const formData = new FormData();
     formData.append("loc", modalData.plant);
     formData.append("process", modalData.process);
     formData.append("applyDate", modalData.applyDate);
-       formData.append("receivedDate", modalData.receivedDate || "");
-          formData.append("comments", modalData.comments);
-        formData.append('username', currentUserName);
-
-    
+    formData.append("receivedDate", modalData.receivedDate || "");
+    formData.append("comments", modalData.comments);
+    formData.append("username", currentUserName);
 
     selectedEmails.forEach((email, i) => {
       formData.append(`emails[${i}]`, email);
@@ -2183,12 +2138,10 @@ const handleAmendClick = async (row, category) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-    
       setShowModal(false);
       setShowEmailModal(false);
-       setLoading(false);    
+      setLoading(false);
       setSelectedEmails([]);
-
 
       const response = await axios.get(
         `${API_BASE_URL}/pcb-store/${selectedPlant}`
@@ -2232,7 +2185,6 @@ const handleAmendClick = async (row, category) => {
 
     if (!result.isConfirmed) return;
 
-
     try {
       await axios.post(`${API_BASE_URL}/delete-edit-file`, {
         docPath,
@@ -2268,23 +2220,22 @@ const handleAmendClick = async (row, category) => {
     }
   };
 
-
   // Add this helper function at the top of your component, after imports
-const formatDate = (dateString) => {
-  if (!dateString) return '-';
-  
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString; // Return original if invalid date
-    
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-  } catch (e) {
-    return dateString; // Return original if parsing fails
-  }
-};
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString; // Return original if invalid date
+
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch (e) {
+      return dateString; // Return original if parsing fails
+    }
+  };
 
   // Submit Amend Modal
   // const handleAmendSubmit = async () => {
@@ -2354,204 +2305,202 @@ const formatDate = (dateString) => {
   //   }
   // };
 
-
   const handleAmendSubmit = async () => {
+    alert(12);
+    const {
+      plant,
+      process,
+      applyDate,
+      receivedDate,
+      amendDate,
+      selectedFiles,
+      comments,
+      category,
+      amendreturnsSubmitted,
+      selectedEmails,
+    } = amendData;
 
-    alert(12)
-  const {
-    plant,
-    process,
-    applyDate,
-    receivedDate,
-    amendDate,
-    selectedFiles,
-    comments,
-    category,
-    amendreturnsSubmitted,
-    selectedEmails,
-  } = amendData;
-
-  const isExistingRecord = storeData.some(
-    (item) =>
-      item.PROCESS?.toLowerCase().trim() === process?.toLowerCase().trim()
-  );
-
-  const endpoint = isExistingRecord
-    ? `${API_BASE_URL}/amendment-updt`
-    : `${API_BASE_URL}/amendment-submit`;
-
-  const formData = new FormData();
-  formData.append("loc", plant);
-  formData.append("process", process);
-  formData.append("applyDate", applyDate);
-  formData.append("receivedDate", receivedDate);
-  formData.append("amendDate", amendDate);
-  formData.append("comments", comments);
-  formData.append("category", category);
-  formData.append("amendreturnsSubmitted", amendreturnsSubmitted);
-  // formData.append("receivedDate",null);
-  selectedFiles.forEach((file) => {
-    formData.append("document[]", file);
-    formData.append("doc_name[]", file.name);
-  });
-
-  // ✅ Log for clarity
-  console.log("📤 Submitting Amendment Data:", amendData);
-  console.log("📤 Selected Emailsssss:", selectedEmails);
-
-  try {
-    // ✅ Step 1: Submit Amendment
-    await axios.post(endpoint, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    await Swal.fire({
-      icon: "success",
-      title: "Amendment Submitted",
-      text: `Amendment (${category}) submitted successfully.`,
-    });
-
-    // ✅ Step 2: Send Email Notification
-    // if (selectedEmails && selectedEmails.length > 0) {
-    //   await handleSendAmendEmail({
-    //     plant,
-    //     process,
-    //     applyDate,
-    //     amendDate,
-    //     comments,
-    //     category,
-    //     selectedEmails,
-    //   });
-    // } else {
-    //   console.warn("⚠️ No email recipients selected. Skipping email step.");
-    // }
-
-    // ✅ Step 3: Refresh PCB store data
-    const response = await axios.get(`${API_BASE_URL}/pcb-store/${plant}`);
-    setStoreData(response.data);
-
-    setShowAmendModal(false);
-  } catch (error) {
-    console.error("❌ Amendment submission failed:", error);
-    await Swal.fire({
-      icon: "error",
-      title: "Submission Failed",
-      text: "Please try again later or contact support.",
-    });
-  }
-};
-
-
-  useEffect(() => {
-  setHeaderData(null);
-}, []);
-
-
-const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
- let freshStoreData = [];
-  
-  if (amendDataFromModal.plant) {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/pcb-store/${amendDataFromModal.plant}`);
-      freshStoreData = response.data;
-      setStoreData(freshStoreData); // Update state too
-      console.log("Fresh store data fetched:", freshStoreData);
-    } catch (err) {
-      console.error("Error fetching fresh data:", err);
-      // Fall back to existing storeData
-      freshStoreData = storeData;
-    }
-  }
- 
-  const payload = new FormData();
-
-  // Add all normal fields
-  payload.append("plant", amendDataFromModal.plant);
-  payload.append("process", amendDataFromModal.process);
-  payload.append("applyDate", amendDataFromModal.applyDate);
-payload.append("receivedDate", amendDataFromModal.receivedDate || ""); 
-  // payload.append("receivedDate", amendDataFromModal.receivedDate);
-  payload.append("amendDate", amendDataFromModal.amendDate);
-  payload.append("comments", amendDataFromModal.comments);
-  payload.append("category", amendDataFromModal.category);
-  
-  // Emails → convert to JSON
-  payload.append(
-    "emails",
-    JSON.stringify(selectedEmails.selectedAmendEmails || [])
-  );
-
-  payload.append(
-    "existingDocs",
-    JSON.stringify(amendDataFromModal.existingDocs || [])
-  );
-  payload.append(
-    "existingNames",
-    JSON.stringify(amendDataFromModal.existingNames || [])
-  );
-
-  payload.append("oldComments", amendDataFromModal.oldComments || "");
-  payload.append("amendDecision", amendDataFromModal.amendDecision || "");
-  payload.append(
-    "amendreturnsSubmitted",
-    amendDataFromModal.amendreturnsSubmitted || ""
-  );
-
-  // Add NEW FILES
-  if (amendDataFromModal.selectedFiles?.length > 0) {
-    amendDataFromModal.selectedFiles.forEach((file) => {
-      payload.append("selectedFiles[]", file);
-    });
-  }
-
-  console.log("📤 Sending payload (FormData) to backend →");
-
-  for (let [key, value] of payload.entries()) {
-    console.log("🔍", key, value);
-  }
-
-
-  try {
-
-console.log("Checking modal process:", amendDataFromModal.process, "amendDataFromModal",amendDataFromModal);
-
-  const isExistingRecord = freshStoreData.some(
-    (item) =>
-      item.PROCESS?.trim().toLowerCase() === amendDataFromModal.process?.trim().toLowerCase()
-  );
-  
-console.log("isExistingRecord:", isExistingRecord);
+    const isExistingRecord = storeData.some(
+      (item) =>
+        item.PROCESS?.toLowerCase().trim() === process?.toLowerCase().trim()
+    );
 
     const endpoint = isExistingRecord
       ? `${API_BASE_URL}/amendment-updt`
       : `${API_BASE_URL}/amendment-submit`;
 
-    // Send the request with correct headers
-    const response = await axios.post(endpoint, payload, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const formData = new FormData();
+    formData.append("loc", plant);
+    formData.append("process", process);
+    formData.append("applyDate", applyDate);
+    formData.append("receivedDate", receivedDate);
+    formData.append("amendDate", amendDate);
+    formData.append("comments", comments);
+    formData.append("category", category);
+    formData.append("amendreturnsSubmitted", amendreturnsSubmitted);
+    // formData.append("receivedDate",null);
+    selectedFiles.forEach((file) => {
+      formData.append("document[]", file);
+      formData.append("doc_name[]", file.name);
     });
 
-     console.log("✅ Backend response:", response.data);
- setShowAmendModal(false);
- 
-    await Swal.fire({
-      icon: "success",
-      title: "Email Sent!",
-      text: `Amendment (${amendDataFromModal.category}) email sent to ${selectedEmails?.selectedAmendEmails} recipient(s).`,
-    });
+    // ✅ Log for clarity
+    console.log("📤 Submitting Amendment Data:", amendData);
+    console.log("📤 Selected Emailsssss:", selectedEmails);
 
+    try {
+      // ✅ Step 1: Submit Amendment
+      await axios.post(endpoint, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
+      await Swal.fire({
+        icon: "success",
+        title: "Amendment Submitted",
+        text: `Amendment (${category}) submitted successfully.`,
+      });
 
-  } catch (error) {
-    console.error("❌ Email sending failed:", error);
-    await Swal.fire({
-      icon: "error",
-      title: "Email Sending Failed",
-      text: "Amendment submitted successfully, but email notification failed.",
-    });
-  }
-};
+      // ✅ Step 2: Send Email Notification
+      // if (selectedEmails && selectedEmails.length > 0) {
+      //   await handleSendAmendEmail({
+      //     plant,
+      //     process,
+      //     applyDate,
+      //     amendDate,
+      //     comments,
+      //     category,
+      //     selectedEmails,
+      //   });
+      // } else {
+      //   console.warn("⚠️ No email recipients selected. Skipping email step.");
+      // }
 
+      // ✅ Step 3: Refresh PCB store data
+      const response = await axios.get(`${API_BASE_URL}/pcb-store/${plant}`);
+      setStoreData(response.data);
+
+      setShowAmendModal(false);
+    } catch (error) {
+      console.error("❌ Amendment submission failed:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Submission Failed",
+        text: "Please try again later or contact support.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    setHeaderData(null);
+  }, []);
+
+  const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
+    let freshStoreData = [];
+
+    if (amendDataFromModal.plant) {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/pcb-store/${amendDataFromModal.plant}`
+        );
+        freshStoreData = response.data;
+        setStoreData(freshStoreData); // Update state too
+        console.log("Fresh store data fetched:", freshStoreData);
+      } catch (err) {
+        console.error("Error fetching fresh data:", err);
+        // Fall back to existing storeData
+        freshStoreData = storeData;
+      }
+    }
+
+    const payload = new FormData();
+
+    // Add all normal fields
+    payload.append("plant", amendDataFromModal.plant);
+    payload.append("process", amendDataFromModal.process);
+    payload.append("applyDate", amendDataFromModal.applyDate);
+    payload.append("receivedDate", amendDataFromModal.receivedDate || "");
+    // payload.append("receivedDate", amendDataFromModal.receivedDate);
+    payload.append("amendDate", amendDataFromModal.amendDate);
+    payload.append("comments", amendDataFromModal.comments);
+    payload.append("category", amendDataFromModal.category);
+
+    // Emails → convert to JSON
+    payload.append(
+      "emails",
+      JSON.stringify(selectedEmails.selectedAmendEmails || [])
+    );
+
+    payload.append(
+      "existingDocs",
+      JSON.stringify(amendDataFromModal.existingDocs || [])
+    );
+    payload.append(
+      "existingNames",
+      JSON.stringify(amendDataFromModal.existingNames || [])
+    );
+
+    payload.append("oldComments", amendDataFromModal.oldComments || "");
+    payload.append("amendDecision", amendDataFromModal.amendDecision || "");
+    payload.append(
+      "amendreturnsSubmitted",
+      amendDataFromModal.amendreturnsSubmitted || ""
+    );
+
+    // Add NEW FILES
+    if (amendDataFromModal.selectedFiles?.length > 0) {
+      amendDataFromModal.selectedFiles.forEach((file) => {
+        payload.append("selectedFiles[]", file);
+      });
+    }
+
+    console.log("📤 Sending payload (FormData) to backend →");
+
+    for (let [key, value] of payload.entries()) {
+      console.log("🔍", key, value);
+    }
+
+    try {
+      console.log(
+        "Checking modal process:",
+        amendDataFromModal.process,
+        "amendDataFromModal",
+        amendDataFromModal
+      );
+
+      const isExistingRecord = freshStoreData.some(
+        (item) =>
+          item.PROCESS?.trim().toLowerCase() ===
+          amendDataFromModal.process?.trim().toLowerCase()
+      );
+
+      console.log("isExistingRecord:", isExistingRecord);
+
+      const endpoint = isExistingRecord
+        ? `${API_BASE_URL}/amendment-updt`
+        : `${API_BASE_URL}/amendment-submit`;
+
+      // Send the request with correct headers
+      const response = await axios.post(endpoint, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      console.log("✅ Backend response:", response.data);
+      setShowAmendModal(false);
+
+      await Swal.fire({
+        icon: "success",
+        title: "Email Sent!",
+        text: `Amendment (${amendDataFromModal.category}) email sent to ${selectedEmails?.selectedAmendEmails} recipient(s).`,
+      });
+    } catch (error) {
+      console.error("❌ Email sending failed:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Email Sending Failed",
+        text: "Amendment submitted successfully, but email notification failed.",
+      });
+    }
+  };
 
   const handleDeleteFile = async (docPath) => {
     await axios.post(`${API_BASE_URL}/delete-amendment-file`, {
@@ -2561,9 +2510,6 @@ console.log("isExistingRecord:", isExistingRecord);
       category: amendData.category,
     });
   };
-
-
-  
 
   const handleSendAmendmentEmail = async (emails, amendData) => {
     try {
@@ -2716,8 +2662,7 @@ console.log("isExistingRecord:", isExistingRecord);
     },
   };
 
-
-  console.log(modalData.isExistingRecord,"is exist", modalData);
+  console.log(modalData.isExistingRecord, "is exist", modalData);
   return (
     <>
       <PlantSelector
@@ -2819,7 +2764,7 @@ console.log("isExistingRecord:", isExistingRecord);
                   const storeInfo = storeData.find(
                     (item) => item.PROCESS === row.PROCESS
                   );
-               console.log("storeinmgo",storeInfo);
+                  console.log("storeinmgo", storeInfo);
                   const isUpdated = !!storeInfo;
                   const isNextStep = index === lastUpdatedIndex + 1;
 
@@ -3005,14 +2950,14 @@ console.log("isExistingRecord:", isExistingRecord);
         </div>
       )}
 
-<Modal
-  show={showModal}
-  onHide={() => setShowModal(false)}
-  centered
-///-----------------------------------------20/11/2025---------------------------------
-  dialogClassName="modal-dialog-scrollable"
-  ///-----------------------------------------20/11/2025---------------------------------
->
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        centered
+        ///-----------------------------------------20/11/2025---------------------------------
+        dialogClassName="modal-dialog-scrollable"
+        ///-----------------------------------------20/11/2025---------------------------------
+      >
         <Modal.Header closeButton>
           <Modal.Title>Edit Process Data</Modal.Title>
         </Modal.Header>
@@ -3026,72 +2971,66 @@ console.log("isExistingRecord:", isExistingRecord);
               <Form.Label>Process</Form.Label>
               <Form.Control type="text" value={modalData.process} readOnly />
             </Form.Group>
-          <Form.Group className="mb-3">
-  <Form.Label>
-    Apply Date 
-    <span style={{ color: "red" }}>*</span>
-  </Form.Label>
-  
-  <Form.Control
-    type="date"
-    value={modalData.applyDate}
-    max={new Date().toISOString().split("T")[0]}
-    readOnly={modalData.isExistingRecord} // Make readonly if record exists
-    onChange={(e) => {
-      // Only allow changes if it's NOT an existing record
-      if (!modalData.isExistingRecord) {
-        setModalData((prev) => ({
-          ...prev,
-          applyDate: e.target.value,
-        }));
-      }
-    }}
-    className={modalData.isExistingRecord ? "bg-light" : ""}
-  />
-  
-  
-  {!modalData.applyDate && errors.applyDate && (
-    <div className="text-danger" style={{ fontSize: "14px" }}>{errors.applyDate}</div>
-  )}  
-</Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Apply Date
+                <span style={{ color: "red" }}>*</span>
+              </Form.Label>
 
+              <Form.Control
+                type="date"
+                value={modalData.applyDate}
+                max={new Date().toISOString().split("T")[0]}
+                readOnly={modalData.isExistingRecord} // Make readonly if record exists
+                onChange={(e) => {
+                  // Only allow changes if it's NOT an existing record
+                  if (!modalData.isExistingRecord) {
+                    setModalData((prev) => ({
+                      ...prev,
+                      applyDate: e.target.value,
+                    }));
+                  }
+                }}
+                className={modalData.isExistingRecord ? "bg-light" : ""}
+              />
 
+              {!modalData.applyDate && errors.applyDate && (
+                <div className="text-danger" style={{ fontSize: "14px" }}>
+                  {errors.applyDate}
+                </div>
+              )}
+            </Form.Group>
 
-  {receivedDateProcesses.includes(modalData.process) && (
-  <Form.Group className="mb-3">
-    <Form.Label>
-      Received Date <span style={{ color: "red" }}>*</span>
-    </Form.Label>
+            {receivedDateProcesses.includes(modalData.process) && (
+              <Form.Group className="mb-3">
+                <Form.Label>
+                  Received Date <span style={{ color: "red" }}>*</span>
+                </Form.Label>
 
-    <Form.Control
-      type="date"
-      value={modalData.receivedDate || ""}
-      max={new Date().toISOString().split("T")[0]}
+                <Form.Control
+                  type="date"
+                  value={modalData.receivedDate || ""}
+                  max={new Date().toISOString().split("T")[0]}
+                  // readOnly={modalData.isExistingRecord}
+                  onChange={(e) => {
+                    // Only allow changes if it's NOT an existing record
+                    // if (!modalData.isExistingRecord) {
+                    setModalData((prev) => ({
+                      ...prev,
+                      receivedDate: e.target.value,
+                    }));
+                    // }
+                  }}
 
-  // readOnly={modalData.isExistingRecord}
-      onChange={(e) => {
-      // Only allow changes if it's NOT an existing record
-      // if (!modalData.isExistingRecord) {
-        setModalData((prev) => ({
-          ...prev,
-         receivedDate: e.target.value,
-        }));
-      // }
-    }}
-
-
-      // onChange={(e) =>
-      //   setModalData((prev) => ({
-      //     ...prev,
-      //     receivedDate: e.target.value,
-      //   }))
-      // }
-    />
-
-  
-  </Form.Group>
-)}
-
+                  // onChange={(e) =>
+                  //   setModalData((prev) => ({
+                  //     ...prev,
+                  //     receivedDate: e.target.value,
+                  //   }))
+                  // }
+                />
+              </Form.Group>
+            )}
 
             {/* Conditional Radio Button for "Returns Submit" */}
             {modalData.process ===
@@ -3192,89 +3131,96 @@ console.log("isExistingRecord:", isExistingRecord);
 
             <div className="mb-3">
               <strong>Previously Uploaded Files:</strong>
-{/* ////--------------------20/11/2025---------------------- */}
-  {Array.isArray(modalData.existingDocs) &&
- modalData.existingDocs.length > 0 &&
- modalData.existingDocs.some(doc => doc && doc !== "null" && doc !== "[]") ? (
-  <ul className="mb-2 list-unstyled">
-    {modalData.existingDocs
-      .filter(doc => doc && doc !== "null" && doc !== "[]")
-      .map((docPath, idx) => {
-        const cleanedPath = docPath.replace(/[\[\]"'%]/g, "").trim();
-        const rawName = modalData.existingNames[idx] || `Document ${idx + 1}`;
-        const cleanedName = rawName.replace(/[\[\]"'%]/g, "").split("/").pop().trim();
+              {/* ////--------------------20/11/2025---------------------- */}
+              {Array.isArray(modalData.existingDocs) &&
+              modalData.existingDocs.length > 0 &&
+              modalData.existingDocs.some(
+                (doc) => doc && doc !== "null" && doc !== "[]"
+              ) ? (
+                <ul className="mb-2 list-unstyled">
+                  {modalData.existingDocs
+                    .filter((doc) => doc && doc !== "null" && doc !== "[]")
+                    .map((docPath, idx) => {
+                      const cleanedPath = docPath
+                        .replace(/[\[\]"'%]/g, "")
+                        .trim();
+                      const rawName =
+                        modalData.existingNames[idx] || `Document ${idx + 1}`;
+                      const cleanedName = rawName
+                        .replace(/[\[\]"'%]/g, "")
+                        .split("/")
+                        .pop()
+                        .trim();
 
-        return (
-          <li
-            key={idx}
-            className="d-flex justify-content-between align-items-center mb-1 border p-2 rounded"
-          >
-            <a
-              href={`${API_DOC_URL}/storage/${cleanedPath}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {cleanedName}
-            </a>
+                      return (
+                        <li
+                          key={idx}
+                          className="d-flex justify-content-between align-items-center mb-1 border p-2 rounded"
+                        >
+                          <a
+                            href={`${API_DOC_URL}/storage/${cleanedPath}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {cleanedName}
+                          </a>
 
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => handleDeleteEditFile(docPath, idx)}
-            >
-              Delete
-            </Button>
-          </li>
-        );
-      })}
-  </ul>
-) : (
-  <p className="text-muted">No documents uploaded.</p>
-)}
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => handleDeleteEditFile(docPath, idx)}
+                          >
+                            Delete
+                          </Button>
+                        </li>
+                      );
+                    })}
+                </ul>
+              ) : (
+                <p className="text-muted">No documents uploaded.</p>
+              )}
 
-{/* ////--------------------20/11/2025---------------------- */}
-
-
+              {/* ////--------------------20/11/2025---------------------- */}
             </div>
-{/*  20/11/2025--------------/// */}
-         <Form.Group className="mb-3">
-  <Form.Label>Upload Document (PDF Only)</Form.Label>
-  <Form.Control
-    type="file"
-    multiple
-    accept="application/pdf"
-    ref={fileInputRef}
-    onChange={(e) => {
-      const files = Array.from(e.target.files);
+            {/*  20/11/2025--------------/// */}
+            <Form.Group className="mb-3">
+              <Form.Label>Upload Document (PDF Only)</Form.Label>
+              <Form.Control
+                type="file"
+                multiple
+                accept="application/pdf"
+                ref={fileInputRef}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files);
 
-      const invalidFiles = files.filter(
-        (file) => file.type !== "application/pdf"
-      );
+                  const invalidFiles = files.filter(
+                    (file) => file.type !== "application/pdf"
+                  );
 
-      if (invalidFiles.length > 0) {
-        toast.error("Only PDF files are allowed!");
-        
-        // Clear input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = null;
-        }
-        return; // Stop here
-      }
+                  if (invalidFiles.length > 0) {
+                    toast.error("Only PDF files are allowed!");
 
-      // Add valid PDF files
-      setModalData((prev) => ({
-        ...prev,
-        selectedFiles: [...prev.selectedFiles, ...files],
-      }));
+                    // Clear input
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = null;
+                    }
+                    return; // Stop here
+                  }
 
-      // Clear the input after selection
-      if (fileInputRef.current) {
-        fileInputRef.current.value = null;
-      }
-    }}
-  />
-</Form.Group>
-{/*  20/11/2025--------------/// */}
+                  // Add valid PDF files
+                  setModalData((prev) => ({
+                    ...prev,
+                    selectedFiles: [...prev.selectedFiles, ...files],
+                  }));
+
+                  // Clear the input after selection
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = null;
+                  }
+                }}
+              />
+            </Form.Group>
+            {/*  20/11/2025--------------/// */}
 
             {modalData.selectedFiles.length > 0 && (
               <div className="mb-2">
@@ -3330,8 +3276,9 @@ console.log("isExistingRecord:", isExistingRecord);
                 </Form.Group> */}
 
             <Form.Group className="mb-3">
-              <Form.Label>Comments
-                      <span style={{ color: "red" }}>*</span>
+              <Form.Label>
+                Comments
+                <span style={{ color: "red" }}>*</span>
               </Form.Label>
               <Form.Control
                 as="textarea"
@@ -3344,19 +3291,28 @@ console.log("isExistingRecord:", isExistingRecord);
                   }))
                 }
               />
-          {errors.comments && (
-    <div className="text-danger" style={{ fontSize: "14px" }}>{errors.comments}</div>
-  )}      
+              {errors.comments && (
+                <div className="text-danger" style={{ fontSize: "14px" }}>
+                  {errors.comments}
+                </div>
+              )}
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)} disabled ={loading}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowModal(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
-  
 
-          <Button variant="primary" onClick={handleEmailSubmit} disabled={loading}>
+          <Button
+            variant="primary"
+            onClick={handleEmailSubmit}
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <span className="spinner-border spinner-border-sm me-2"></span>
@@ -3388,8 +3344,8 @@ console.log("isExistingRecord:", isExistingRecord);
         setAmendData={setAmendData}
         onSubmit={handleAmendSubmit}
         onDeleteFile={handleDeleteFile}
-  emailAmendRecipients={emailAmendRecipients}
-  onSendAmendEmail={handleSendAmendEmail}
+        emailAmendRecipients={emailAmendRecipients}
+        onSendAmendEmail={handleSendAmendEmail}
       />
     </>
   );

@@ -276,7 +276,7 @@ const PollutionForm = () => {
         formPayload.append('applyDate', formData.applyDate);
         formPayload.append('comments', formData.comments);
     formPayload.append('receivedDate', "");
-    formPayload.append('userName',currentUserName);
+    formPayload.append('username',currentUserName);
 
 
         // ✅ Append only validated PDF files

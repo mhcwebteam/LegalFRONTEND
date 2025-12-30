@@ -21,7 +21,9 @@ const Amendment = () => {
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState([]);
   const [amendmentStatus, setamendmentStatus] = useState("");
+    const token = localStorage.getItem('token');
   const navigate = useNavigate(); // Initialize navigate
+        const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
   const tabList = [
     "Pollution Control Board",
@@ -31,6 +33,24 @@ const Amendment = () => {
   ];
 
 
+  
+    // --- 2. Check User Login ---
+            useEffect(() => {
+              if (!token) {
+                navigate('/');
+                return;
+              }
+              const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+              if (userString) {
+                try {
+                  const userObj = JSON.parse(userString);
+                  setLoggedInUser(userObj);
+                } catch (error) {
+                  console.error("Error parsing user data:", error);
+                }
+              }
+              
+            }, [token, navigate]);
   
 
   useEffect(() => {
@@ -130,8 +150,12 @@ const Amendment = () => {
       return;
     }
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const payload = {
       plant: selectedPlant,
+      username: currentUserName,
       category:
         key === "Pollution Control Board"
           ? category

@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Badge, Modal, OverlayTrigger, Tooltip, Card , Alert} from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 // added on 20-12-2025 ny rajakumari.m-----------------------------------------------------------
 import {FaCheckCircle } from "react-icons/fa";
 //-----------------------------------------------------------------------------------------------
@@ -15,6 +16,8 @@ import ProjectInfoHeader from "./ProjectInfoHeader";
 import EmailSelectionModal from "./EmailModal";
 
 const FireUpdateTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const [steps, setSteps] = useState([]);
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState("");
@@ -59,8 +62,7 @@ const FireUpdateTable = () => {
 // Add this with your other useState declarations
 const [allStepsCompleted, setAllStepsCompleted] = useState(false);
 const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
-
-
+  const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
 
   const provisionalRadioLabels = {
@@ -276,6 +278,25 @@ const fetchPlantData = useCallback(async (plantId) => {
   }
 }, [steps, PROVISIONAL_NOC_STEP_INDICES, OC_PROCESS_CONCEPTUAL_START_INDEX, fetchStepDetails, checkAllStepsCompleted]);
 
+
+      // --- 2. Check User Login ---
+      useEffect(() => {
+        if (!token) {
+          navigate("/");
+          return;
+        }
+        const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+        if (userString) {
+          try {
+            const userObj = JSON.parse(userString);
+            setLoggedInUser(userObj);
+          } catch (error) {
+            console.error("Error parsing user data:", error);
+          }
+        }
+      }, [token, navigate]);
+
+
   useEffect(() => {
     axios.get(`${API_BASE_URL}/fire-process`)
       .then((res) => setSteps(res.data))
@@ -321,6 +342,9 @@ const fetchPlantData = useCallback(async (plantId) => {
     const currentStepIsOC = immediateNextStepIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX && immediateNextStepIndex < (PROVISIONAL_NOC_STEP_INDICES.length * 2);
     // const stepType = currentStepIsOC ? "OC Process" : "Provisional NOC";
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const payload = new FormData();
     payload.append("loc", formData.loc);
     payload.append("process", immediateNextStep.PROCESS);
@@ -328,6 +352,7 @@ const fetchPlantData = useCallback(async (plantId) => {
     payload.append("steptype", currentProcess);
     payload.append("applyDate", formData.applyDate);
     payload.append("comments", formData.comments);
+    payload.append("username", currentUserName);
 
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);

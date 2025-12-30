@@ -1030,6 +1030,7 @@
 
 import React, { useEffect, useState, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL } from "../config/Config";
 import { FaCheckCircle, FaUpload } from "react-icons/fa";
@@ -1043,6 +1044,8 @@ import EmailSelectionModal from "./EmailModal";
 import { toast } from "react-toastify";
 
 const GhmcModify = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const {
     storeData,
     setStoreData,
@@ -1068,6 +1071,7 @@ const GhmcModify = () => {
   const [viewedStepDetails, setViewedStepDetails] = useState(null);
   const [currentProcess, setCurrentProcess] = useState("");
 
+  const [loggedInUser, setLoggedInUser] = useState(null);  //-----------login userstate
 
   // ------updated on 26-12-2025 by rajakumari.m-----------------------------------------
   const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
@@ -1127,6 +1131,24 @@ const GhmcModify = () => {
     return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
 
+  
+    // --- 2. Check User Login ---
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+        return;
+      }
+      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    }, [token, navigate]);
+  
   useEffect(() => {
   setHeaderData(null);
 }, []);
@@ -1614,6 +1636,9 @@ const handleViewNextStep = () => {
   const handleConfirmSubmit = async (emails) => {
     setIsSubmitting(true);
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const payload = new FormData();
 
    
@@ -1634,6 +1659,7 @@ const handleViewNextStep = () => {
     payload.append("projectBuildArea", formData.ProjectBuildArea || "");
     payload.append("noOfTowers", formData.noOfTowers || null);
     payload.append("TotalAmount", formData.TotalAmount || "");
+    payload.append("username", currentUserName || "");
 
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);

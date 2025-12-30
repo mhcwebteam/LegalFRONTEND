@@ -1140,6 +1140,7 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Container } from 'react-bootstrap';
+import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { API_BASE_URL, API_DOC_URL } from '../config/Config';
 import { OverlayTrigger, Tooltip, Modal, Button, Form } from 'react-bootstrap';
@@ -1243,6 +1244,8 @@ const getLatestComment = (storeInfo) => {
 };
 
 const PcbUpdateTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const [key, setKey] = useState('Pollution Control Board');
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState('');
@@ -1278,6 +1281,7 @@ const PcbUpdateTable = () => {
   const [editableReceivedDate, setEditableReceivedDate] = useState('');
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
+    const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
   const [errors, setErrors] = useState({
     receivedDate: ""
@@ -1319,6 +1323,24 @@ const receivedDateProcesses = [
     return '';
   };
 
+  
+    // --- 2. Check User Login ---
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+        return;
+      }
+      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    }, [token, navigate]);
+  
   useEffect(() => {
     axios.get(`${API_BASE_URL}/pcb-processes`).then(res => setPcbProcesses(res.data));
     axios.get(`${API_BASE_URL}/plants`).then(res => setPlants(res.data));
@@ -1535,6 +1557,8 @@ const handleSendEmail = async (selectedEmails) => {
   // Convert existing date to YYYY-MM-DD for comparison
   const existingDateFormatted = formatDateForInput(storeInfo?.APPLY_DT || '');
   
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
   
   console.log("New date from input:", formatDate(editableApplyDate)); // YYYY-MM-DD
   console.log("Existing date from DB:", storeInfo?.APPLY_DT); // DD-MM-YYYY
@@ -1566,7 +1590,8 @@ const handleSendEmail = async (selectedEmails) => {
       documentPath: storeInfo.DOC_PATH,
       comments: storeInfo.COMMENTS,
       receivedDate: updatedReceivedDate,
-      emails: selectedEmails
+      emails: selectedEmails,
+      username: currentUserName
     });
 
     Swal.close();

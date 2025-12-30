@@ -1351,6 +1351,7 @@ import {
   Card,
 } from "react-bootstrap";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
@@ -1362,6 +1363,8 @@ import { getMasterByLoc } from "../api/Api";
 import EmailSelectionModal from "./EmailModal";
 
 const FireModifyTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const {
     storeData,
     setStoreData,
@@ -1418,6 +1421,7 @@ const FireModifyTable = () => {
 
   const [isViewingCompletedStep, setIsViewingCompletedStep] = useState(false);
 
+  const [loggedInUser, setLoggedInUser] = useState(null);
   //---------------------------------------------------------------------------------------------------------------
   const PROVISIONAL_NOC_STEP_INDICES = useMemo(() => [0, 1, 2, 3, 4], []);
   const OC_PROCESS_STEP_RANGE = useMemo(() => [5, 6, 7, 8, 9, 10], []);
@@ -1435,6 +1439,23 @@ const FireModifyTable = () => {
     8: "Committee Approved?",
     9: "OC Status?",
   };
+
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
 
   useEffect(() => {
     axios
@@ -1908,11 +1929,15 @@ const FireModifyTable = () => {
       return;
     }
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const payload = new FormData();
     payload.append("loc", formData.loc);
     payload.append("process", immediateNextStep.PROCESS);
     payload.append("comments", formData.comments || "");
     payload.append("applyDate", formData.applyDate || "");
+    payload.append("username", currentUserName || "");
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });

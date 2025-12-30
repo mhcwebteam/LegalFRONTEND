@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL } from "../config/Config";
 import Swal from "sweetalert2";
@@ -16,6 +17,8 @@ import PreviousWaterUploadedDocs from "./PreviousWaterUploadedDocs";
 
 
 const WaterModifyTable = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
   const { storeData, setStoreData, plants, respModifyData, setRespModifyData, totalMasterData, setHeaderData, headerData } = useContext(Context);
 
@@ -73,9 +76,29 @@ const WaterModifyTable = () => {
   
   // Added on 24-12-2025 by rajakumari.m - State to store selected process details for viewing historical data
   const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
+
+  const [loggedInUser, setLoggedInUser] = useState(null);  //-----------login userstate
+  
   
   const [loc, setLoc] = useState([]);
-
+  
+    // --- 2. Check User Login ---
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+        return;
+      }
+      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    }, [token, navigate]);
+  
 
   useEffect(() => {
     setHeaderData(null);
@@ -1105,6 +1128,8 @@ const WaterModifyTable = () => {
   const handleConfirmSubmit = async (emails) => {
     setIsSubmitting(true);
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
     const payload = new FormData();
     payload.append("loc", formData.loc);
     payload.append("applyDate", formData.applyDate);
@@ -1122,6 +1147,7 @@ const WaterModifyTable = () => {
     payload.append("TotalAmount", formData.TotalAmount || "");
     payload.append("KLD", formData.KLD || "");
     payload.append("amountPaid", formData.amountPaid || "");
+    payload.append("username", currentUserName || "");
     linkDocs.forEach(f => payload.append("Plan_Doc[]", f));
     landDocs.forEach(f => payload.append("Title_Doc[]", f));
     othDocs.forEach(f => payload.append("Oth_Doc[]", f));
