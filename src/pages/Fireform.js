@@ -1,5 +1,3 @@
-
-
 // import React, { useState, useEffect, useContext } from "react";
 // import { useNavigate } from "react-router-dom";
 // import axios from "axios";
@@ -59,7 +57,7 @@
 //     try {
 //       const response = await axios.get(`${API_BASE_URL}/fire-process`);
 //       console.log("Fire Process Data:", response.data);
-      
+
 //       // Set the first process as default
 //       if (response.data && response.data.length > 0) {
 //         setFormData(prev => ({
@@ -113,7 +111,7 @@
 //       try {
 //         const res = await axios.post(`${API_BASE_URL}/check-plant-exists-fire`, { loc: plant });
 //         console.log("API Response:", res.data);
-        
+
 //         if (res.data && res.data.exists === true) {
 //           toast.error('This plant already has entries.');
 //           setFormData((prev) => ({ ...prev, loc: '' }));
@@ -165,7 +163,7 @@
 //       try {
 //          const plantExists = await checkIfPlantExists(value);
 //         if (plantExists) {
-//           return; 
+//           return;
 //         }
 //         const res = await getMasterByLoc(value);
 //         if (res && Object.keys(res).length > 0) {
@@ -209,14 +207,14 @@
 //     const fileExtension = file.name.toLowerCase().endsWith('.pdf');
 //     // Check MIME type
 //     const fileMimeType = file.type === 'application/pdf';
-    
+
 //     return fileExtension && fileMimeType;
 //   };
 
 //   // Function to validate all files are PDF
 //   const validateAllFilesArePDF = (files) => {
 //     if (!files || files.length === 0) return true;
-    
+
 //     for (const file of files) {
 //       if (!isFilePDF(file)) {
 //         return false;
@@ -233,7 +231,7 @@
 //     e.preventDefault();
 
 //     const newErrors = {};
-    
+
 //     // Clear previous errors
 //     setErrors({});
 
@@ -243,7 +241,6 @@
 //     if (!formData.feePaid) newErrors.feePaid = "Please specify if fee is paid.";
 //  if (!formData.noOfTowers) newErrors.noOfTowers = "Number of Towers is required.";
 //     if(!formData.Comments) newErrors.Comments = "Please enter the comments.";
-    
 
 //     if (formData.feePaid === "YES" && !formData.feeAmount)
 //       newErrors.feeAmount = "Fee amount is required when fee is paid.";
@@ -259,7 +256,7 @@
 //         newErrors.documents = "All application documents must be PDF files only.";
 //       }
 //     }
-    
+
 //     if (acknowledgeDocs.length === 0) {
 //       newErrors.acknowledgeDocs = "Please upload at least one acknowledgement receipt.";
 //     } else {
@@ -288,7 +285,7 @@
 //     setIsSubmitting(false);
 //     return;
 //   }
-  
+
 //   if (!validateAllFilesArePDF(acknowledgeDocs)) {
 //     toast.error("Acknowledgement receipts must be PDF files only.");
 //     setIsSubmitting(false);
@@ -332,12 +329,12 @@
 
 //   try {
 //     const response = await submitFireForm(formPayload);
-    
+
 //     console.log("API Response:", response);
-    
+
 //     // Check if response has message (could be at root or in data property)
 //     const successMessage = response?.message || response?.data?.message || "Application submitted successfully!";
-    
+
 //     await Swal.fire({
 //       icon: "success",
 //       title: successMessage,
@@ -370,10 +367,10 @@
 
 //     // Navigate to create page
 //     navigate("/create");
-    
+
 //   } catch (err) {
 //     console.error("Submission error:", err);
-    
+
 //     // Use Swal.fire instead of toast for error
 //     Swal.fire({
 //       icon: "error",
@@ -799,21 +796,41 @@
 
 // export default FireForm;
 
-
-
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL } from '../config/Config';
-import { FaLeaf, FaFire, FaBuilding, FaCalendarAlt, FaUpload, FaMoneyBill, FaFileAlt, FaCheckCircle, FaWater } from 'react-icons/fa';
-import { ChevronLeft, FileText, Home, Flame, MessageSquareMore, Calculator, Store, FileCheck, FolderUp, MapPinned, User } from "lucide-react";
+import { API_BASE_URL } from "../config/Config";
+import {
+  FaLeaf,
+  FaFire,
+  FaBuilding,
+  FaCalendarAlt,
+  FaUpload,
+  FaMoneyBill,
+  FaFileAlt,
+  FaCheckCircle,
+  FaWater,
+} from "react-icons/fa";
+import {
+  ChevronLeft,
+  FileText,
+  Home,
+  Flame,
+  MessageSquareMore,
+  Calculator,
+  Store,
+  FileCheck,
+  FolderUp,
+  MapPinned,
+  User,
+} from "lucide-react";
 import WaterDocUploadModal from "../components/WaterDocUploadModal";
-import PlantSelect from '../components/PlantSelect';
-import ApplyDateInput from '../components/ApplyDateInput';
-import { ToastContainer, toast } from 'react-toastify';
-import ProcessField from '../components/ProcessField';
+import PlantSelect from "../components/PlantSelect";
+import ApplyDateInput from "../components/ApplyDateInput";
+import { ToastContainer, toast } from "react-toastify";
+import ProcessField from "../components/ProcessField";
 import ReusableDialog from "../components/ReusableDialog";
-import ProjectInfoHeader from "../components/ProjectInfoHeader"
+import ProjectInfoHeader from "../components/ProjectInfoHeader";
 import "../pages/Fire.css";
 import { getMasterByLoc, submitFireForm, submitWaterForm } from "../api/Api";
 import { Context } from "../context/ContextData";
@@ -822,8 +839,15 @@ import FlatsPerTowerModal from "../components/FlatsPerTowerModal";
 import Swal from "sweetalert2";
 
 const FireForm = () => {
+  const token = localStorage.getItem("token");
   const navigate = useNavigate();
-  const { totalMasterData, setHeaderData, headerData, setMasterGetData, setMasterData } = useContext(Context);
+  const {
+    totalMasterData,
+    setHeaderData,
+    headerData,
+    setMasterGetData,
+    setMasterData,
+  } = useContext(Context);
   const [showAcknowledgeModal, setShowAcknowledgeModal] = useState(false);
   const [acknowledgeDocs, setAcknowledgeDocs] = useState([]);
 
@@ -837,6 +861,7 @@ const FireForm = () => {
 
   const [newDocs, setNewDocs] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(null);
 
   const [formData, setFormData] = useState({
     loc: "",
@@ -855,28 +880,44 @@ const FireForm = () => {
     acknowledgeName: "",
   });
 
-  // Add this useEffect to your FireForm component
-useEffect(() => {
-  const fetchFireProcess = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/fire-process`);
-      console.log("Fire Process Data:", response.data);
-      
-      // Set the first process as default
-      if (response.data && response.data.length > 0) {
-        setFormData(prev => ({
-          ...prev,
-          process: response.data[0].PROCESS
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching fire process:", error);
-      toast.error("Failed to load process data");
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
     }
-  };
+    const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
+  // Add this useEffect to your FireForm component
+  useEffect(() => {
+    const fetchFireProcess = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/fire-process`);
+        console.log("Fire Process Data:", response.data);
 
-  fetchFireProcess();
-}, [API_BASE_URL]); // Add API_BASE_URL to dependency array if it can change
+        // Set the first process as default
+        if (response.data && response.data.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            process: response.data[0].PROCESS,
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching fire process:", error);
+        toast.error("Failed to load process data");
+      }
+    };
+
+    fetchFireProcess();
+  }, [API_BASE_URL]); // Add API_BASE_URL to dependency array if it can change
 
   // useEffect(() => {
   //   if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
@@ -896,8 +937,7 @@ useEffect(() => {
   //   }
   // };
 
-
-    useEffect(() => {
+  useEffect(() => {
     setHeaderData(null);
   }, []);
 
@@ -917,29 +957,31 @@ useEffect(() => {
   }, []);
 
   const checkIfPlantExists = async (plant) => {
-      try {
-        const res = await axios.post(`${API_BASE_URL}/check-plant-exists-fire`, { loc: plant });
-        console.log("API Response:", res.data);
-        
-        if (res.data && res.data.exists === true) {
-          toast.error('This plant already has entries.');
-          setFormData((prev) => ({ ...prev, loc: '' }));
-          setHeaderData(null);
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.error('Failed to check plant:', error);
-        return false;
+    try {
+      const res = await axios.post(`${API_BASE_URL}/check-plant-exists-fire`, {
+        loc: plant,
+      });
+      console.log("API Response:", res.data);
+
+      if (res.data && res.data.exists === true) {
+        toast.error("This plant already has entries.");
+        setFormData((prev) => ({ ...prev, loc: "" }));
+        setHeaderData(null);
+        return true;
       }
-    };
+      return false;
+    } catch (error) {
+      console.error("Failed to check plant:", error);
+      return false;
+    }
+  };
 
   const handleChange = async (e) => {
     const { name, value, type, checked } = e.target;
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
 
     if (type === "radio") {
@@ -970,15 +1012,15 @@ useEffect(() => {
 
       // Fetch master data for the selected location
       try {
-         const plantExists = await checkIfPlantExists(value);
+        const plantExists = await checkIfPlantExists(value);
         if (plantExists) {
-          return; 
+          return;
         }
         const res = await getMasterByLoc(value);
         if (res && Object.keys(res).length > 0) {
           setHeaderData(res);
         } else {
-          console.warn('⚠️ No master data found for location:', value);
+          console.warn("⚠️ No master data found for location:", value);
           setHeaderData({});
           setFormData((prev) => ({
             ...prev,
@@ -1005,12 +1047,12 @@ useEffect(() => {
 
   const handleNoOfTowersChange = (e) => {
     const value = e.target.value;
-    setFormData(prev => ({ ...prev, noOfTowers: value }));
-    
+    setFormData((prev) => ({ ...prev, noOfTowers: value }));
+
     // Reset towerFlatsSubmitted when number of towers changes
     setTowerFlatsSubmitted(false);
     setTowerFlats({});
-    
+
     const selectedTowers = parseInt(value);
     if (selectedTowers > 0) {
       setShowFlatsModal(true);
@@ -1029,17 +1071,17 @@ useEffect(() => {
   // Function to check if a file is PDF
   const isFilePDF = (file) => {
     // Check file extension
-    const fileExtension = file.name.toLowerCase().endsWith('.pdf');
+    const fileExtension = file.name.toLowerCase().endsWith(".pdf");
     // Check MIME type
-    const fileMimeType = file.type === 'application/pdf';
-    
+    const fileMimeType = file.type === "application/pdf";
+
     return fileExtension && fileMimeType;
   };
 
   // Function to validate all files are PDF
   const validateAllFilesArePDF = (files) => {
     if (!files || files.length === 0) return true;
-    
+
     for (const file of files) {
       if (!isFilePDF(file)) {
         return false;
@@ -1062,7 +1104,7 @@ useEffect(() => {
     e.preventDefault();
 
     const newErrors = {};
-    
+
     // Clear previous errors
     setErrors({});
 
@@ -1070,9 +1112,10 @@ useEffect(() => {
     if (!formData.loc) newErrors.loc = "Project location is required.";
     if (!formData.process) newErrors.process = "Process type is required.";
     if (!formData.feePaid) newErrors.feePaid = "Please specify if fee is paid.";
-    if (!formData.noOfTowers) newErrors.noOfTowers = "Number of Towers is required.";
-    if(!formData.Comments) newErrors.Comments = "Please enter the comments.";
-    
+    if (!formData.noOfTowers)
+      newErrors.noOfTowers = "Number of Towers is required.";
+    if (!formData.Comments) newErrors.Comments = "Please enter the comments.";
+
     if (formData.feePaid === "YES" && !formData.feeAmount)
       newErrors.feeAmount = "Fee amount is required when fee is paid.";
     if (!formData.acknowledgeName)
@@ -1084,16 +1127,19 @@ useEffect(() => {
     } else {
       // Check if all newDocs are PDF
       if (!validateAllFilesArePDF(newDocs)) {
-        newErrors.documents = "All application documents must be PDF files only.";
+        newErrors.documents =
+          "All application documents must be PDF files only.";
       }
     }
-    
+
     if (acknowledgeDocs.length === 0) {
-      newErrors.acknowledgeDocs = "Please upload at least one acknowledgement receipt.";
+      newErrors.acknowledgeDocs =
+        "Please upload at least one acknowledgement receipt.";
     } else {
       // Check if all acknowledgeDocs are PDF
       if (!validateAllFilesArePDF(acknowledgeDocs)) {
-        newErrors.acknowledgeDocs = "All acknowledgement receipts must be PDF files only.";
+        newErrors.acknowledgeDocs =
+          "All acknowledgement receipts must be PDF files only.";
       }
     }
 
@@ -1135,129 +1181,138 @@ useEffect(() => {
     setConfirmOpen(true);
   };
 
- const handleConfirmSubmit = async () => {
-  setConfirmOpen(false);
-  setIsSubmitting(true);
+  const handleConfirmSubmit = async () => {
+    setConfirmOpen(false);
+    setIsSubmitting(true);
 
-  // Final validation - check all files are PDF
-  if (!validateAllFilesArePDF(newDocs)) {
-    toast.error("Application documents must be PDF files only.");
-    setIsSubmitting(false);
-    return;
-  }
-  
-  if (!validateAllFilesArePDF(acknowledgeDocs)) {
-    toast.error("Acknowledgement receipts must be PDF files only.");
-    setIsSubmitting(false);
-    return;
-  }
-
-  // Final tower flats validation
-  const noOfTowers = parseInt(formData.noOfTowers);
-  if (noOfTowers > 0) {
-    if (!towerFlatsSubmitted || Object.keys(towerFlats).length !== noOfTowers) {
-      toast.error("Please enter valid flats per tower details.");
+    // Final validation - check all files are PDF
+    if (!validateAllFilesArePDF(newDocs)) {
+      toast.error("Application documents must be PDF files only.");
       setIsSubmitting(false);
       return;
     }
-  }
 
-  const formPayload = new FormData();
-  formPayload.append("loc", formData.loc);
-  formPayload.append("process", formData.process);
-  formPayload.append("applyDate", formData.applyDate);
-  formPayload.append("noOfFlats", formData.noOfFlats);
-  formPayload.append("comments", formData.Comments);
-  formPayload.append("feePaid", formData.feePaid);
-  formPayload.append("feeAmount", formData.feeAmount);
-  formPayload.append("acknowledgeName", formData.acknowledgeName);
-  formPayload.append("noOfTowers", formData.noOfTowers);
-  formPayload.append("BuildArea", formData.BuildArea);
-  formPayload.append("ProjectArea", formData.ProjectArea);
-  formPayload.append("TotalArea", formData.TotalArea);
-  formPayload.append("ProjectName", formData.ProjectName);
-  formPayload.append("steptype", "ProvisionalNOC");
-
-  // Append document arrays
-  acknowledgeDocs.forEach((f) => formPayload.append("Acknowledge_Doc[]", f));
-  newDocs.forEach((f) => formPayload.append("New_Doc[]", f));
-
-  // Append towerFlats data as a JSON string
-  formPayload.append("towerFlats", JSON.stringify(towerFlats));
-
-  console.log("--- FormData Payload ---");
-  for (let [key, value] of formPayload.entries()) {
-    if (value instanceof File) {
-      console.log(
-        `${key}: File (name: ${value.name}, type: ${value.type}, size: ${value.size} bytes)`
-      );
-    } else {
-      console.log(`${key}: ${value}`);
+    if (!validateAllFilesArePDF(acknowledgeDocs)) {
+      toast.error("Acknowledgement receipts must be PDF files only.");
+      setIsSubmitting(false);
+      return;
     }
-  }
-  console.log("------------------------");
 
-  try {
-    const response = await submitFireForm(formPayload);
-    
-    console.log("API Response:", response);
-    
-    // Check if response has message (could be at root or in data property)
-    const successMessage = response?.message || response?.data?.message || "Application submitted successfully!";
-    
-    await Swal.fire({
-      icon: "success",
-      title: successMessage,
-      showConfirmButton: false,
-      timer: 2000,
-    });
-
-    // Reset form
-    setFormData({
-      loc: "",
-      process: "",
-      applyDate: "",
-      document: null,
-      noOfFlats: "",
-      Comments: "",
-      noOfTowers: "",
-      BuildArea: "",
-      ProjectArea: "",
-      TotalArea: "",
-      ProjectName: "",
-      feePaid: "",
-      feeAmount: "",
-      acknowledgeName: "",
-    });
-
-    // Reset document states and towerFlats
-    setAcknowledgeDocs([]);
-    setNewDocs([]);
-    setTowerFlats({});
-    setTowerFlatsSubmitted(false);
-
-    // Navigate to create page
-    navigate("/create");
-    
-  } catch (err) {
-    console.error("Submission error:", err);
-    
-    // Use Swal.fire instead of toast for error
-    Swal.fire({
-      icon: "error",
-      title: "Submission Failed",
-      text: err.response?.data?.message ||
-        err.message ||
-        "Submission failed. Please try again.",
-    });
-
-    if (err.response?.data?.errors) {
-      console.error("Validation Errors:", err.response.data.errors);
+    // Final tower flats validation
+    const noOfTowers = parseInt(formData.noOfTowers);
+    if (noOfTowers > 0) {
+      if (
+        !towerFlatsSubmitted ||
+        Object.keys(towerFlats).length !== noOfTowers
+      ) {
+        toast.error("Please enter valid flats per tower details.");
+        setIsSubmitting(false);
+        return;
+      }
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+    const formPayload = new FormData();
+    formPayload.append("loc", formData.loc);
+    formPayload.append("process", formData.process);
+    formPayload.append("applyDate", formData.applyDate);
+    formPayload.append("noOfFlats", formData.noOfFlats);
+    formPayload.append("comments", formData.Comments);
+    formPayload.append("feePaid", formData.feePaid);
+    formPayload.append("feeAmount", formData.feeAmount);
+    formPayload.append("acknowledgeName", formData.acknowledgeName);
+    formPayload.append("noOfTowers", formData.noOfTowers);
+    formPayload.append("BuildArea", formData.BuildArea);
+    formPayload.append("ProjectArea", formData.ProjectArea);
+    formPayload.append("TotalArea", formData.TotalArea);
+    formPayload.append("ProjectName", formData.ProjectName);
+    formPayload.append("steptype", "ProvisionalNOC");
+        formPayload.append('username', currentUserName);
+
+    // Append document arrays
+    acknowledgeDocs.forEach((f) => formPayload.append("Acknowledge_Doc[]", f));
+    newDocs.forEach((f) => formPayload.append("New_Doc[]", f));
+
+    // Append towerFlats data as a JSON string
+    formPayload.append("towerFlats", JSON.stringify(towerFlats));
+
+    console.log("--- FormData Payload ---");
+    for (let [key, value] of formPayload.entries()) {
+      if (value instanceof File) {
+        console.log(
+          `${key}: File (name: ${value.name}, type: ${value.type}, size: ${value.size} bytes)`
+        );
+      } else {
+        console.log(`${key}: ${value}`);
+      }
+    }
+    console.log("------------------------");
+
+    try {
+      const response = await submitFireForm(formPayload);
+
+      console.log("API Response:", response);
+
+      // Check if response has message (could be at root or in data property)
+      const successMessage =
+        response?.message ||
+        response?.data?.message ||
+        "Application submitted successfully!";
+
+      await Swal.fire({
+        icon: "success",
+        title: successMessage,
+        showConfirmButton: false,
+        timer: 2000,
+      });
+
+      // Reset form
+      setFormData({
+        loc: "",
+        process: "",
+        applyDate: "",
+        document: null,
+        noOfFlats: "",
+        Comments: "",
+        noOfTowers: "",
+        BuildArea: "",
+        ProjectArea: "",
+        TotalArea: "",
+        ProjectName: "",
+        feePaid: "",
+        feeAmount: "",
+        acknowledgeName: "",
+      });
+
+      // Reset document states and towerFlats
+      setAcknowledgeDocs([]);
+      setNewDocs([]);
+      setTowerFlats({});
+      setTowerFlatsSubmitted(false);
+
+      // Navigate to create page
+      navigate("/create");
+    } catch (err) {
+      console.error("Submission error:", err);
+
+      // Use Swal.fire instead of toast for error
+      Swal.fire({
+        icon: "error",
+        title: "Submission Failed",
+        text:
+          err.response?.data?.message ||
+          err.message ||
+          "Submission failed. Please try again.",
+      });
+
+      if (err.response?.data?.errors) {
+        console.error("Validation Errors:", err.response.data.errors);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleBackClick = () => {
     navigate("/create");
@@ -1336,7 +1391,7 @@ useEffect(() => {
                   <FaLeaf className="label-icon" /> Process Type
                 </label>
                 <div className="input-wrapper">
-                     <ProcessField
+                  <ProcessField
                     apiUrl={`${API_BASE_URL}/fire-process`}
                     value={formData.process}
                     onChange={handleProcessChange}
@@ -1552,20 +1607,18 @@ useEffect(() => {
                     )}
                   </div>
                 </div>
-                       {errors.towerFlats && (
-              
-             
-                    <p className="error-text" style={{ color: "#dc3545", fontSize: "14px" }}>
-                      ⚠️ {errors.towerFlats}
-                    </p>
-    
-              )}
+                {errors.towerFlats && (
+                  <p
+                    className="error-text"
+                    style={{ color: "#dc3545", fontSize: "14px" }}
+                  >
+                    ⚠️ {errors.towerFlats}
+                  </p>
+                )}
               </div>
 
               {/* Show Tower Flats Error */}
-       
 
-  
               <div className="form-field full-width">
                 <label className="field-label">
                   <MessageSquareMore className="label-icon" /> Comments*
@@ -1663,6 +1716,3 @@ useEffect(() => {
 };
 
 export default FireForm;
-
-
-

@@ -18,6 +18,7 @@ import { Context } from "../context/ContextData";
 import Swal from "sweetalert2";
 
 const WaterForm = () => {
+    const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const {
     waterData,
@@ -41,6 +42,7 @@ const WaterForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+      const [loggedInUser, setLoggedInUser] = useState(null);
 
   const [formData, setFormData] = useState({
     loc: '',
@@ -66,6 +68,23 @@ const WaterForm = () => {
   });
 
 
+  // --- 2. Check User Login ---
+            useEffect(() => {
+              if (!token) {
+                navigate('/');
+                return;
+              }
+              const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+              if (userString) {
+                try {
+                  const userObj = JSON.parse(userString);
+                  setLoggedInUser(userObj);
+                } catch (error) {
+                  console.error("Error parsing user data:", error);
+                }
+              }
+              
+            }, [token, navigate]);
     useEffect(() => {
     setHeaderData(null);
   }, []);
@@ -332,6 +351,8 @@ const WaterForm = () => {
     setConfirmOpen(false);
     setIsSubmitting(true);
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
     const formPayload = new FormData();
     formPayload.append('loc', formData.loc);
     formPayload.append('process', formData.process);
@@ -351,6 +372,7 @@ const WaterForm = () => {
     formPayload.append('KLD', formData.KLD);
     formPayload.append('FeasibilityDoc', formData.feasibilityDoc);
     formPayload.append('AMOUNT_PAID_DOC[]', formData.AmountPaidDoc);
+        formPayload.append('username', currentUserName);
 
     // Only append valid PDF files
     planDocs.forEach(f => {

@@ -1146,13 +1146,38 @@ const WaterModifyTable = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const refreshed = await axios.get(
-        `${API_BASE_URL}/water-data?plant=${formData.loc}`
-      );
-      setStoreData(refreshed.data);
+     // --- START OF RESET LOGIC ---
 
+      // 1. Reset Plant Selection to break the link to current data
+      setSelectedPlant("");
+
+      // 2. Clear Global Context Data (Clears Left Side Colors & Header)
+      setStoreData([]); 
+      setHeaderData(null);
+      setRespModifyData(res?.data?.data); // Optional: keep response data if needed, or set to null
+
+      // 3. Clear Local State (Navigation & Process Tracking)
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setNextStepDetails(null);
+      setAllStepsCompleted(false);
+      setActiveStep(0);
+      setSelectedProcessDetails(null); // Exit "View History" mode if active
+
+      // 4. Clear Documents (Right Side & Pending Uploads)
+      setFirstStep(null); // This clears the "Previous Water Uploaded Docs" on the right
+      setLinkDocs([]);
+      setLandDocs([]);
+      setOthDocs([]);
+      setFeasibilityDocs([]);
+      setAmountPaidDocs([]);
+
+      // 5. Reset Submission Flags
+      setSubmitted(false); // Reset to false so the next user sees "Submit" button, not "Submitted"
+
+      // 6. Full Form Reset (Empty all fields)
       setFormData({
-        loc: formData.loc,
+        loc: "",
         applyDate: "",
         comments: "",
         noOfFlats: "",
@@ -1162,20 +1187,16 @@ const WaterModifyTable = () => {
         AmountPaidDoc: null,
         status: "",
         reason: "",
+        Ghmc: "",
+        OldAmount: "",
+        Size: "",
+        TotalAmount: "",
         noOfTowers: "",
         ProjectBuildArea: "",
         TotalProjectArea: ""
       });
 
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setFirstStep(null);
-      setNextStepDetails(null);
-      setSubmitted(true);
-      setRespModifyData(res?.data?.data);
+      // --- END OF RESET LOGIC ---
 
       setDialogConfig({
         title: 'Success',

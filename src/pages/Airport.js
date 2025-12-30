@@ -27,6 +27,7 @@ import Swal from "sweetalert2";
 import WaterDocUploadModal from "../components/WaterDocUploadModal";
 
 const AirportForm = () => {
+    const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [linkDocs, setLinkDocs] = useState([]);
@@ -37,7 +38,7 @@ const AirportForm = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
    const [feasibilityDocs, setFeasibilityDocs] = useState([]);
-
+const [loggedInUser, setLoggedInUser] = useState(null);
   // ✅ Add ref to track if initial load is done
   const hasLoadedInitialData = useRef(false);
 
@@ -56,6 +57,24 @@ const AirportForm = () => {
     noOfNocs: '',
     comments: ''
   });
+
+  // --- 2. Check User Login ---
+          useEffect(() => {
+            if (!token) {
+              navigate('/');
+              return;
+            }
+            const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+            if (userString) {
+              try {
+                const userObj = JSON.parse(userString);
+                setLoggedInUser(userObj);
+              } catch (error) {
+                console.error("Error parsing user data:", error);
+              }
+            }
+            
+          }, [token, navigate]);
 
   useEffect(() => {
   setHeaderData(null);
@@ -262,6 +281,8 @@ const validateForm = () => {
     e.preventDefault();
     setConfirmOpen(false);
     setIsSubmitting(true);
+ //   : 'fetch User';
+      let currentUserName = loggedInUser.username;
 
     const formPayload = new FormData();
     formPayload.append('loc', formData.loc);
@@ -271,11 +292,20 @@ const validateForm = () => {
     formPayload.append('totalPrjArea', formData.totalPrjArea);
     formPayload.append('noOfNocs', formData.noOfNocs);
     formPayload.append('comments', formData.comments);
+    formPayload.append('username', currentUserName);
 
    linkDocs.forEach(f => {
   formPayload.append("documents[]", f);
 });
 
+  // ---------------------------------------------------------
+  // 👇 CODE TO CONSOLE LOG THE DATA 👇
+  // ---------------------------------------------------------
+  console.log("📦 --- PAYLOAD DATA --- 📦");
+  for (const pair of formPayload.entries()) {
+    console.log(`${pair[0]}:`, pair[1]);
+  }
+  // ---------------------------------------------------------
     try {
       const response = await axios.post(`${API_BASE_URL}/airport-submit`, formPayload, {
         headers: { 'Content-Type': 'multipart/form-data' },

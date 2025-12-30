@@ -1964,16 +1964,67 @@ const FireModifyTable = () => {
         showConfirmButton: false,
       });
 
-      setFormData((prev) => ({
-        ...prev,
+       // 1. Reset Plant Selection State
+      setSelectedPlant(""); 
+
+      // 2. Reset Context Data (Clears Left Side Colors and Header)
+      setStoreData([]); 
+      setHeaderData(null);
+
+      // 3. Reset Step Tracking (Clears Right Side Docs and Middle Form)
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setNextStepDetails(null);
+      setLatestLogs([]);
+      setCurrentProcess("");
+      setProvisionalNOCCompleted(false);
+
+      // 4. Reset View Modes (Exit any "View Mode")
+      setViewedStepConceptualIndex(-1);
+      setViewedStepDetails(null);
+      setIsViewingCompletedStep(false);
+      setIsAllStepsCompleted(false);
+
+      // 5. Reset Files and Errors
+      setNewDocs([]);
+      setAcknowledgeDocs([]);
+      setErrors({});
+
+      // 6. Reset Form Data to Initial State
+      setFormData({
+        loc: "",
         applyDate: "",
+        document: null,
         comments: "",
+        prjName: "",
+        address: "",
         feePaid: "",
         feeAmount: "",
         acknowledgeName: "",
         noOfTowers: "",
         feepaidstatus: "",
-      }));
+        stepStatus_1: "YES",
+        stepStatus_2: "YES",
+        stepStatus_3: "YES",
+        stepStatus_4: "YES",
+        stepStatus_6: "YES",
+        stepStatus_7: "YES",
+        stepStatus_8: "YES",
+        stepStatus_9: "YES",
+      });
+      
+      // --- END OF RESET LOGIC ---
+      // setFormData((prev) => ({
+      //   ...prev,
+      //   loc: "",
+      //   applyDate: "",
+      //   comments: "",
+      //   feePaid: "",
+      //   feeAmount: "",
+      //   acknowledgeName: "",
+      //   noOfTowers: "",
+      //   feepaidstatus: "",
+      // }));
       setNewDocs([]);
       setAcknowledgeDocs([]);
       setErrors({});

@@ -1714,6 +1714,7 @@ import EmailSelectionModal from "../components/EmailSelectionModal"; // Adjust p
 import { toast } from "react-toastify";
 
 const PcbModifyTable = () => {
+    const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const [key, setKey] = useState("Pollution Control Board");
   const [plants, setPlants] = useState([]);
@@ -1732,6 +1733,7 @@ const PcbModifyTable = () => {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [loading, setLoading] = useState(false);
+      const [loggedInUser, setLoggedInUser] = useState(null);
 const [errors, setErrors] = useState({
   applyDate: "",
   comments: "",
@@ -1782,6 +1784,23 @@ const [errors, setErrors] = useState({
 
   });
 
+    // --- 2. Check User Login ---
+          useEffect(() => {
+            if (!token) {
+              navigate('/');
+              return;
+            }
+            const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+            if (userString) {
+              try {
+                const userObj = JSON.parse(userString);
+                setLoggedInUser(userObj);
+              } catch (error) {
+                console.error("Error parsing user data:", error);
+              }
+            }
+            
+          }, [token, navigate]);
      useEffect(() => {
         setHeaderData(null);
       }, []);
@@ -2113,6 +2132,8 @@ const handleAmendClick = async (row, category) => {
       return;
     }
 
+        //  --- : 'fetch User';
+        let currentUserName = loggedInUser.username;
   setLoading(true);          
     const formData = new FormData();
     formData.append("loc", modalData.plant);
@@ -2120,6 +2141,7 @@ const handleAmendClick = async (row, category) => {
     formData.append("applyDate", modalData.applyDate);
        formData.append("receivedDate", modalData.receivedDate || "");
           formData.append("comments", modalData.comments);
+        formData.append('username', currentUserName);
 
     
 
@@ -2143,7 +2165,7 @@ const handleAmendClick = async (row, category) => {
     for (const pair of formData.entries()) {
       console.log(`${pair[0]}: ${pair[1]}`);
     }
-    console.log("-------------------------");
+    console.log("-----------111--------------");
     // --- END: Console log FormData content ---
 
     const existingRecord = storeData.find(

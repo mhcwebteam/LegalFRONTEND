@@ -20,7 +20,8 @@ import WaterDocUploadModal from "../components/WaterDocUploadModal";
 import Swal from "sweetalert2";
 
 const Ghmc = () => {
-    const navigate = useNavigate();
+    const token = localStorage.getItem('token');
+  const navigate = useNavigate();
     const { totalMasterData, setHeaderData, headerData, setMasterGetData, setMasterData } = useContext(Context);
     const [showModal, setShowModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,6 +31,7 @@ const Ghmc = () => {
     const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
     const [feasibilityDocs, setFeasibilityDocs] = useState([]);
     const [amountPaidDocModal, setAmountPaidDocModal] = useState(false);
+    const [loggedInUser, setLoggedInUser] = useState(null);
     const [towerDocuments, setTowerDocuments] = useState([]);
     const [AmountPaidDocs, setAmountPaidDocs] = useState([]);
     const [formData, setFormData] = useState({
@@ -60,7 +62,23 @@ const Ghmc = () => {
         return true;
     };
 
-
+    // --- 2. Check User Login ---
+          useEffect(() => {
+            if (!token) {
+              navigate('/');
+              return;
+            }
+            const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+            if (userString) {
+              try {
+                const userObj = JSON.parse(userString);
+                setLoggedInUser(userObj);
+              } catch (error) {
+                console.error("Error parsing user data:", error);
+              }
+            }
+            
+          }, [token, navigate]);
 
   useEffect(() => {
   setHeaderData(null);
@@ -273,7 +291,8 @@ const Ghmc = () => {
 
         setConfirmOpen(false);
         setIsSubmitting(true);
-
+        //  --- : 'fetch User';
+        let currentUserName = loggedInUser.username;
         const formPayload = new FormData();
         formPayload.append('loc', formData.loc);
         formPayload.append('process', formData.process);
@@ -281,6 +300,7 @@ const Ghmc = () => {
         formPayload.append('Organization', formData.Organization);
         formPayload.append('noOfTowers', formData.noOfTowers);
         formPayload.append('Comments', formData.Comments || "");
+        formPayload.append('username', currentUserName);
 
         // Append documents
         feasibilityDocs.forEach(file => formPayload.append('feas_doc_name[]', file));
@@ -291,6 +311,15 @@ const Ghmc = () => {
                 formPayload.append('tower_doc_name[]', file);
             });
         });
+
+        // ---------------------------------------------------------
+        // 👇 CODE TO CONSOLE LOG THE DATA 👇
+        // ---------------------------------------------------------
+        console.log("📦 --- PAYLOAD DATA --- 📦");
+        for (const pair of formPayload.entries()) {
+            console.log(`${pair[0]}:`, pair[1]);
+        }
+        // ---------------------------------------------------------
 
         try {
             const res = await axios.post(`${API_BASE_URL}/GHMC-submit`, formPayload, {

@@ -39,6 +39,7 @@ const ALLOWED_FILE_TYPES = {
 // const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const PollutionForm = () => {
+    const token = localStorage.getItem('token');
     const navigate = useNavigate();
     const {
         totalMasterData = [],
@@ -64,7 +65,11 @@ const PollutionForm = () => {
     const [linkDocs, setLinkDocs] = useState([]);
     const [landDocs, setLandDocs] = useState([]);
     const [othDocs, setOthDocs] = useState([]);
+      const [loggedInUser, setLoggedInUser] = useState(null);
 
+      
+    
+    
     // ✅ PDF VALIDATION FUNCTION
     const validateFileType = (file) => {
         const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
@@ -87,6 +92,24 @@ const PollutionForm = () => {
 
         return true;
     };
+
+    // --- 2. Check User Login ---
+        useEffect(() => {
+          if (!token) {
+            navigate('/');
+            return;
+          }
+          const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+          if (userString) {
+            try {
+              const userObj = JSON.parse(userString);
+              setLoggedInUser(userObj);
+            } catch (error) {
+              console.error("Error parsing user data:", error);
+            }
+          }
+          
+        }, [token, navigate]);
 
     // useEffect(() => {
     //     if (!headerData?.LOC && Array.isArray(totalMasterData) && totalMasterData.length > 0) {
@@ -235,6 +258,9 @@ const PollutionForm = () => {
     const handleConfirmSubmit = async () => {
         setIsSubmitting(true);
 
+        //   : 'fetch User';
+      let currentUserName = loggedInUser.username;
+
         // ✅ Final validation before submission
         const invalidFiles = newDocs.filter(file => !validateFileType(file));
         if (invalidFiles.length > 0) {
@@ -250,6 +276,7 @@ const PollutionForm = () => {
         formPayload.append('applyDate', formData.applyDate);
         formPayload.append('comments', formData.comments);
     formPayload.append('receivedDate', "");
+    formPayload.append('userName',currentUserName);
 
 
         // ✅ Append only validated PDF files
@@ -260,6 +287,14 @@ const PollutionForm = () => {
                
             }
         });
+
+        // 🔍 CONSOLE LOG THE DATA HERE
+    console.log("------------------------------------------");
+    console.log("🚀 Submitting Pollution Form Data:");
+    for (let [key, value] of formPayload.entries()) {
+        console.log(`${key}:`, value);
+    }
+    console.log("------------------------------------------");
 
         try {
             const response = await axios.post(`${API_BASE_URL}/pollution-submit`, formPayload, {

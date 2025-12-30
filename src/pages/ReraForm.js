@@ -17,6 +17,7 @@ import ProjectInfoHeader from "../components/ProjectInfoHeader";
 import Swal from "sweetalert2";
 
 const ReraForm = () => {
+    const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const {setFormReraData, totalMasterData = [], setHeaderData, headerData  } = useContext(Context);
 
@@ -27,6 +28,7 @@ const ReraForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+        const [loggedInUser, setLoggedInUser] = useState(null);
 
   const [formData, setFormData] = useState({
     loc: '',
@@ -58,6 +60,24 @@ const ReraForm = () => {
   //   }
   // }, [totalMasterData]);
 
+  
+    // --- 2. Check User Login ---
+              useEffect(() => {
+                if (!token) {
+                  navigate('/');
+                  return;
+                }
+                const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+                if (userString) {
+                  try {
+                    const userObj = JSON.parse(userString);
+                    setLoggedInUser(userObj);
+                  } catch (error) {
+                    console.error("Error parsing user data:", error);
+                  }
+                }
+                
+              }, [token, navigate]);
 
     useEffect(() => {
     setHeaderData(null);
@@ -254,6 +274,8 @@ const ReraForm = () => {
     setConfirmOpen(false);
     setIsSubmitting(true);
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
     const formPayload = new FormData();
 
     formPayload.append('loc', formData.loc);
@@ -262,6 +284,7 @@ const ReraForm = () => {
     formPayload.append('prjName', formData.projectDetails);
     formPayload.append('address', formData.address);
     formPayload.append('comments', formData.Comments || '');
+        formPayload.append('username', currentUserName);
 formPayload.append("fromDate",'');
       formPayload.append("toDate", '');
     // Append multiple uploaded docs
