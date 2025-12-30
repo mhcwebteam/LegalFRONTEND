@@ -1,278 +1,4 @@
-
-
-// import React, {useEffect, useState} from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import './Create.css';
-// import {TabIcons, TabLabels} from '../components/TabIcons';
-
-// const Create = () => {
-//   const navigate = useNavigate();
-
-//    const [selectedPlant, setSelectedPlant] = useState('');
-//    // Get token and user from localStorage
-//   const token = localStorage.getItem('token');
-//   const user = JSON.parse(localStorage.getItem('user'));
-
-//   // Optional: redirect if not logged in
-//   // useEffect(() => {
-//   //   if (!token) {
-//   //     navigate('/login');
-//   //   }
-//   // }, [navigate, token]);
-
-//  const tabs = [
-//   {
-//       icon: TabIcons.masterproject,  
-//       label: TabLabels.masterproject,      
-//       route: '/create/masterproject',
-//       gradient: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
-//       hoverGradient: 'linear-gradient(135deg, #10b981 0%, #2563eb 100%)'
-//     },
-//   { 
-//     icon: TabIcons.pollution, 
-//     label: TabLabels.pollution, 
-//     route: '/create/pollution',
-//     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-//     hoverGradient: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)'
-//   },
-//   { 
-//     icon: TabIcons.airport, 
-//     label: TabLabels.airport, 
-//     route: '/create/airport',
-//     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-//     hoverGradient: 'linear-gradient(135deg, #e879f9 0%, #ef4444 100%)'
-//   },
-//   { 
-//     icon: TabIcons.hmda, 
-//     label: TabLabels.hmda, 
-//     route: '/create/hmda',
-//     gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-//     hoverGradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)'
-//   },
-//   { 
-//     icon: TabIcons.fire, 
-//     label: TabLabels.fire, 
-//     route: '/create/fire',
-//     gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-//     hoverGradient: 'linear-gradient(135deg, #f43f5e 0%, #f59e0b 100%)'
-//   },
-//   { 
-//     icon: TabIcons.water,
-//     label: TabLabels.water, 
-//     route: '/create/water',
-//     gradient: 'linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%)',
-//     hoverGradient: 'linear-gradient(135deg, #5eead4 0%, #0284c7 100%)'
-//   },
-//     {
-//     icon: TabIcons.rera,  
-//     label: TabLabels.rera,             
-//     route: '/create/rera',
-//     gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',  
-//     hoverGradient: 'linear-gradient(135deg, #fb7185 0%, #fbbf24 100%)'
-//   },
-//   {
-//     icon: TabIcons.miscellaneous,
-//     label: TabLabels.miscellaneous,
-//     route: '/create/miscellaneous',
-//     gradient: 'linear-gradient(135deg, #a18cd1 0%, #d57abcff 100%)',  
-//     hoverGradient: 'linear-gradient(135deg, #c084fc 0%, #eb99c3ff 100%)'
-//   }
-
-// ];
-
-// // added on 05-11-2025 start from here
-//  // Mock data for status updates
-//   const statusUpdates = [
-//      {
-//       type: 'Pollution Control Board',
-//       icon: '🌱',
-//       title: 'PCB Process',
-//       project: 'Tech Park Phase 2',
-//       step:2,
-//       status: 'UNDER REVIEW',
-//       statusColor: '#3b82f6',
-//       time: '3 days ago',
-//       borderColor: '#667eea'
-//     },
-//     {
-//       type: 'Airport Authority',
-//       icon: '✈️',
-//       title: 'Airport Process',
-//       project: 'Vertex Commercial Complex',
-//       applicationId: 'AAI/2025/3456',
-//       documentsCount: 1,
-//       status: 'PENDING',
-//       statusColor: '#f59e0b',
-//       time: '1 week ago',
-//       borderColor: '#f093fb'
-//     },
-//     {
-      
-//       type: 'HMDA/GHMC',
-//       icon: '🏢',
-//       title: 'HMDA Process',
-//       project: 'Grava Residencies Block-A',
-//       applicationId: 'HMDA/2025/4521',
-//       documentsCount: 3,
-//       status: 'PENDING',
-//       statusColor: '#f59e0b',
-//       time: '2 hours ago',
-//       borderColor: '#4facfe'
-//     },
-//     {
-   
-//       type: 'Fire',
-//       icon: '🔥',
-//       title: 'Fire Process',
-//       project: 'Downtown Heights',
-//       applicationId: 'FIRE/2025/8934',
-//       documentsCount: 4,
-//       status: 'APPROVED',
-//       statusColor: '#10b981',
-//       time: '1 day ago',
-//       borderColor: '#fa709a'
-//     },
-//     {
-    
-//       type: 'Water',
-//       icon: '💧',
-//       title: 'Water Process',
-//       project: 'Green Valley Apartments',
-//       applicationId: 'WATER/2025/7823',
-//       documentsCount: 2,
-//       status: 'REJECTED',
-//       statusColor: '#ef4444',
-//       time: '4 days ago',
-//       borderColor: '#6dd5ed'
-//     },
-//     {
- 
-//       type: 'RERA',
-//       icon: '🏛️',
-//       title: 'RERA Process',
-//       project: 'Prime Properties Phase-1',
-//       applicationId: 'RERA/2025/9012',
-//       documentsCount: 6,
-//       status: 'UNDER REVIEW',
-//       statusColor: '#3b82f6',
-//       time: '2 weeks ago',
-//       borderColor: '#ff9a9e'
-//     }
-   
-//   ];
-
-//   const plants = ['All Plants', 'Plant A', 'Plant B', 'Plant C', 'Plant D'];
-// //added to here 05-11-2025 end
-//   return (
-// <div className="create-page">
-//   <h2 className="title">Create Approvals</h2>
-
-//   <div className="main-layout">
-//     {/* Left Side: Tabs */}
-//     <div className="tab-container">
-//       {tabs.map((tab, index) => (
-//         <div
-//           key={index}
-//           className="tab-card"
-//           onClick={() => navigate(tab.route)}
-//           style={{
-//             background: tab.gradient,
-//             '--hover-gradient': tab.hoverGradient,
-//             animationDelay: `${index * 0.2}s`
-//           }}
-//         >
-//           <div className="tab-icon">{tab.icon}</div>
-//           <div className="tab-label">{tab.label}</div>
-//         </div>
-//       ))}
-//     </div>
-
-//      <div className="notifications-panel">
-//           <div className="notifications-header">
-//             <div className="header-title">
-//               <span className="status-icon">📊</span>
-//               <h3>Status Updates</h3>
-//               <span className="notification-badge">{statusUpdates.length}</span>
-//             </div>
-//           </div>
-
-//           <div className="plant-dropdown">
-//             <select 
-//               value={selectedPlant} 
-//               onChange={(e) => setSelectedPlant(e.target.value)}
-//               className="plant-select"
-//             >
-//               <option value="">Select Plant</option>
-//               {plants.map((plant, index) => (
-//                 <option key={index} value={plant}>{plant}</option>
-//               ))}
-//             </select>
-//           </div>
-
-//           <div className="status-updates-list">
-//             {statusUpdates.map((update, index) => (
-//               <div 
-//                 key={index} 
-//                 className="status-card"
-//                 style={{
-//                   borderLeftColor: update.borderColor,
-//                   animationDelay: `${index * 0.1}s`
-//                 }}
-//               >
-//                 <div className="status-card-header">
-//                   <span className="status-type-icon">{update.icon}</span>
-//                   <h4>{update.title}</h4>
-//                 </div>
-                
-//                 <div className="status-card-body">
-//                   <p className="project-name"><strong>Project:</strong> {update.project}</p>
-//                   <p className="application-id"><strong>Step:</strong> {update.step}</p>
-//                   <p className="application-id"><strong>Comments:</strong> {update.comments}</p>
-//                   <p className="application-id"><strong>Date:</strong> {update.date}</p>
-//                   {/* {update.documentsCount && (
-//                     <div className="documents-pending">
-//                       <span className="doc-badge">{update.documentsCount}</span>
-//                       <span>documents pending review</span>
-//                     </div>
-//                   )} */}
-                  
-//                   {update.message && (
-//                     <div className="status-message">
-//                       <span className="check-icon">✓</span>
-//                       <span>{update.message}</span>
-//                     </div>
-//                   )}
-//                 </div>
-
-//                 <div className="status-card-footer">
-//                   <span 
-//                     className="status-badge"
-//                     style={{ backgroundColor: update.statusColor }}
-//                   >
-//                     {update.status}
-//                   </span>
-//                   <span className="status-time">{update.time}</span>
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//   </div>
-
-//   {/* added on 5/11/2025 */}
-//      {/* Right Side: Notifications */}
-     
-          
-
-// </div>
-
-//   );
-// };
-
-// export default Create;
-
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Create.css';
 import { TabIcons, TabLabels } from '../components/TabIcons';
@@ -280,18 +6,181 @@ import { API_BASE_URL } from '../config/Config';
 
 const Create = () => {
   const navigate = useNavigate();
+  
+  // --- State Variables ---
   const [selectedProcess, setSelectedProcess] = useState('All Processes');
   const [statusUpdates, setStatusUpdates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Loading & Error States
+  const [loadingUpdates, setLoadingUpdates] = useState(true);
+  const [loadingTabs, setLoadingTabs] = useState(true); // New state for tabs loading
   const [error, setError] = useState(null);
+  
   const [maximizedGroup, setMaximizedGroup] = useState(null);
+  const [loggedInUser, setLoggedInUser] = useState(null);
+
+  // Dynamic Tabs State
+  const [visibleTabs, setVisibleTabs] = useState([]); 
 
   const token = localStorage.getItem('token');
 
-  // Fetch status updates from backend
+  // --- 1. Define Master List of Tabs ---
+  // We use useMemo so this array doesn't recreate on every render
+  const allTabs = useMemo(() => [
+    {
+      id: 'masterproject', 
+      icon: TabIcons.masterproject,
+      label: TabLabels.masterproject,
+      route: '/create/masterproject',
+      gradient: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
+      hoverGradient: 'linear-gradient(135deg, #10b981 0%, #2563eb 100%)'
+    },
+    {
+      id: 'pollution',
+      icon: TabIcons.pollution,
+      label: TabLabels.pollution,
+      route: '/create/pollution',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      hoverGradient: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)'
+    },
+    {
+      id: 'airport',
+      icon: TabIcons.airport,
+      label: TabLabels.airport,
+      route: '/create/airport',
+      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      hoverGradient: 'linear-gradient(135deg, #e879f9 0%, #ef4444 100%)'
+    },
+    {
+      id: 'hmda', // Make sure this ID matches your DB response
+      icon: TabIcons.hmda,
+      label: TabLabels.hmda,
+      route: '/create/Ghmc',
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      hoverGradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)'
+    },
+    {
+      id: 'fire',
+      icon: TabIcons.fire,
+      label: TabLabels.fire,
+      route: '/create/fire',
+      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      hoverGradient: 'linear-gradient(135deg, #f43f5e 0%, #f59e0b 100%)'
+    },
+    {
+      id: 'water',
+      icon: TabIcons.water,
+      label: TabLabels.water,
+      route: '/create/water',
+      gradient: 'linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%)',
+      hoverGradient: 'linear-gradient(135deg, #5eead4 0%, #0284c7 100%)'
+    },
+    {
+      id: 'rera',
+      icon: TabIcons.rera,
+      label: TabLabels.rera,
+      route: '/create/rera',
+      gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
+      hoverGradient: 'linear-gradient(135deg, #fb7185 0%, #fbbf24 100%)'
+    },
+    {
+      id: 'miscellaneous',
+      icon: TabIcons.miscellaneous,
+      label: TabLabels.miscellaneous,
+      route: '/create/miscellaneous',
+      gradient: 'linear-gradient(135deg, #a18cd1 0%, #d57abcff 100%)',
+      hoverGradient: 'linear-gradient(135deg, #c084fc 0%, #eb99c3ff 100%)'
+    }
+  ], []);
+
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate('/');
+      return;
+    }
+    const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
+
+  // --- 3. Fetch Tabs based on User Role ---
+ // --- 3. Fetch Tabs based on User Role ---
+  useEffect(() => {
+    const fetchUserPermissions = async () => {
+      // 1. Get User Data: Try State first, then fallback to LocalStorage
+      let currentUser = loggedInUser;
+      
+      if (!currentUser) {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            currentUser = JSON.parse(storedUser);
+          } catch (e) {
+            console.error("Error parsing user from localStorage:", e);
+          }
+        }
+      }
+
+      console.log("Debug - User Object:", currentUser);
+
+      // --- FIX: Check 'Email' (Title Case) as well ---
+      const email = currentUser?.Email || currentUser?.email || currentUser?.EMAIL;
+      
+      console.log("Debug - Email to fetch:", email);
+
+      // 4. Safety Check
+      if (!email) {
+        console.warn("⚠️ Stopping Fetch: No email property found.");
+        return; 
+      }
+
+      try {
+        setLoadingTabs(true);
+        // 5. Call API
+        const response = await fetch(`${API_BASE_URL}/user-permissions?email=${email}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        if (data.success && Array.isArray(data.allowedTabs)) {
+          const filteredTabs = allTabs.filter(tab => 
+            data.allowedTabs.includes(tab.id)
+          );
+          setVisibleTabs(filteredTabs);
+        } else {
+          console.warn("API returned success:false or invalid tabs");
+          setVisibleTabs([]); 
+        }
+
+      } catch (err) {
+        console.error('Error fetching permissions:', err);
+      } finally {
+        setLoadingTabs(false);
+      }
+    };
+
+    fetchUserPermissions();
+  }, [token, loggedInUser, allTabs]);
+  // --- 4. Fetch Status Updates ---
   const fetchStatusUpdates = async (process = 'All Processes') => {
     try {
-      setLoading(true);
+      setLoadingUpdates(true);
       setError(null);
 
       let allData = [];
@@ -327,22 +216,13 @@ const Create = () => {
       } else {
         let url = '';
 
-        if (process === 'Airport Authority') {
-          url = `${API_BASE_URL}/airport-status-updates`;
-        } else if (process === 'RERA') {
-          url = `${API_BASE_URL}/rera-status-updates`;
-        } else if (process === 'Water') {
-          url = `${API_BASE_URL}/water-status-updates`;
-        } else if (process === 'Pollution Control Board') {
-          console.log('process',process);
-          url = `${API_BASE_URL}/status-updates`;
-        } else if (process === 'HMDA/GHMC') {
-          url = `${API_BASE_URL}/ghmc-status-updates`;
-        }else if (process === 'Fire') {
-  url = `${API_BASE_URL}/fire-status-updates`;
-} else {
-          url = `${API_BASE_URL}/status-updates?process=${encodeURIComponent(process)}`;
-        }
+        if (process === 'Airport Authority') url = `${API_BASE_URL}/airport-status-updates`;
+        else if (process === 'RERA') url = `${API_BASE_URL}/rera-status-updates`;
+        else if (process === 'Water') url = `${API_BASE_URL}/water-status-updates`;
+        else if (process === 'Pollution Control Board') url = `${API_BASE_URL}/status-updates`;
+        else if (process === 'HMDA/GHMC') url = `${API_BASE_URL}/ghmc-status-updates`;
+        else if (process === 'Fire') url = `${API_BASE_URL}/fire-status-updates`;
+        else url = `${API_BASE_URL}/status-updates?process=${encodeURIComponent(process)}`;
 
         const response = await fetch(url, {
           headers: {
@@ -351,9 +231,7 @@ const Create = () => {
           }
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch status updates');
-        }
+        if (!response.ok) throw new Error('Failed to fetch status updates');
 
         const data = await response.json();
 
@@ -367,7 +245,7 @@ const Create = () => {
       console.error('Error fetching status updates:', err);
       setError('Unable to load status updates. Please try again.');
     } finally {
-      setLoading(false);
+      setLoadingUpdates(false);
     }
   };
 
@@ -381,9 +259,7 @@ const Create = () => {
     fetchStatusUpdates(process);
   };
 
-  const displayedUpdates = statusUpdates;
-
-  const groupedUpdates = displayedUpdates.reduce((acc, update) => {
+  const groupedUpdates = statusUpdates.reduce((acc, update) => {
     const processType = update.title;
     if (!acc[processType]) {
       acc[processType] = [];
@@ -391,65 +267,6 @@ const Create = () => {
     acc[processType].push(update);
     return acc;
   }, {});
-
-  const tabs = [
-    {
-      icon: TabIcons.masterproject,
-      label: TabLabels.masterproject,
-      route: '/create/masterproject',
-      gradient: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
-      hoverGradient: 'linear-gradient(135deg, #10b981 0%, #2563eb 100%)'
-    },
-    {
-      icon: TabIcons.pollution,
-      label: TabLabels.pollution,
-      route: '/create/pollution',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      hoverGradient: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)'
-    },
-    {
-      icon: TabIcons.airport,
-      label: TabLabels.airport,
-      route: '/create/airport',
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      hoverGradient: 'linear-gradient(135deg, #e879f9 0%, #ef4444 100%)'
-    },
-    {
-      icon: TabIcons.hmda,
-      label: TabLabels.hmda,
-      route: '/create/Ghmc',
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      hoverGradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)'
-    },
-    {
-      icon: TabIcons.fire,
-      label: TabLabels.fire,
-      route: '/create/fire',
-      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      hoverGradient: 'linear-gradient(135deg, #f43f5e 0%, #f59e0b 100%)'
-    },
-    {
-      icon: TabIcons.water,
-      label: TabLabels.water,
-      route: '/create/water',
-      gradient: 'linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%)',
-      hoverGradient: 'linear-gradient(135deg, #5eead4 0%, #0284c7 100%)'
-    },
-    {
-      icon: TabIcons.rera,
-      label: TabLabels.rera,
-      route: '/create/rera',
-      gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
-      hoverGradient: 'linear-gradient(135deg, #fb7185 0%, #fbbf24 100%)'
-    },
-    {
-      icon: TabIcons.miscellaneous,
-      label: TabLabels.miscellaneous,
-      route: '/create/miscellaneous',
-      gradient: 'linear-gradient(135deg, #a18cd1 0%, #d57abcff 100%)',
-      hoverGradient: 'linear-gradient(135deg, #c084fc 0%, #eb99c3ff 100%)'
-    }
-  ];
 
   const processTypes = [
     'All Processes',
@@ -461,28 +278,39 @@ const Create = () => {
     'RERA'
   ];
 
+  // --- Render ---
   return (
     <div className="create-page">
       <h2 className="title">Create Approvals</h2>
 
       <div className="main-layout">
-        {/* Left Side: Tabs */}
+        {/* Left Side: Dynamic Tabs */}
         <div className="tab-container">
-          {tabs.map((tab, index) => (
-            <div
-              key={index}
-              className="tab-card"
-              onClick={() => navigate(tab.route)}
-              style={{
-                background: tab.gradient,
-                '--hover-gradient': tab.hoverGradient,
-                animationDelay: `${index * 0.2}s`
-              }}
-            >
-              <div className="tab-icon">{tab.icon}</div>
-              <div className="tab-label">{tab.label}</div>
+          {loadingTabs ? (
+             <div className="loading-tabs" style={{color: 'white', padding: '20px'}}>
+               Loading menu...
+             </div>
+          ) : visibleTabs.length > 0 ? (
+            visibleTabs.map((tab, index) => (
+              <div
+                key={tab.id}
+                className="tab-card"
+                onClick={() => navigate(tab.route)}
+                style={{
+                  background: tab.gradient,
+                  '--hover-gradient': tab.hoverGradient,
+                  animationDelay: `${index * 0.1}s`
+                }}
+              >
+                <div className="tab-icon">{tab.icon}</div>
+                <div className="tab-label">{tab.label}</div>
+              </div>
+            ))
+          ) : (
+            <div className="no-tabs-message" style={{color: 'white', padding: '20px'}}>
+               No permissions assigned.
             </div>
-          ))}
+          )}
         </div>
 
         {/* Right Side: Status Updates */}
@@ -491,7 +319,7 @@ const Create = () => {
             <div className="header-title">
               <span className="status-icon">📊</span>
               <h3>Status Updates</h3>
-              <span className="notification-badge">{displayedUpdates.length}</span>
+              <span className="notification-badge">{statusUpdates.length}</span>
             </div>
           </div>
 
@@ -507,7 +335,7 @@ const Create = () => {
             </select>
           </div>
 
-          {loading ? (
+          {loadingUpdates ? (
             <div className="status-loading">
               <div className="loading-spinner"></div>
               <p>Loading status updates...</p>

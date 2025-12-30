@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal, Button, Form } from 'react-bootstrap';
 import axios from 'axios';
 import { API_BASE_URL, API_DOC_URL } from '../config/Config';
@@ -106,8 +108,12 @@ const AmendUpdateModal = ({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailAmendRecipients, setEmailAmendRecipients] = useState([]);
   const [selectedAmendEmails, setSelectedAmendEmails] = useState([]);
-  
+  const [loggedInUser, setLoggedInUser] = useState(null);
   const fileInputRef = useRef(null);
+
+  
+const token = localStorage.getItem('token');
+const navigate = useNavigate();
 
   // Format date for display helper
   const formatDateForDisplay = (date) => {
@@ -116,6 +122,24 @@ const AmendUpdateModal = ({
     const [y, m, d] = fullDate.split("-");
     return time ? `${d}-${m}-${y} ${time}` : `${d}-${m}-${y}`;
   };
+
+  // --- 2. Check User Login ---
+    useEffect(() => {
+      if (!token) {
+        navigate('/');
+        return;
+      }
+      const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+      
+    }, [token, navigate]);
 
   // Initialize data when modal opens
   useEffect(() => {
@@ -308,6 +332,15 @@ const AmendUpdateModal = ({
     try {
       const uploadResult = await handleUploadFiles();
 
+       //  const currentUserName = loggedInUser 
+      // //  //? (loggedInUser.username || loggedInUser.name || loggedInUser.email || 'Unknown User') 
+      //   : 'Unknown User';
+      let currentUserName = loggedInUser.username;
+
+      console.log("-----------------------------------------");
+      console.log("Submitting with User:", currentUserName);
+      console.log("-----------------------------------------");
+
       const submissionData = {
         loc: plant,
         process: process,
@@ -319,8 +352,11 @@ const AmendUpdateModal = ({
         docName: uploadResult.docName,
         comments: prepareCommentsForSubmission(),
         status: 'YES',
-        emails: selectedEmails 
+        emails: selectedEmails,
+        userName: currentUserName 
       };
+
+     
 
       console.log("sssssssssssss",submissionData)
 
@@ -413,15 +449,14 @@ const receivedDateProcesses = [
                     applyDate: e.target.value,
                   }))
                 }
+                readOnly
               />
               {errors.applyDate && (
                 <div className="text-danger" style={{ fontSize: "14px" }}>
                   {errors.applyDate}
                 </div>
               )}
-              <Form.Text className="text-muted">
-                Original: {formatDateForDisplay(storeInfo?.APPLY_DT)}
-              </Form.Text>
+             
             </Form.Group>
 
             {/* RECEIVED DATE - EDITABLE (conditional) */}

@@ -335,7 +335,7 @@ const TaxReturns = () => {
             </Form.Group>
           </Col>
 
-          <Col md={3}>
+          {/* <Col md={3}>
             <Form.Group>
               <Form.Label style={{ fontWeight: '600', fontSize: '14px' }}>
                 Approval Authority
@@ -354,8 +354,31 @@ const TaxReturns = () => {
                 ))}
               </Form.Select>
             </Form.Group>
-          </Col>
-
+          </Col> */}
+          {/* //----------------updated this col code by rajakumari on 291225 */}
+          <Col md={3}>
+  <Form.Group>
+    <Form.Label style={{ fontWeight: '600', fontSize: '14px' }}>
+      Approval Authority
+    </Form.Label>
+    <Form.Select
+      className="form-select-sm"
+      value={selectedAuthority}
+      onChange={(e) => handleAuthorityChange(e.target.value)}
+      style={{ border: '1px solid #7b2cbf' }}
+    >
+      <option value="">Select Authority</option>
+      {Object.entries(Tabs)
+        .filter((_, index) => index === 0)
+        .map(([key, label]) => (
+          <option key={key} value={label}>
+            {label}
+          </option>
+        ))}
+    </Form.Select>
+  </Form.Group>
+</Col>
+{/* //---------------------end-------------------------- */}
           <Col md={6}>
             <div style={{ display: 'flex', gap: '10px' }}>
                {!recordsExist && (

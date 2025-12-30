@@ -327,7 +327,8 @@ useEffect(() => {
     setAmendmentStatus(null);
     setIsAmendmentActive(false);
     setFormData((prev) => ({
-      plant: prev.plant,
+       plant: selectedPlant,
+      // plant: prev.plant,
       applyDate: "",
       comments: "",
       amendComments: "",
@@ -589,7 +590,7 @@ useEffect(() => {
         showConfirmButton: false,
         timer: 2000,
       });
-
+      setSelectedPlant("");
       setFirstStep(null);
       setFormData({
         plant: formData.plant,
