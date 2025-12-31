@@ -19,18 +19,18 @@
 // // Helper function to format dates for backend (YYYY-MM-DD to DD-MM-YYYY)
 // const formatDateForBackend = (dateString) => {
 //   if (!dateString) return '';
-  
+
 //   // Check if already in DD-MM-YYYY format
 //   if (dateString.includes('-') && dateString.split('-')[0].length <= 2) {
 //     return dateString;
 //   }
-  
+
 //   // If in YYYY-MM-DD format, convert to DD-MM-YYYY
 //   if (dateString.includes('-') && dateString.split('-')[0].length === 4) {
 //     const [year, month, day] = dateString.split('-');
 //     return `${day}-${month}-${year}`;
 //   }
-  
+
 //   return dateString;
 // };
 
@@ -52,24 +52,24 @@
 //       const dateB = b.date ? new Date(b.date) : new Date(0);
 //       return dateB - dateA;
 //     });
-    
+
 //     const latestLog = sortedLogs[0];
 //     return {
 //       date: latestLog.date || '',
 //       comment: latestLog.comment || 'No comment text'
 //     };
 //   }
-  
+
 //   // If no parsedLogs, check COMMENTS field
 //   const commentsJson = storeInfo?.COMMENTS;
-  
+
 //   if (!commentsJson || commentsJson === 'null' || commentsJson === 'undefined' || commentsJson.trim() === '') {
 //     return { date: '', comment: 'No comments available' };
 //   }
-  
+
 //   try {
 //     const parsed = JSON.parse(commentsJson);
-    
+
 //     if (Array.isArray(parsed) && parsed.length > 0) {
 //       // Sort by date descending (newest first)
 //       const sorted = [...parsed].sort((a, b) => {
@@ -77,7 +77,7 @@
 //         const dateB = b.date ? new Date(b.date) : new Date(0);
 //         return dateB - dateA;
 //       });
-      
+
 //       const latest = sorted[0];
 //       return {
 //         date: latest.date || '',
@@ -98,7 +98,7 @@
 //       };
 //     }
 //   }
-  
+
 //   return { date: '', comment: 'No comments available' };
 // };
 
@@ -158,24 +158,24 @@
 //   // Format date for input field (YYYY-MM-DD)
 //   const formatDateForInput = (dateStr) => {
 //     if (!dateStr) return '';
-    
+
 //     // If already in YYYY-MM-DD format
 //     if (dateStr.includes('-') && dateStr.split('-')[0].length === 4) {
 //       const parts = dateStr.split(' ');
 //       return parts[0]; // Return just the date part
 //     }
-    
+
 //     // If in DD-MM-YYYY format, convert to YYYY-MM-DD
 //     if (dateStr.includes('-')) {
 //       const parts = dateStr.split(' ');
 //       const datePart = parts[0];
 //       const [day, month, year] = datePart.split('-');
-      
+
 //       if (day && month && year && year.length === 4) {
 //         return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 //       }
 //     }
-    
+
 //     return '';
 //   };
 
@@ -206,7 +206,7 @@
 //             }
 //             return item;
 //           });
-          
+
 //           setStoreData(processedData);
 //         })
 //         .catch((err) => console.error(err));
@@ -251,22 +251,22 @@
 //     setConfirmModalData({
 //       storeInfo: storeInfo
 //     });
-    
+
 //     // Set initial editable dates from store info
 //     setEditableApplyDate(formatDateForInput(storeInfo?.APPLY_DT || ''));
 //     setEditableReceivedDate(formatDateForInput(storeInfo?.RECEIVED_DT || ''));
-    
+
 //     // Get latest comment
 //     const latestComment = getLatestComment(storeInfo);
 //     setNewComment(latestComment.comment);
-    
+
 //     setShowConfirmModal(true);
 //   };
 
 //   const validateForm = () => {
 //     const processName = confirmModalData.storeInfo?.PROCESS;
 //     let newErrors = {};
-    
+
 //     // Check if this process requires received date
 //     if (receivedDateProcesses.includes(processName)) {
 //       if (!editableReceivedDate) {
@@ -277,7 +277,7 @@
 //     setErrors(newErrors);
 //     return Object.keys(newErrors).length === 0;
 //   };
-  
+
 //   const proceedToEmailSelection = async () => {
 //     if (!validateForm()) {
 //       const processName = confirmModalData.storeInfo?.PROCESS;
@@ -290,15 +290,15 @@
 //       }
 //       return;
 //     }
-    
+
 //     setShowConfirmModal(false);
 //     setLoading(true);
-    
+
 //     try {
 //       // Fetch email recipients
 //       const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
 //       setEmailRecipients(response.data);
-      
+
 //       // Convert dates to DD-MM-YYYY format for backend
 //       let formattedApplyDate = '';
 //       if (editableApplyDate) {
@@ -306,27 +306,27 @@
 //       } else if (confirmModalData.storeInfo?.APPLY_DT) {
 //         formattedApplyDate = confirmModalData.storeInfo.APPLY_DT;
 //       }
-      
+
 //       let formattedReceivedDate = '';
 //       if (editableReceivedDate) {
 //         formattedReceivedDate = formatDateForBackend(editableReceivedDate);
 //       } else if (confirmModalData.storeInfo?.RECEIVED_DT) {
 //         formattedReceivedDate = confirmModalData.storeInfo.RECEIVED_DT;
 //       }
-      
+
 //       // Create updated process info with formatted dates
 //       const updatedStoreInfo = {
 //         ...confirmModalData.storeInfo,
 //         APPLY_DT: formattedApplyDate,
 //         RECEIVED_DT: formattedReceivedDate || ""
 //       };
-      
+
 //       console.log('Updated store info for submission:', updatedStoreInfo);
-      
+
 //       setSelectedProcess(updatedStoreInfo);
 //       setShowEmailModal(true);
 //       setLoading(false);
-      
+
 //     } catch (error) {
 //       console.error("❌ Failed to fetch email recipients:", error);
 //       setLoading(false);
@@ -347,12 +347,12 @@
 //         const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
 //         setEmailRecipients(response.data);
 //         setSelectedProcess(processInfo);
-        
+
 //         setEmailSubject(`Process Update: ${processInfo.PROCESS}`);
 //         setEmailMessage(
 //           `Dear Team,\n\nPlease find the update for the process: ${processInfo.PROCESS}\n\nPlant: ${selectedPlant}\nApply Date: ${processInfo.APPLY_DT}\n\nComments: ${processInfo.COMMENTS}\n\nBest Regards`
 //         );
-        
+
 //         setSelectedEmails([]);
 //         setShowEmailModal(true);
 //       } else if (type === 'amendment') {
@@ -385,22 +385,22 @@
 //   }
 
 //   setLoading(true);
-  
+
 //   const storeInfo = storeData.find(item => item.PROCESS === selectedProcess?.PROCESS);
-  
+
 //   // ✅ Get dates in consistent format
 //   const updatedApplyDate = formatDate(selectedProcess.APPLY_DT); // Should be DD-MM-YYYY
 //   const updatedReceivedDate = selectedProcess.RECEIVED_DT || "";
-  
+
 //   // Convert existing date to YYYY-MM-DD for comparison
 //   const existingDateFormatted = formatDateForInput(storeInfo?.APPLY_DT || '');
-  
-  
+
+
 //   console.log("New date from input:", formatDate(editableApplyDate)); // YYYY-MM-DD
 //   console.log("Existing date from DB:", storeInfo?.APPLY_DT); // DD-MM-YYYY
 //   console.log("Existing date formatted:", existingDateFormatted); // YYYY-MM-DD
 //   console.log("Updated date to send:", updatedApplyDate); // DD-MM-YYYY
-  
+
 //   if (!updatedApplyDate || !storeInfo?.DOC_PATH || !storeInfo?.COMMENTS) {
 //     await Swal.fire({
 //       icon: 'warning',
@@ -607,7 +607,7 @@
 //                   <th>DOCUMENT</th>
 //                   <th>LOGS</th>
 //                   <th>ACTION</th>
-                  
+
 //                   {/* Amendment columns */}
 //                   {amendCategories?.map(cat => (
 //                     <React.Fragment key={cat}>
@@ -862,7 +862,7 @@
 //                                     onClick={() => {
 //                                       const amendLogs = [];
 //                                       const comments = storeInfo?.[commentsKey];
-                                      
+
 //                                       if (comments) {
 //                                         try {
 //                                           const parsedComments = JSON.parse(comments);
@@ -889,7 +889,7 @@
 //                                           });
 //                                         }
 //                                       }
-                                      
+
 //                                       if (amendLogs.length > 0) {
 //                                         setLogModalTitle(`${row.PROCESS} - ${cat} Comments`);
 //                                         setCurrentLogs(amendLogs);
@@ -964,7 +964,7 @@
 //                   readOnly 
 //                 />
 //               </Form.Group>
-              
+
 //               <Form.Group className="mb-3">
 //                 <Form.Label>Process</Form.Label>
 //                 <Form.Control 
@@ -973,7 +973,7 @@
 //                   readOnly 
 //                 />
 //               </Form.Group>
-              
+
 //               <Form.Group className="mb-3">
 //                 <Form.Label>
 //                   Apply Date 
@@ -1011,7 +1011,7 @@
 //                   )}
 //                 </Form.Group>
 //               )}
-              
+
 //               <Form.Group className="mb-3">
 //                 <Form.Label>Latest Comments</Form.Label>
 //                 <div style={{ 
@@ -1038,7 +1038,7 @@
 //             </div>
 //           )}
 //         </Modal.Body>
-        
+
 //         <Modal.Footer>
 //           <Button 
 //             variant="secondary" 
@@ -1047,7 +1047,7 @@
 //           >
 //             Cancel
 //           </Button>
-          
+
 //           <Button 
 //             variant="primary" 
 //             onClick={proceedToEmailSelection}
@@ -1093,7 +1093,7 @@
 //           process={selectedAmendUpdateData?.process}
 //           category={selectedAmendUpdateData?.category}
 //           storeInfo={selectedAmendUpdateData?.storeInfo}
-     
+
 //         />
 //       )}
 
@@ -1140,7 +1140,6 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Container } from 'react-bootstrap';
-import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { API_BASE_URL, API_DOC_URL } from '../config/Config';
 import { OverlayTrigger, Tooltip, Modal, Button, Form } from 'react-bootstrap';
@@ -1155,25 +1154,27 @@ import { getMasterByLoc } from "../api/Api";
 import ProjectInfoHeader from './ProjectInfoHeader';
 import { Context } from '../context/ContextData';
 import EmailSelectionModal from './EmailSelectionModal';
-import AmendUpdateModal from './AmendUpdateModal'; 
+import AmendUpdateModal from './AmendUpdateModal';
 
 // Helper function to format dates for backend (YYYY-MM-DD to DD-MM-YYYY)
 const formatDateForBackend = (dateString) => {
   if (!dateString) return '';
-  
+
   // Check if already in DD-MM-YYYY format
   if (dateString.includes('-') && dateString.split('-')[0].length <= 2) {
     return dateString;
   }
-  
+
   // If in YYYY-MM-DD format, convert to DD-MM-YYYY
   if (dateString.includes('-') && dateString.split('-')[0].length === 4) {
     const [year, month, day] = dateString.split('-');
     return `${day}-${month}-${year}`;
   }
-  
+
   return dateString;
 };
+
+
 
 // Helper function to format dates for display
 const formatDate = (date) => {
@@ -1193,24 +1194,24 @@ const getLatestComment = (storeInfo) => {
       const dateB = b.date ? new Date(b.date) : new Date(0);
       return dateB - dateA;
     });
-    
+
     const latestLog = sortedLogs[0];
     return {
       date: latestLog.date || '',
       comment: latestLog.comment || 'No comment text'
     };
   }
-  
+
   // If no parsedLogs, check COMMENTS field
   const commentsJson = storeInfo?.COMMENTS;
-  
+
   if (!commentsJson || commentsJson === 'null' || commentsJson === 'undefined' || commentsJson.trim() === '') {
     return { date: '', comment: 'No comments available' };
   }
-  
+
   try {
     const parsed = JSON.parse(commentsJson);
-    
+
     if (Array.isArray(parsed) && parsed.length > 0) {
       // Sort by date descending (newest first)
       const sorted = [...parsed].sort((a, b) => {
@@ -1218,7 +1219,7 @@ const getLatestComment = (storeInfo) => {
         const dateB = b.date ? new Date(b.date) : new Date(0);
         return dateB - dateA;
       });
-      
+
       const latest = sorted[0];
       return {
         date: latest.date || '',
@@ -1239,13 +1240,11 @@ const getLatestComment = (storeInfo) => {
       };
     }
   }
-  
+
   return { date: '', comment: 'No comments available' };
 };
 
 const PcbUpdateTable = () => {
-  const token = localStorage.getItem("token");
-  const navigate = useNavigate();
   const [key, setKey] = useState('Pollution Control Board');
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState('');
@@ -1268,7 +1267,7 @@ const PcbUpdateTable = () => {
   const [inputData, setInputData] = useState({});
   const [status, setStatus] = useState('');
   const [showLogModal, setShowLogModal] = useState(false);
-  const [currentLogs, setCurrentLogs] = useState([]); 
+  const [currentLogs, setCurrentLogs] = useState([]);
   const [amendLogs, setAmendLogs] = useState([]);
   const [logModalTitle, setLogModalTitle] = useState('');
   const [selectedAmendProcess, setSelectedAmendProcess] = useState("");
@@ -1281,66 +1280,47 @@ const PcbUpdateTable = () => {
   const [editableReceivedDate, setEditableReceivedDate] = useState('');
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
-    const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
   const [errors, setErrors] = useState({
     receivedDate: ""
   });
 
-  const { 
+  const {
     totalMasterData = [],
-    setHeaderData, 
-    headerData 
+    setHeaderData,
+    headerData
   } = useContext(Context);
 
-const receivedDateProcesses = [
-  "Received TOR",
-  "EC (Environmetal Clearance)",
-  "Application for CFE",
-  "Received CFE",
-]
+  const receivedDateProcesses = [
+    "Received TOR",
+    "EC (Environmetal Clearance)",
+    "Application for CFE",
+    "Received CFE",
+  ]
   // Format date for input field (YYYY-MM-DD)
   const formatDateForInput = (dateStr) => {
     if (!dateStr) return '';
-    
+
     // If already in YYYY-MM-DD format
     if (dateStr.includes('-') && dateStr.split('-')[0].length === 4) {
       const parts = dateStr.split(' ');
       return parts[0]; // Return just the date part
     }
-    
+
     // If in DD-MM-YYYY format, convert to YYYY-MM-DD
     if (dateStr.includes('-')) {
       const parts = dateStr.split(' ');
       const datePart = parts[0];
       const [day, month, year] = datePart.split('-');
-      
+
       if (day && month && year && year.length === 4) {
         return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       }
     }
-    
+
     return '';
   };
 
-  
-    // --- 2. Check User Login ---
-    useEffect(() => {
-      if (!token) {
-        navigate("/");
-        return;
-      }
-      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
-      if (userString) {
-        try {
-          const userObj = JSON.parse(userString);
-          setLoggedInUser(userObj);
-        } catch (error) {
-          console.error("Error parsing user data:", error);
-        }
-      }
-    }, [token, navigate]);
-  
   useEffect(() => {
     axios.get(`${API_BASE_URL}/pcb-processes`).then(res => setPcbProcesses(res.data));
     axios.get(`${API_BASE_URL}/plants`).then(res => setPlants(res.data));
@@ -1368,7 +1348,7 @@ const receivedDateProcesses = [
             }
             return item;
           });
-          
+
           setStoreData(processedData);
         })
         .catch((err) => console.error(err));
@@ -1413,22 +1393,22 @@ const receivedDateProcesses = [
     setConfirmModalData({
       storeInfo: storeInfo
     });
-    
+
     // Set initial editable dates from store info
     setEditableApplyDate(formatDateForInput(storeInfo?.APPLY_DT || ''));
     setEditableReceivedDate(formatDateForInput(storeInfo?.RECEIVED_DT || ''));
-    
+
     // Get latest comment
     const latestComment = getLatestComment(storeInfo);
     setNewComment(latestComment.comment);
-    
+
     setShowConfirmModal(true);
   };
 
   const validateForm = () => {
     const processName = confirmModalData.storeInfo?.PROCESS;
     let newErrors = {};
-    
+
     // Check if this process requires received date
     if (receivedDateProcesses.includes(processName)) {
       if (!editableReceivedDate) {
@@ -1439,7 +1419,7 @@ const receivedDateProcesses = [
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const proceedToEmailSelection = async () => {
     if (!validateForm()) {
       const processName = confirmModalData.storeInfo?.PROCESS;
@@ -1452,15 +1432,15 @@ const receivedDateProcesses = [
       }
       return;
     }
-    
+
     setShowConfirmModal(false);
     setLoading(true);
-    
+
     try {
       // Fetch email recipients
       const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
       setEmailRecipients(response.data);
-      
+
       // Convert dates to DD-MM-YYYY format for backend
       let formattedApplyDate = '';
       if (editableApplyDate) {
@@ -1468,27 +1448,27 @@ const receivedDateProcesses = [
       } else if (confirmModalData.storeInfo?.APPLY_DT) {
         formattedApplyDate = confirmModalData.storeInfo.APPLY_DT;
       }
-      
+
       let formattedReceivedDate = '';
       if (editableReceivedDate) {
         formattedReceivedDate = formatDateForBackend(editableReceivedDate);
       } else if (confirmModalData.storeInfo?.RECEIVED_DT) {
         formattedReceivedDate = confirmModalData.storeInfo.RECEIVED_DT;
       }
-      
+
       // Create updated process info with formatted dates
       const updatedStoreInfo = {
         ...confirmModalData.storeInfo,
         APPLY_DT: formattedApplyDate,
         RECEIVED_DT: formattedReceivedDate || ""
       };
-      
+
       console.log('Updated store info for submission:', updatedStoreInfo);
-      
+
       setSelectedProcess(updatedStoreInfo);
       setShowEmailModal(true);
       setLoading(false);
-      
+
     } catch (error) {
       console.error("❌ Failed to fetch email recipients:", error);
       setLoading(false);
@@ -1509,12 +1489,12 @@ const receivedDateProcesses = [
         const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
         setEmailRecipients(response.data);
         setSelectedProcess(processInfo);
-        
+
         setEmailSubject(`Process Update: ${processInfo.PROCESS}`);
         setEmailMessage(
           `Dear Team,\n\nPlease find the update for the process: ${processInfo.PROCESS}\n\nPlant: ${selectedPlant}\nApply Date: ${processInfo.APPLY_DT}\n\nComments: ${processInfo.COMMENTS}\n\nBest Regards`
         );
-        
+
         setSelectedEmails([]);
         setShowEmailModal(true);
       } else if (type === 'amendment') {
@@ -1535,112 +1515,109 @@ const receivedDateProcesses = [
     }
   };
 
-const handleSendEmail = async (selectedEmails) => {
+  const handleSendEmail = async (selectedEmails) => {
 
-  if (!selectedProcess) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'No Process Selected',
-      text: 'Please select a process to update.'
-    });
-    return;
-  }
-
-  setLoading(true);
-  
-  const storeInfo = storeData.find(item => item.PROCESS === selectedProcess?.PROCESS);
-  
-  // ✅ Get dates in consistent format
-  const updatedApplyDate = formatDate(selectedProcess.APPLY_DT); // Should be DD-MM-YYYY
-  const updatedReceivedDate = selectedProcess.RECEIVED_DT || "";
-  
-  // Convert existing date to YYYY-MM-DD for comparison
-  const existingDateFormatted = formatDateForInput(storeInfo?.APPLY_DT || '');
-  
-    //  --- : 'fetch User';
-    let currentUserName = loggedInUser.username;
-  
-  console.log("New date from input:", formatDate(editableApplyDate)); // YYYY-MM-DD
-  console.log("Existing date from DB:", storeInfo?.APPLY_DT); // DD-MM-YYYY
-  console.log("Existing date formatted:", existingDateFormatted); // YYYY-MM-DD
-  console.log("Updated date to send:", updatedApplyDate); // DD-MM-YYYY
-  
-  if (!updatedApplyDate || !storeInfo?.DOC_PATH || !storeInfo?.COMMENTS) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Missing Fields',
-      text: 'Please ensure Apply Date, Document, and Comments are all available before updating.'
-    });
-    setLoading(false);
-    return;
-  }
-
-  try {
-    Swal.fire({
-      title: 'Updating...',
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    // Send update to backend
-    await axios.post(`${API_BASE_URL}/pollution-update`, {
-      loc: selectedPlant,
-      process: selectedProcess.PROCESS,
-      applyDate: updatedApplyDate, // Send as DD-MM-YYYY
-      documentPath: storeInfo.DOC_PATH,
-      comments: storeInfo.COMMENTS,
-      receivedDate: updatedReceivedDate,
-      emails: selectedEmails,
-      username: currentUserName
-    });
-
-    Swal.close();
-
-    // ✅ Update storeData - make sure date format matches what will be displayed
-    setStoreData(prevStoreData => {
-      return prevStoreData.map(item => {
-        if (item.PROCESS === selectedProcess.PROCESS) {
-          return {
-            ...item,
-            APPLY_DT: updatedApplyDate, // Store as DD-MM-YYYY
-            RECEIVED_DT: updatedReceivedDate || item.RECEIVED_DT,
-            UPDATED: 'YES'
-          };
-        }
-        return item;
+    if (!selectedProcess) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'No Process Selected',
+        text: 'Please select a process to update.'
       });
-    });
+      return;
+    }
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'Update Successful',
-      text: `${selectedProcess.PROCESS} has been updated successfully.`,
-      timer: 2000,
-      showConfirmButton: false
-    });
+    setLoading(true);
 
-     refreshStoreData(); 
-    // Close modals and reset states
-    setShowEmailModal(false);
-    setShowConfirmModal(false);
-    setSelectedProcess(null);
-    setConfirmModalData(null);
-    setEditableApplyDate('');
-    setEditableReceivedDate('');
-    setSelectedEmails([]);
-    setLoading(false);
+    const storeInfo = storeData.find(item => item.PROCESS === selectedProcess?.PROCESS);
 
-  } catch (error) {
-    console.error('Update failed:', error);
-    Swal.close();
-    setLoading(false);
-    Swal.fire({
-      icon: 'error',
-      title: 'Update Failed',
-      text: error.response?.data?.message || 'Something went wrong while updating. Please try again.'
-    });
-  }
-};
+    // ✅ Get dates in consistent format
+    const updatedApplyDate = formatDate(selectedProcess.APPLY_DT); // Should be DD-MM-YYYY
+    const updatedReceivedDate = selectedProcess.RECEIVED_DT || "";
+
+    // Convert existing date to YYYY-MM-DD for comparison
+    const existingDateFormatted = formatDateForInput(storeInfo?.APPLY_DT || '');
+
+
+    console.log("New date from input:", formatDate(editableApplyDate)); // YYYY-MM-DD
+    console.log("Existing date from DB:", storeInfo?.APPLY_DT); // DD-MM-YYYY
+    console.log("Existing date formatted:", existingDateFormatted); // YYYY-MM-DD
+    console.log("Updated date to send:", updatedApplyDate); // DD-MM-YYYY
+
+    if (!updatedApplyDate || !storeInfo?.DOC_PATH || !storeInfo?.COMMENTS) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Missing Fields',
+        text: 'Please ensure Apply Date, Document, and Comments are all available before updating.'
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      Swal.fire({
+        title: 'Updating...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      // Send update to backend
+      await axios.post(`${API_BASE_URL}/pollution-update`, {
+        loc: selectedPlant,
+        process: selectedProcess.PROCESS,
+        applyDate: updatedApplyDate, // Send as DD-MM-YYYY
+        documentPath: storeInfo.DOC_PATH,
+        comments: storeInfo.COMMENTS,
+        receivedDate: updatedReceivedDate,
+        emails: selectedEmails
+      });
+
+      Swal.close();
+
+      // ✅ Update storeData - make sure date format matches what will be displayed
+      setStoreData(prevStoreData => {
+        return prevStoreData.map(item => {
+          if (item.PROCESS === selectedProcess.PROCESS) {
+            return {
+              ...item,
+              APPLY_DT: updatedApplyDate, // Store as DD-MM-YYYY
+              RECEIVED_DT: updatedReceivedDate || item.RECEIVED_DT,
+              UPDATED: 'YES'
+            };
+          }
+          return item;
+        });
+      });
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Update Successful',
+        text: `${selectedProcess.PROCESS} has been updated successfully.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      refreshStoreData();
+      // Close modals and reset states
+      setShowEmailModal(false);
+      setShowConfirmModal(false);
+      setSelectedProcess(null);
+      setConfirmModalData(null);
+      setEditableApplyDate('');
+      setEditableReceivedDate('');
+      setSelectedEmails([]);
+      setLoading(false);
+
+    } catch (error) {
+      console.error('Update failed:', error);
+      Swal.close();
+      setLoading(false);
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Something went wrong while updating. Please try again.'
+      });
+    }
+  };
 
   // Refresh data after amendment update
   const refreshStoreData = async () => {
@@ -1736,7 +1713,7 @@ const handleSendEmail = async (selectedEmails) => {
         customMarginTop="-10px"
       />
       <div className='mt-1'>
-        <ProjectInfoHeader data={headerData}/>
+        <ProjectInfoHeader data={headerData} />
       </div>
 
       {!selectedPlant ? (
@@ -1749,9 +1726,9 @@ const handleSendEmail = async (selectedEmails) => {
           Please select a plant to view data.
         </div>
       ) : (
-        <div 
-          className="custom-tbl" 
-          style={{ 
+        <div
+          className="custom-tbl"
+          style={{
             backgroundColor: '#fff',
             borderRadius: '8px',
             overflow: 'hidden',
@@ -1773,7 +1750,7 @@ const handleSendEmail = async (selectedEmails) => {
                   <th>DOCUMENT</th>
                   <th>LOGS</th>
                   <th>ACTION</th>
-                  
+
                   {/* Amendment columns */}
                   {amendCategories?.map(cat => (
                     <React.Fragment key={cat}>
@@ -1789,7 +1766,7 @@ const handleSendEmail = async (selectedEmails) => {
                 {pcbProcesses?.map((row, index) => {
                   const storeInfo = storeData?.find(item => item.PROCESS === row.PROCESS);
 
-                  console.log(storeInfo,"infrrrrraaaaaaaaaaaaaa");
+                  console.log(storeInfo, "infrrrrraaaaaaaaaaaaaa");
                   const isOriginalUpdated = storeInfo?.UPDATED === 'YES';
 
                   let isUpdated = false;
@@ -1905,8 +1882,8 @@ const handleSendEmail = async (selectedEmails) => {
                           '-'
                         )}
                       </td>
-
-                       <td>
+{/* raja 30/12/2025 */}
+                      <td>
                         {isAmendExists ? (
                           <button
                             className={`btn btn-sm ${isOriginalUpdated ? "btn-success" : "btn-secondary"
@@ -1916,7 +1893,7 @@ const handleSendEmail = async (selectedEmails) => {
                             {isOriginalUpdated ? "Updated" : "Pending"}
                           </button>
                         ) : isNextStep ? (
-                          <button className="btn btn-primary btn-sm"
+                          <button className="btn btn-warning btn-sm"
                             onClick={async () => {
                               if (
                                 !storeInfo?.APPLY_DT ||
@@ -1941,6 +1918,45 @@ const handleSendEmail = async (selectedEmails) => {
                           </button>
                         )}
                       </td>
+{/* raja 30/12/2025 */}
+
+                      {/* <td>
+                        {isAmendExists ? (
+                          <button
+                            className={`btn btn-sm ${
+                              isOriginalUpdated ? "btn-success" : "btn-secondary"
+                            }`}
+                            disabled
+                          >
+                            {isOriginalUpdated ? "Updated" : "Pending"}
+                          </button>
+                        ) : isNextStep ? (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={async () => {
+                              if (
+                                !storeInfo?.APPLY_DT ||
+                                !storeInfo?.DOC_PATH ||
+                                !storeInfo?.COMMENTS
+                              ) {
+                                await Swal.fire({
+                                  icon: "warning",
+                                  title: "Missing Fields",
+                                  text: "Please ensure Apply Date, Document, and Comments are all available.",
+                                });
+                                return;
+                              }
+                              showConfirmationModal(storeInfo);
+                            }}
+                          >
+                            Update
+                          </button>
+                        ) : (
+                          <button className="btn btn-success btn-sm" disabled>
+                            {isOriginalUpdated ? "Updated" : "Pending"}
+                          </button>
+                        )}
+                      </td> */}
 
                       {/* Amendment columns */}
                       {amendCategories?.map(cat => {
@@ -1955,7 +1971,7 @@ const handleSendEmail = async (selectedEmails) => {
                         const hasComments = storeInfo?.[commentsKey];
                         const amendDate = storeInfo?.[dateKey];
 
-                        console.log(storeInfo,":dddddddddddddd");
+                        
 
                         const isLatestAmendmentForCat =
                           latestCreatedAmendment &&
@@ -2026,7 +2042,7 @@ const handleSendEmail = async (selectedEmails) => {
                                     onClick={() => {
                                       const amendLogs = [];
                                       const comments = storeInfo?.[commentsKey];
-                                      
+
                                       if (comments) {
                                         try {
                                           const parsedComments = JSON.parse(comments);
@@ -2053,7 +2069,7 @@ const handleSendEmail = async (selectedEmails) => {
                                           });
                                         }
                                       }
-                                      
+
                                       if (amendLogs.length > 0) {
                                         setLogModalTitle(`${row.PROCESS} - ${cat} Comments`);
                                         setCurrentLogs(amendLogs);
@@ -2122,25 +2138,25 @@ const handleSendEmail = async (selectedEmails) => {
             <Form>
               <Form.Group className="mb-3">
                 <Form.Label>Plant</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  value={selectedPlant || "N/A"} 
-                  readOnly 
+                <Form.Control
+                  type="text"
+                  value={selectedPlant || "N/A"}
+                  readOnly
                 />
               </Form.Group>
-              
+
               <Form.Group className="mb-3">
                 <Form.Label>Process</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  value={confirmModalData.storeInfo?.PROCESS || "N/A"} 
-                  readOnly 
+                <Form.Control
+                  type="text"
+                  value={confirmModalData.storeInfo?.PROCESS || "N/A"}
+                  readOnly
                 />
               </Form.Group>
-              
+
               <Form.Group className="mb-3">
                 <Form.Label>
-                  Apply Date 
+                  Apply Date
                   <span style={{ color: "red" }}>*</span>
                 </Form.Label>
                 <Form.Control
@@ -2149,6 +2165,7 @@ const handleSendEmail = async (selectedEmails) => {
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setEditableApplyDate(e.target.value)}
                   required
+                  readOnly
                 />
                 <small className="text-muted">
                   Current date will be replaced with the new date you select.
@@ -2175,11 +2192,11 @@ const handleSendEmail = async (selectedEmails) => {
                   )}
                 </Form.Group>
               )}
-              
+
               <Form.Group className="mb-3">
                 <Form.Label>Latest Comments</Form.Label>
-                <div style={{ 
-                  maxHeight: '150px', 
+                <div style={{
+                  maxHeight: '150px',
                   overflowY: 'auto',
                   backgroundColor: '#f8f9fa',
                   padding: '10px',
@@ -2202,18 +2219,18 @@ const handleSendEmail = async (selectedEmails) => {
             </div>
           )}
         </Modal.Body>
-        
+
         <Modal.Footer>
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             onClick={() => setShowConfirmModal(false)}
             disabled={loading}
           >
             Cancel
           </Button>
-          
-          <Button 
-            variant="primary" 
+
+          <Button
+            variant="primary"
             onClick={proceedToEmailSelection}
             disabled={!confirmModalData || !editableApplyDate || loading}
           >
@@ -2257,7 +2274,7 @@ const handleSendEmail = async (selectedEmails) => {
           process={selectedAmendUpdateData?.process}
           category={selectedAmendUpdateData?.category}
           storeInfo={selectedAmendUpdateData?.storeInfo}
-           onSuccess={refreshStoreData} 
+          onSuccess={refreshStoreData}
         />
       )}
 

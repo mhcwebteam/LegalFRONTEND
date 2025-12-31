@@ -631,80 +631,55 @@ const AmendModal = ({
   // };
   //---------------------------updated this handleopenemailmodal by rajakumari on 291225-------------------
   const handleOpenEmailModal = () => {
-  // Validate all required fields
-  let newErrors = {};
-  let shouldScroll = false;
+    // Validate all required fields
+    let newErrors = {};
+    let shouldScroll = false;
 
-  if (!amendData.amendDate) {
-    newErrors.amendDate = "Please enter Amendment Date";
-  }
-
-  if (!amendData.comments.trim()) {
-    newErrors.comments = "Please enter Comments";
-    shouldScroll = true; // Flag to scroll to comments
-  }
-
-  setErrors(newErrors);
-
-  // If there are errors, show alert and scroll to comments field
-  if (Object.keys(newErrors).length > 0) {
-    // If comments error, scroll to comments field
-    if (shouldScroll) {
-      // Use setTimeout to ensure DOM is updated
-      setTimeout(() => {
-        const commentsTextarea = document.querySelector('textarea[name="comments"]') || 
-                                 document.querySelector('textarea[placeholder*="Enter your amendment remarks"]');
-        
-        if (commentsTextarea) {
-          commentsTextarea.focus();
-          commentsTextarea.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
-        }
-      }, 100);
+    if (!amendData.amendDate) {
+      newErrors.amendDate = "Please enter Amendment Date";
     }
-    
-    return;
-  }
 
-  // If validation passes, open email modal
-  setShowEmailModal(true);
-};
-//---------------------------------------------------------------------------------------------------------------------
+    if (!amendData.comments.trim()) {
+      newErrors.comments = "Please enter Comments";
+      shouldScroll = true; // Flag to scroll to comments
+    }
 
-  // ✅ Handle Email Modal Submit
-  // const handleSendAmendEmail = async (amendEmailData) => {
-  //   setLoading(true); // ⏳ START LOADING
-  //   setShowEmailModal(false);
+    setErrors(newErrors);
 
-  //   try {
-  //     await onSendAmendEmail(amendData, amendEmailData); // API call from parent
-  //   } catch (error) {
-  //     console.error("Email Send Failed:", error);
-  //   }
+    // If there are errors, show alert and scroll to comments field
+    if (Object.keys(newErrors).length > 0) {
+      // If comments error, scroll to comments field
+      if (shouldScroll) {
+        // Use setTimeout to ensure DOM is updated
+        setTimeout(() => {
+          const commentsTextarea = document.querySelector('textarea[name="comments"]') ||
+            document.querySelector('textarea[placeholder*="Enter your amendment remarks"]');
 
-  //   setLoading(false); // ⏳ STOP LOADING
-  // };
+          if (commentsTextarea) {
+            commentsTextarea.focus();
+            commentsTextarea.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+          }
+        }, 100);
+      }
+
+      return;
+    }
+
+    // If validation passes, open email modal
+    setShowEmailModal(true);
+  };
+  //---------------------------------------------------------------------------------------------------------------------
 
   // ✅ Handle Email Modal Submit
   const handleSendAmendEmail = async (amendEmailData) => {
-    
-    // 🔍 DEBUGGING: Check what is being sent to the parent
-    console.log("🚀 SENDING TO PARENT:", {
-      formData: amendData,
-      emailsFromArg: amendEmailData,       // Data passed from Child via function argument
-      emailsFromState: selectedAmendEmails // Data stored in Local State
-    });
-
     setLoading(true); // ⏳ START LOADING
     setShowEmailModal(false);
 
     try {
-      // ⚠️ CRITICAL CHECK: 
-      // Ensure you are passing the one that actually has data.
-      // Usually, it's either amendEmailData OR selectedAmendEmails.
-      await onSendAmendEmail(amendData, amendEmailData); 
+      await onSendAmendEmail(amendData, amendEmailData); // API call from parent
     } catch (error) {
       console.error("Email Send Failed:", error);
     }
@@ -731,7 +706,7 @@ const AmendModal = ({
     "Received CFE",
   ];
 
-  console.log(amendData, "eeeeeeeeeeeeeeeeeeeee");
+
 
   return (
     <>
@@ -765,7 +740,8 @@ const AmendModal = ({
             </Form.Group>
 
             {/* APPLY DATE */}
-               <Form.Group className="mb-3">
+            {/* APPLY DATE */}
+            <Form.Group className="mb-3">
               <Form.Label>
                 Apply Date
                 <span style={{ color: "red" }}>*</span>
@@ -795,17 +771,17 @@ const AmendModal = ({
                 <Form.Label>Amendment Received Date</Form.Label>
                 <Form.Control
                   type="date"
-                  value={amendData.receivedDate}
+                  value={amendData.amendReceivedDate}
                   max={new Date().toISOString().split("T")[0]}
-                  readOnly={amendData.isExistingAmendment} // ← Add this
+                 readOnly={amendData.isExistingAmendment} // ← Add this
                   onChange={(e) => {
                     // Only allow changes if it's NOT an existing amendment
-                    if (!amendData.isExistingAmendment) {
+                   if (!amendData.isExistingAmendment) {
                       setAmendData((prev) => ({
                         ...prev,
-                        receivedDate: e.target.value,
+                        amendReceivedDate: e.target.value,
                       }));
-                    }
+                   }
                   }}
                   className={amendData.isExistingAmendment ? "bg-light" : ""} // ← Add this
                 />
@@ -874,42 +850,42 @@ const AmendModal = ({
             {/* Conditional Radio Button for "Returns Submit" in Amend Modal */}
             {amendData.process ===
               "Comply EC conditions and submit half yearly returns and compliance Reports" && (
-              <Form.Group className="mb-3">
-                <Form.Label>Returns Submit</Form.Label>
-                <div>
-                  <Form.Check
-                    inline
-                    type="radio"
-                    label="Yes"
-                    name="amendReturnsSubmit" // Use a different name for amend modal to avoid conflicts
-                    id="amendReturnsSubmitYes"
-                    value="Yes"
-                    checked={amendData.amendreturnsSubmitted === "Yes"}
-                    onChange={(e) =>
-                      setAmendData((prev) => ({
-                        ...prev,
-                        amendreturnsSubmitted: e.target.value,
-                      }))
-                    }
-                  />
-                  <Form.Check
-                    inline
-                    type="radio"
-                    label="No"
-                    name="amendReturnsSubmit"
-                    id="amendReturnsSubmitNo"
-                    value="No"
-                    checked={amendData.amendreturnsSubmitted === "No"}
-                    onChange={(e) =>
-                      setAmendData((prev) => ({
-                        ...prev,
-                        amendreturnsSubmitted: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </Form.Group>
-            )}
+                <Form.Group className="mb-3">
+                  <Form.Label>Returns Submit</Form.Label>
+                  <div>
+                    <Form.Check
+                      inline
+                      type="radio"
+                      label="Yes"
+                      name="amendReturnsSubmit" // Use a different name for amend modal to avoid conflicts
+                      id="amendReturnsSubmitYes"
+                      value="Yes"
+                      checked={amendData.amendreturnsSubmitted === "Yes"}
+                      onChange={(e) =>
+                        setAmendData((prev) => ({
+                          ...prev,
+                          amendreturnsSubmitted: e.target.value,
+                        }))
+                      }
+                    />
+                    <Form.Check
+                      inline
+                      type="radio"
+                      label="No"
+                      name="amendReturnsSubmit"
+                      id="amendReturnsSubmitNo"
+                      value="No"
+                      checked={amendData.amendreturnsSubmitted === "No"}
+                      onChange={(e) =>
+                        setAmendData((prev) => ({
+                          ...prev,
+                          amendreturnsSubmitted: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </Form.Group>
+              )}
 
             <div className="mb-3">
               <strong>Previously Uploaded Amendment Files:</strong>

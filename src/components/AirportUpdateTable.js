@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import FormGroup from "./FormGroup";
 import { API_BASE_URL } from "../config/Config";
-import PreviousUploadedDocsPanel1 from "./PreviousUploadedDocsPanel1";
+import PreviousUploadedDocsModal from "./PreviousUploadedDocsPanel";
 import Swal from "sweetalert2";
 import EmailSelectionModal from "./EmailModal"
 import ProjectInfoHeader from "./ProjectInfoHeader";
@@ -947,7 +947,7 @@ const AirportUpdateTable = () => {
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousUploadedDocsPanel1 firstStep={firstStep} />
+            <PreviousUploadedDocsModal firstStep={firstStep}  type = 'view'/>
           </div>
         </Col>
       </Row>

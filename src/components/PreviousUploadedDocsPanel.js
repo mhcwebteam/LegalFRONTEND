@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, ListGroup, Button, Modal } from "react-bootstrap";
 import { FaTrashAlt } from "react-icons/fa";
@@ -7,8 +6,7 @@ import Swal from "sweetalert2";
 import { API_BASE_URL, API_BASE_URLS, API_DOC_URL } from "../config/Config";
 import { BoxArrowUpRight } from "react-bootstrap-icons";
 
-
-const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
+const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [], isUpdatable, showDeleteButton }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [docToDelete, setDocToDelete] = useState(null);
 
@@ -54,7 +52,7 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
             key={`${docType}-${doc.name}-${idx}`}
             className="d-flex align-items-center justify-content-between"
           >
-             <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center">
               <BoxArrowUpRight className="me-3" color="royalblue" size={20} />
               <a
                 href={doc.url}
@@ -66,13 +64,16 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
               </a>
             </div>
 
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => handleDeleteClick(doc)}
-            >
-              <FaTrashAlt />
-            </Button>
+            {/* Show delete button only if showDeleteButton is true */}
+            {showDeleteButton && (
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() => handleDeleteClick(doc)}
+              >
+                <FaTrashAlt />
+              </Button>
+            )}
           </ListGroup.Item>
         ))}
       </ListGroup>
@@ -101,27 +102,25 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [] }) => {
 };
 
 // ------------------ Main Panel ------------------
-const PreviousUploadedDocsPanel = ({ firstStep, onDocumentsChange }) => {
+const PreviousUploadedDocsPanel = ({ storeData, firstStep, onDocumentsChange, type = "view" }) => {
+  console.log('fffffffffffffffffff',storeData);
 
   const [deletedDocuments, setDeletedDocuments] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Logs modal states (FIX)
+  // Logs modal states
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
 
-
   // Parse Logs
- let logs = [];
-
-try {
-  const parsed = JSON.parse(firstStep?.LOG || "[]");
-  logs = Array.isArray(parsed) ? parsed : [parsed]; 
-} catch (e) {
-  console.error("Invalid LOG JSON:", e);
-  logs = [];
-}
-
+  let logs = [];
+  try {
+    const parsed = JSON.parse(firstStep?.LOG || "[]");
+    logs = Array.isArray(parsed) ? parsed : [parsed]; 
+  } catch (e) {
+    console.error("Invalid LOG JSON:", e);
+    logs = [];
+  }
 
   if (!firstStep) {
     return (
@@ -133,26 +132,26 @@ try {
     );
   }
 
+  // Check if updatable based on UPDATED field
+  const isUpdatable = firstStep.UPDATED !== "YES";
+  
+  // Determine if we should show delete buttons based on type prop
+  const showDeleteButton = type === "modify" && isUpdatable;
+
   // Delete API
   const handleDelete = async (docType, fileName) => {
+    if (!isUpdatable) {
+      Swal.fire("Not Allowed!", "Documents cannot be modified at this stage.", "error");
+      return;
+    }
 
-  
     if (isDeleting) return;
     setIsDeleting(true);
 
     try {
-      // const res = await axios.delete(`${API_BASE_URL}/water/document`, {
-      //   data: {
-      //     loc: firstStep.LOC,
-      //     process: firstStep.PROCESS,
-      //     doc_type: docType,
-      //     file_name: fileName,
-      //   },
-      // });
+      console.log("firstStep.LOC", firstStep.LOC, "firstStep.PROCESS", firstStep.PROCESS, "doc", docType, "v", fileName)
 
-      console.log("firstStep.LOC",firstStep.LOC,"firstStep.PROCESS",firstStep.PROCESS,"doc",docType,"v",fileName)
-
-        const res = await axios.delete(`${API_BASE_URL}/airport-docu-delete`, {
+      const res = await axios.delete(`${API_BASE_URL}/airport-docu-delete`, {
         data: {
           loc: firstStep.LOC,
           process: firstStep.PROCESS,
@@ -187,7 +186,6 @@ try {
       const names = JSON.parse(firstStep[nameField]);
       const paths = JSON.parse(firstStep[pathField]);
 
-
       return names.map((name, i) => ({
         name,
         url: `${API_DOC_URL}/storage/${paths[i].replace(/\\/g, "/")}`,
@@ -205,15 +203,28 @@ try {
   const landDocs = parseDocs("LAND_DOC_NAME", "LAND_DOC_PATH");
   const othDocs = parseDocs("OTH_DOC_NAME", "OTH_DOC_PATH");
   const feasDocs = parseDocs("FEAS_DOC_NAME", "FEAS_DOC_PATH");
-  const docs = parseDocs("DOCUMENT_NAME","DOCUMENT_PATH");
-
-
+  const docs = parseDocs("DOCUMENT_NAME", "DOCUMENT_PATH");
 
   return (
     <Card className="h-100 shadow-sm d-flex flex-column">
       <div style={{ flex: "0 0 80%", overflowY: "auto", padding: "10px" }}>
         <Card.Title as="h5" className="mb-3 border-bottom pb-2">
           Previously Uploaded Documents
+          {type === "view" && (
+            <span className="ms-2 badge bg-danger">
+              Read Only
+            </span>
+          )}
+          {type === "modify" && !isUpdatable && (
+            <span className="ms-2 badge bg-warning">
+              Completed - Read Only
+            </span>
+          )}
+          {type === "modify" && isUpdatable && (
+            <span className="ms-2 badge bg-success">
+              Editable
+            </span>
+          )}
         </Card.Title>
 
         <>
@@ -223,6 +234,7 @@ try {
             docType="PLAN"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
+            showDeleteButton={showDeleteButton}
           />
 
           <DocumentList
@@ -231,6 +243,7 @@ try {
             docType="TITLE"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
+            showDeleteButton={showDeleteButton}
           />
 
           <DocumentList
@@ -239,6 +252,7 @@ try {
             docType="LINK"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
+            showDeleteButton={showDeleteButton}
           />
 
           <DocumentList
@@ -247,6 +261,7 @@ try {
             docType="LAND"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
+            showDeleteButton={showDeleteButton}
           />
 
           <DocumentList
@@ -255,6 +270,7 @@ try {
             docType="OTH"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
+            showDeleteButton={showDeleteButton}
           />
 
           <DocumentList
@@ -263,14 +279,16 @@ try {
             docType="FEAS"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
+            showDeleteButton={showDeleteButton}
           />
 
-           <DocumentList
-            title=" Documents"
+          <DocumentList
+            title="Documents"
             docs={docs}
             docType="DOCS"
             onDelete={handleDelete}
             deletedDocs={deletedDocuments}
+            showDeleteButton={showDeleteButton}
           />
         </>
       </div>
@@ -281,7 +299,7 @@ try {
           variant="info"
           size="sm"
           onClick={() => {
-         setSelectedLogs(logs || []);
+            setSelectedLogs(logs || []);
             setShowLogsModal(true);
           }}
         >
@@ -295,19 +313,18 @@ try {
           <Modal.Title>Logs</Modal.Title>
         </Modal.Header>
 
- <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
-  {selectedLogs.length === 0 ? (
-    <p>No comments available</p>
-  ) : (
-    selectedLogs.map((log, i) => (
-      <div key={i}>
-        <strong>{log?.date}:</strong> {log?.comment}
-        <hr />
-      </div>
-    ))
-  )}
-</Modal.Body>
-
+        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
+          {selectedLogs.length === 0 ? (
+            <p>No comments available</p>
+          ) : (
+            selectedLogs.map((log, i) => (
+              <div key={i}>
+                <strong>{log?.date}:</strong> {log?.comment}
+                <hr />
+              </div>
+            ))
+          )}
+        </Modal.Body>
 
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
@@ -320,4 +337,3 @@ try {
 };
 
 export default PreviousUploadedDocsPanel;
-

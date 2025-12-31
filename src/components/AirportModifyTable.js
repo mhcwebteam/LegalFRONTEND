@@ -349,6 +349,37 @@ const AirportModifyTable = () => {
     }
   };
 
+
+  useEffect(() => {
+  // Clear everything when plant is cleared
+  if (!selectedPlant) {
+    setStoreData([]);
+    setHeaderData(null);
+    setAllStepsCompleted(false);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null);
+    setFirstStep(null);
+    setFormData({
+      plant: "",
+      applyDate: "",
+      comments: "",
+      amendComments: "",
+      amendDate: "",
+      totalPrjArea: "",
+      noOfNocs: "",
+      prjArea: "",
+      nocs: "",
+      STATUS: "",
+    });
+    setLinkDocs([]);
+    return;
+  }
+
+  // Rest of your existing useEffect logic for fetching data...
+  // ... [keep your existing fetch logic here]
+}, [selectedPlant, steps]);
+
   useEffect(() => {
     // Set the correct date label based on the next step
     if (immediateNextStep && immediateNextStep.PROCESS) {
@@ -500,148 +531,233 @@ const AirportModifyTable = () => {
   }, [nextStepDetails]);
 
   const handleChange = async (e) => {
-    const { name, value } = e.target;
+  const { name, value } = e.target;
 
-    // Prevent changing applyDate for already submitted processes
-    if (
-      name === "applyDate" &&
-      (isProcessAlreadySubmitted || isProcessAmended)
-    ) {
-      toast.info(
-        "Application date cannot be changed for already submitted or amended processes"
-      );
+  // Prevent changing applyDate for already submitted processes
+  if (
+    name === "applyDate" &&
+    (isProcessAlreadySubmitted || isProcessAmended)
+  ) {
+    toast.info(
+      "Application date cannot be changed for already submitted or amended processes"
+    );
+    return;
+  }
+
+  if (name === "plant") {
+    // Clear everything before setting new plant
+    setSelectedPlant("");
+    setStoreData([]);
+    setHeaderData(null);
+    setAllStepsCompleted(false);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null);
+    setFirstStep(null);
+    setFormData({
+      plant: "",
+      applyDate: "",
+      comments: "",
+      amendComments: "",
+      amendDate: "",
+      totalPrjArea: "",
+      noOfNocs: "",
+      prjArea: "",
+      nocs: "",
+      STATUS: "",
+    });
+    setLinkDocs([]);
+    setErrors({});
+
+    if (!value || value.trim() === "") {
       return;
     }
 
-    if (name === "plant") {
-      setSelectedPlant(value);
+    // Now set the new plant
+    setSelectedPlant(value);
 
-      if (!value || value.trim() === "") {
-        setFormData((prev) => ({
-          ...prev,
-          plant: "",
-          applyDate: "",
-          comments: "",
-          amendComments: "",
-          amendDate: "",
-          totalPrjArea: "",
-          noOfNocs: "",
-          nocs: "",
-          prjArea: "",
-          STATUS: "YES",
-        }));
-        return;
-      }
+    try {
+      const res = await getMasterByLoc(value);
 
-      try {
-        const res = await getMasterByLoc(value);
+      if (res) {
+        setHeaderData(res);
 
-        if (res) {
-          setHeaderData(res);
-
-          setFormData((prev) => ({
-            ...prev,
-            plant: value,
-            applyDate: res.APPLICATION_DATE || "",
-            prjArea: res.TOTAL_PROJECT_AREA || "" || null,
-          }));
-        } else {
-          console.warn("⚠️ No master data found for location:", value);
-          setHeaderData(null);
-          setFormData((prev) => ({
-            ...prev,
-            plant: value,
-            applyDate: "",
-            comments: "",
-            amendComments: "",
-            amendDate: "",
-            totalPrjArea: "",
-            prjArea: "",
-            noOfNocs: "",
-            nocs: "",
-            STATUS: "",
-          }));
-        }
-      } catch (err) {
-        console.error("❌ Error fetching master by loc:", err);
-        setHeaderData({});
         setFormData((prev) => ({
           ...prev,
           plant: value,
-          applyDate: "",
-          comments: "",
-          amendComments: "",
-          amendDate: "",
-          totalPrjArea: "",
-          prjArea: "",
-          noOfNocs: "",
-          nocs: "",
-          STATUS: "",
+          applyDate: res.APPLICATION_DATE || "",
+          prjArea: res.TOTAL_PROJECT_AREA || "" || null,
+        }));
+      } else {
+        console.warn("⚠️ No master data found for location:", value);
+        setHeaderData(null);
+        setFormData((prev) => ({
+          ...prev,
+          plant: value,
         }));
       }
-
-      return;
+    } catch (err) {
+      console.error("❌ Error fetching master by loc:", err);
+      setHeaderData({});
+      setFormData((prev) => ({
+        ...prev,
+        plant: value,
+      }));
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+    return;
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+  // const handleChange = async (e) => {
+  //   const { name, value } = e.target;
+
+  //   // Prevent changing applyDate for already submitted processes
+  //   if (
+  //     name === "applyDate" &&
+  //     (isProcessAlreadySubmitted || isProcessAmended)
+  //   ) {
+  //     toast.info(
+  //       "Application date cannot be changed for already submitted or amended processes"
+  //     );
+  //     return;
+  //   }
+
+  //   if (name === "plant") {
+  //     setSelectedPlant(value);
+
+  //     if (!value || value.trim() === "") {
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         plant: "",
+  //         applyDate: "",
+  //         comments: "",
+  //         amendComments: "",
+  //         amendDate: "",
+  //         totalPrjArea: "",
+  //         noOfNocs: "",
+  //         nocs: "",
+  //         prjArea: "",
+  //         STATUS: "YES",
+  //       }));
+  //       return;
+  //     }
+
+  //     try {
+  //       const res = await getMasterByLoc(value);
+
+  //       if (res) {
+  //         setHeaderData(res);
+
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           plant: value,
+  //           applyDate: res.APPLICATION_DATE || "",
+  //           prjArea: res.TOTAL_PROJECT_AREA || "" || null,
+  //         }));
+  //       } else {
+  //         console.warn("⚠️ No master data found for location:", value);
+  //         setHeaderData(null);
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           plant: value,
+  //           applyDate: "",
+  //           comments: "",
+  //           amendComments: "",
+  //           amendDate: "",
+  //           totalPrjArea: "",
+  //           prjArea: "",
+  //           noOfNocs: "",
+  //           nocs: "",
+  //           STATUS: "",
+  //         }));
+  //       }
+  //     } catch (err) {
+  //       console.error("❌ Error fetching master by loc:", err);
+  //       setHeaderData({});
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         plant: value,
+  //         applyDate: "",
+  //         comments: "",
+  //         amendComments: "",
+  //         amendDate: "",
+  //         totalPrjArea: "",
+  //         prjArea: "",
+  //         noOfNocs: "",
+  //         nocs: "",
+  //         STATUS: "",
+  //       }));
+  //     }
+
+  //     return;
+  //   }
+
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: value,
+  //   }));
+  // };
+
 
   const handleConfirmSubmit = async (emails) => {
-    if (!formData.plant || !formData.applyDate) {
-      Swal.fire(
-        "Validation Error",
-        "Please select a plant and provide a date.",
-        "error"
-      );
-      return;
-    }
-
-    // Final document validation before submission
-    if (!validateDocuments()) {
-      toast.error("Please ensure all uploaded files are PDF format");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    //  --- : 'fetch User';
-    let currentUserName = loggedInUser.username;
-
-    const payload = new FormData();
-    payload.append("loc", formData.plant);
-    payload.append("applyDate", formData.applyDate);
-    payload.append("comments", formData.comments || "");
-    payload.append("process", immediateNextStep.PROCESS);
-    payload.append("totalPrjArea", formData.prjArea || "" || null);
-    payload.append("noOfNocs", formData.nocs || "" || null);
-    payload.append("STATUS", formData.STATUS);
-    payload.append("username", currentUserName);
-
-    emails.forEach((email, i) => {
-      payload.append(`emails[${i}]`, email);
-    });
-
-    // Append documents
-    linkDocs.forEach((file) => {
-      if (validateFileType(file)) {
-        payload.append("documents[]", file);
-      }
-    });
-
-    const existingRecord = storeData.find(
-      (item) =>
-        item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() &&
-        item.LOC?.trim() === formData.plant?.trim()
+  if (!formData.plant || !formData.applyDate) {
+    Swal.fire(
+      "Validation Error",
+      "Please select a plant and provide a date.",
+      "error"
     );
+    return;
+  }
 
-    const apiUrl = existingRecord
-      ? `${API_BASE_URL}/airport-modify`
-      : `${API_BASE_URL}/airport-submit`;
+  // Final document validation before submission
+  if (!validateDocuments()) {
+    toast.error("Please ensure all uploaded files are PDF format");
+    return;
+  }
 
-    try {
+  setIsSubmitting(true);
+
+  //  --- : 'fetch User';
+  let currentUserName = loggedInUser.username;
+
+  const payload = new FormData();
+  payload.append("loc", formData.plant);
+  payload.append("applyDate", formData.applyDate);
+  payload.append("comments", formData.comments || "");
+  payload.append("process", immediateNextStep.PROCESS);
+  payload.append("totalPrjArea", formData.prjArea || "" || null);
+  payload.append("noOfNocs", formData.nocs || "" || null);
+  payload.append("STATUS", formData.STATUS);
+  payload.append("username", currentUserName);
+
+  emails.forEach((email, i) => {
+    payload.append(`emails[${i}]`, email);
+  });
+
+  // Append documents
+  linkDocs.forEach((file) => {
+    if (validateFileType(file)) {
+      payload.append("documents[]", file);
+    }
+  });
+
+  const existingRecord = storeData.find(
+    (item) =>
+      item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() &&
+      item.LOC?.trim() === formData.plant?.trim()
+  );
+
+  const apiUrl = existingRecord
+    ? `${API_BASE_URL}/airport-modify`
+    : `${API_BASE_URL}/airport-submit`;
+
+try {
       await axios.post(apiUrl, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -702,7 +818,146 @@ const AirportModifyTable = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+
+};
+
+// Helper function to fetch plant data
+const fetchPlantData = async (plant) => {
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/airport-data?plant=${plant}`
+    );
+    setStoreData(res.data);
+    
+    // Recalculate next step after data is loaded
+    if (res.data.length > 0 && steps.length > 0) {
+      const completed = res.data
+        .filter((i) => i.UPDATED === "YES")
+        .map((i) => i.PROCESS);
+      
+      const nextStep = steps.find((s) => !completed.includes(s.PROCESS));
+      
+      if (nextStep) {
+        setImmediateNextStep(nextStep);
+        setImmediateNextStepIndex(steps.indexOf(nextStep));
+        
+        // Fetch step details
+        const detailsUrl = `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+          plant
+        )}/${encodeURIComponent(nextStep.PROCESS)}`;
+        
+        const detailsRes = await axios.get(detailsUrl);
+        setNextStepDetails(detailsRes.data);
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching plant data after submission:", err);
+  }
+};
+  
+
+//   const handleConfirmSubmit = async (emails) => {
+//     if (!formData.plant || !formData.applyDate) {
+//       Swal.fire(
+//         "Validation Error",
+//         "Please select a plant and provide a date.",
+//         "error"
+//       );
+//       return;
+//     }
+
+//     // Final document validation before submission
+//     if (!validateDocuments()) {
+//       toast.error("Please ensure all uploaded files are PDF format");
+//       return;
+//     }
+
+//     setIsSubmitting(true);
+
+//     //  --- : 'fetch User';
+//     let currentUserName = loggedInUser.username;
+
+//     const payload = new FormData();
+//     payload.append("loc", formData.plant);
+//     payload.append("applyDate", formData.applyDate);
+//     payload.append("comments", formData.comments || "");
+//     payload.append("process", immediateNextStep.PROCESS);
+//     payload.append("totalPrjArea", formData.prjArea || "" || null);
+//     payload.append("noOfNocs", formData.nocs || "" || null);
+//     payload.append("STATUS", formData.STATUS);
+//     payload.append("username", currentUserName);
+
+//     emails.forEach((email, i) => {
+//       payload.append(`emails[${i}]`, email);
+//     });
+
+//     // Append documents
+//     linkDocs.forEach((file) => {
+//       if (validateFileType(file)) {
+//         payload.append("documents[]", file);
+//       }
+//     });
+
+//     const existingRecord = storeData.find(
+//       (item) =>
+//         item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim() &&
+//         item.LOC?.trim() === formData.plant?.trim()
+//     );
+
+//     const apiUrl = existingRecord
+//       ? `${API_BASE_URL}/airport-modify`
+//       : `${API_BASE_URL}/airport-submit`;
+
+//     try {
+//       await axios.post(apiUrl, payload, {
+//         headers: { "Content-Type": "multipart/form-data" },
+//       });
+
+//       Swal.fire({
+//         icon: "success",
+//         title: "Submitted Successfully!",
+//         showConfirmButton: false,
+//         timer: 2000,
+//       });
+//       setSelectedPlant("");
+//         setStoreData([]); 
+//       setHeaderData(null);
+// setAllStepsCompleted("");
+//       // 3. Reset Step Tracking (Clears Right Side Docs and Middle Form)
+//       setImmediateNextStep(null);
+//       setImmediateNextStepIndex(-1);
+//       setNextStepDetails(null);
+//       // setLatestLogs([]);
+//       setFirstStep(null);
+//       setFormData({
+//         plant: formData.plant,
+//         applyDate: "",
+//         comments: "",
+//         totalPrjArea: "",
+//         prjArea: "",
+//         nocs: "",
+//         document: "",
+//       });
+
+//       // Clear document states
+//       setLinkDocs([]);
+//       setErrors({}); // Clear errors on successful submission
+
+//       const res = await axios.get(
+//         `${API_BASE_URL}/airport-data?plant=${formData.plant}`
+//       );
+//       setStoreData(res.data);
+//     } catch (error) {
+//       console.error("Submission failed:", error);
+//       Swal.fire(
+//         "Error",
+//         "Submission failed. Please check the console.",
+//         "error"
+//       );
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
 
   const handleAmendmentUpdate = async (dataFromPanel) => {
     if (!selectedPlant || !immediateNextStep) {
@@ -1149,7 +1404,7 @@ const AirportModifyTable = () => {
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousUploadedDocsModal firstStep={firstStep} />
+            <PreviousUploadedDocsModal storeData={storeData} firstStep={firstStep} type= "modify" />
           </div>
         </Col>
       </Row>

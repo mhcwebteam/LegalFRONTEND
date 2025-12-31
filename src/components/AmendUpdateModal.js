@@ -1,59 +1,60 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Modal, Button, Form } from "react-bootstrap";
-import axios from "axios";
-import { API_BASE_URL, API_DOC_URL } from "../config/Config";
-import Swal from "sweetalert2";
-import EmailAmendModal from "./EmailAmendModal";
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Modal, Button, Form } from 'react-bootstrap';
+import axios from 'axios';
+import { API_BASE_URL, API_DOC_URL } from '../config/Config';
+import Swal from 'sweetalert2';
+import EmailAmendModal from './EmailAmendModal';
 
 // Helper function to extract latest comment with date (sorted by date descending)
 const getLatestComment = (commentsJson) => {
-  if (!commentsJson) return { date: "", comment: "" };
-
+  if (!commentsJson) return { date: '', comment: '' };
+  
   try {
     const parsed = JSON.parse(commentsJson);
-
+    
     if (Array.isArray(parsed) && parsed.length > 0) {
       // Sort by date descending (newest first)
       const sorted = [...parsed].sort((a, b) => {
         return new Date(b.date) - new Date(a.date);
       });
-
+      
       // Get the first element (newest)
       const latest = sorted[0];
       return {
-        date: latest.date || "",
-        comment: latest.comment || latest || "",
+        date: latest.date || '',
+        comment: latest.comment || latest || ''
       };
-    } else if (typeof parsed === "string") {
+    } else if (typeof parsed === 'string') {
       return {
-        date: "",
-        comment: parsed,
+        date: '',
+        comment: parsed
       };
     }
   } catch (e) {
     // If parsing fails, return as is
     return {
-      date: "",
-      comment: commentsJson,
+      date: '',
+      comment: commentsJson
     };
   }
-
-  return { date: "", comment: "" };
+  
+  return { date: '', comment: '' };
 };
 
 // Helper function to format date for input field (YYYY-MM-DD)
 const formatDateForInput = (dateStr) => {
-  if (!dateStr) return "";
-
+  if (!dateStr) return '';
+  
   try {
     // Remove time part if exists
-    const datePart = dateStr.split(" ")[0];
-
+    const datePart = dateStr.split(' ')[0];
+    
     // Check current format
-    if (datePart.includes("-")) {
-      const parts = datePart.split("-");
-
+    if (datePart.includes('-')) {
+      const parts = datePart.split('-');
+      
       if (parts.length === 3) {
         // Check if it's DD-MM-YYYY or YYYY-MM-DD
         if (parts[0].length === 4) {
@@ -62,21 +63,21 @@ const formatDateForInput = (dateStr) => {
         } else if (parts[2].length === 4) {
           // DD-MM-YYYY format, convert to YYYY-MM-DD
           const [day, month, year] = parts;
-          return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
         }
       }
     }
-
+    
     // Try to parse as Date object
     const dateObj = new Date(dateStr);
     if (!isNaN(dateObj.getTime())) {
-      return dateObj.toISOString().split("T")[0];
+      return dateObj.toISOString().split('T')[0];
     }
   } catch (e) {
-    console.error("Error formatting date:", e);
+    console.error('Error formatting date:', e);
   }
-
-  return "";
+  
+  return '';
 };
 
 const AmendUpdateModal = ({
@@ -86,22 +87,23 @@ const AmendUpdateModal = ({
   process,
   category,
   storeInfo,
-  onSuccess,
+  onSuccess
 }) => {
   const [amendData, setAmendData] = useState({
-    plant: plant || "",
-    process: process || "",
-    category: category || "",
-    applyDate: "",
-    receivedDate: "",
-    amendDate: "",
-    commentDate: "",
-    commentText: "",
+    plant: plant || '',
+    process: process || '',
+    category: category || '',
+    applyDate: '',
+    receivedDate: '',
+    amendreceivedDate: '',
+    amendDate: '',
+    commentDate: '',
+    commentText: '',
     selectedFiles: [],
     existingDocs: [],
-    existingNames: [],
+    existingNames: []
   });
-
+  
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -110,8 +112,9 @@ const AmendUpdateModal = ({
   const [loggedInUser, setLoggedInUser] = useState(null);
   const fileInputRef = useRef(null);
 
-  const token = localStorage.getItem("token");
-  const navigate = useNavigate();
+  
+const token = localStorage.getItem('token');
+const navigate = useNavigate();
 
   // Format date for display helper
   const formatDateForDisplay = (date) => {
@@ -122,21 +125,22 @@ const AmendUpdateModal = ({
   };
 
   // --- 2. Check User Login ---
-  useEffect(() => {
-    if (!token) {
-      navigate("/");
-      return;
-    }
-    const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
-    if (userString) {
-      try {
-        const userObj = JSON.parse(userString);
-        setLoggedInUser(userObj);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
+    useEffect(() => {
+      if (!token) {
+        navigate('/');
+        return;
       }
-    }
-  }, [token, navigate]);
+      const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+      
+    }, [token, navigate]);
 
   // Initialize data when modal opens
   useEffect(() => {
@@ -146,69 +150,64 @@ const AmendUpdateModal = ({
       const docNameKey = `${category}_DOC_NAME`;
       const commentsKey = `${category}_COMMENTS`;
       const dateKey = `${category}_DATE`;
-
+      
       let existingDocs = [];
       let existingNames = [];
-
+      
       try {
-        existingDocs = JSON.parse(storeInfo[docPathKey] || "[]");
-        existingNames = JSON.parse(storeInfo[docNameKey] || "[]");
+        existingDocs = JSON.parse(storeInfo[docPathKey] || '[]');
+        existingNames = JSON.parse(storeInfo[docNameKey] || '[]');
       } catch (e) {
-        console.error("Error parsing existing docs:", e);
+        console.error('Error parsing existing docs:', e);
       }
-
+      
       // Extract the latest comment with date
       const latestComment = getLatestComment(storeInfo[commentsKey]);
-
+      
       // Format dates for input fields
-      const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || "");
-      const formattedReceivedDate = formatDateForInput(
-        storeInfo.RECEIVED_DT || ""
-      );
-      const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || "");
+      const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
+      // const formattedReceivedDate = formatDateForInput(storeInfo.RECEIVED_DT || '');
+      const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
 
-      console.log(formattedReceivedDate, "ffffffffffff", formattedApplyDate);
+      const formattedAmendReceivedDate = formatDateForInput(storeInfo[dateKey] || '');
 
-      setAmendData((prev) => ({
+   
+      
+      setAmendData(prev => ({
         ...prev,
         plant: plant,
         process: process,
         category: category,
         applyDate: formattedApplyDate,
-        receivedDate: formattedReceivedDate,
-        amendDate: formattedAmendDate || new Date().toISOString().split("T")[0],
+        amendreceivedDate: formattedAmendReceivedDate,
+        amendDate: formattedAmendDate || new Date().toISOString().split('T')[0],
         commentDate: latestComment.date,
         commentText: latestComment.comment,
         existingDocs: existingDocs,
-        existingNames: existingNames,
+        existingNames: existingNames
       }));
-    }
+  }
   }, [show, plant, process, category, storeInfo]);
 
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-
+    
     // Validate required fields
-    // if (!amendData.applyDate) newErrors.applyDate = "Apply date is required";
-    if (!amendData.amendDate)
-      newErrors.amendDate = "Amendment date is required";
-
+    if (!amendData.amendDate) newErrors.amendDate = 'Amendment date is required';
+    
     // Validate received date for specific processes
     const receivedDateProcesses = [
       "Received TOR",
       "EC (Environmental Clearance)",
       "Application for CFE",
-      "Received CFE",
+      "Received CFE"
     ];
-
-    if (
-      receivedDateProcesses.includes(amendData.process) &&
-      !amendData.receivedDate
-    ) {
-      newErrors.receivedDate = "Received date is required for this process";
+    
+    if (receivedDateProcesses.includes(amendData.process) && !amendData.amendreceivedDate) {
+      newErrors.amendreceivedDate = 'Received date is required for this process';
     }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -216,104 +215,96 @@ const AmendUpdateModal = ({
   // Handle file upload
   const handleUploadFiles = async () => {
     if (amendData.selectedFiles.length === 0) {
-      return {
-        docPath: JSON.stringify(amendData.existingDocs),
-        docName: JSON.stringify(amendData.existingNames),
+      return { 
+        docPath: JSON.stringify(amendData.existingDocs), 
+        docName: JSON.stringify(amendData.existingNames) 
       };
     }
 
     const formData = new FormData();
-    amendData.selectedFiles.forEach((file) => {
-      formData.append("files[]", file);
+    amendData.selectedFiles.forEach(file => {
+      formData.append('files[]', file);
     });
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/upload-amendment`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
+      const response = await axios.post(`${API_BASE_URL}/upload-amendment`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
       const newDocs = [...amendData.existingDocs, ...response.data.filePaths];
       const newNames = [...amendData.existingNames, ...response.data.fileNames];
-
+      
       return {
         docPath: JSON.stringify(newDocs),
-        docName: JSON.stringify(newNames),
+        docName: JSON.stringify(newNames)
       };
     } catch (error) {
-      console.error("Upload failed:", error);
+      console.error('Upload failed:', error);
       throw error;
     }
   };
 
   // Convert date from YYYY-MM-DD to DD-MM-YYYY format for backend
   const convertDateForBackend = (dateStr) => {
-    if (!dateStr) return "";
-
+    if (!dateStr) return '';
+    
     // If already in DD-MM-YYYY format, return as is
-    if (dateStr.includes("-")) {
-      const parts = dateStr.split("-");
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
       if (parts.length === 3 && parts[2].length === 4) {
         // DD-MM-YYYY format
         return `${dateStr}`;
       }
     }
-
+    
     // Convert from YYYY-MM-DD to DD-MM-YYYY
-    if (dateStr.includes("-")) {
-      const [year, month, day] = dateStr.split("-");
+    if (dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-');
       return `${day}-${month}-${year}`;
     }
-
+    
     return `${dateStr}`;
   };
 
   // Prepare comments for submission
   const prepareCommentsForSubmission = () => {
     const now = new Date();
-    const timestamp = now.toISOString().slice(0, 19).replace("T", " ");
-
+    const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
+    
     // Get existing comments
     let existingComments = [];
     const existingCommentsJson = storeInfo[`${category}_COMMENTS`];
-
+    
     if (existingCommentsJson) {
       try {
         const parsed = JSON.parse(existingCommentsJson);
         if (Array.isArray(parsed)) {
           existingComments = parsed;
-        } else if (typeof parsed === "string") {
+        } else if (typeof parsed === 'string') {
           // Convert old string comment to array format
-          existingComments = [
-            {
-              date: storeInfo[`${category}_DATE`] || timestamp,
-              comment: parsed,
-            },
-          ];
+          existingComments = [{
+            date: storeInfo[`${category}_DATE`] || timestamp,
+            comment: parsed
+          }];
         }
       } catch (e) {
         // If parsing fails, create new array
-        existingComments = [
-          {
-            date: timestamp,
-            comment: existingCommentsJson,
-          },
-        ];
+        existingComments = [{
+          date: timestamp,
+          comment: existingCommentsJson
+        }];
       }
     }
-
+    
     // Add new comment with current date/time
     const newCommentObj = {
       date: timestamp,
-      comment: amendData.commentText || "Updated",
+      comment: amendData.commentText || 'Updated'
     };
-
+    
     // Add new comment at the beginning
     const allComments = [newCommentObj, ...existingComments];
-
+    
     return JSON.stringify(allComments);
   };
 
@@ -327,11 +318,12 @@ const AmendUpdateModal = ({
       // Fetch email recipients first
       const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
       setEmailAmendRecipients(response.data);
-
+      
       // Show email modal
       setShowEmailModal(true);
+      
     } catch (error) {
-      console.error("Failed to fetch email recipients:", error);
+      console.error('Failed to fetch email recipients:', error);
       setShowEmailModal(true);
     }
   };
@@ -342,8 +334,8 @@ const AmendUpdateModal = ({
     try {
       const uploadResult = await handleUploadFiles();
 
-      //  const currentUserName = loggedInUser
-      // //  //? (loggedInUser.username || loggedInUser.name || loggedInUser.email || 'Unknown User')
+       //  const currentUserName = loggedInUser 
+      // //  //? (loggedInUser.username || loggedInUser.name || loggedInUser.email || 'Unknown User') 
       //   : 'Unknown User';
       let currentUserName = loggedInUser.username;
 
@@ -355,44 +347,47 @@ const AmendUpdateModal = ({
         loc: plant,
         process: process,
         category: category,
-        // applyDate: convertDateForBackend(amendData.applyDate),
-          applyDate: convertDateForBackend(amendData.applyDate) || convertDateForBackend(amendData.amendDate),
-        receivedDate: convertDateForBackend(amendData.receivedDate),
+        applyDate: convertDateForBackend(amendData.applyDate) || convertDateForBackend(amendData.amendDate),
+        // receivedDate: convertDateForBackend(amendData.receivedDate),
+        amendreceivedDate:convertDateForBackend(amendData.amendreceivedDate),
         amendDate: convertDateForBackend(amendData.amendDate),
         documentPath: uploadResult.docPath,
         docName: uploadResult.docName,
         comments: prepareCommentsForSubmission(),
-        status: "YES",
+        status: 'YES',
         emails: selectedEmails,
-        userName: currentUserName,
+        userName: currentUserName 
       };
 
-      console.log("sssssssssssss", submissionData);
+     
 
-      await axios.post(`${API_BASE_URL}/amendment-update`, submissionData);
+      console.log("sssssssssssss",submissionData)
 
+     await axios.post(`${API_BASE_URL}/amendment-update`, submissionData);
+      
       await Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Amendment updated successfully!",
+        icon: 'success',
+        title: 'Success',
+        text: 'Amendment updated successfully!',
         timer: 2000,
-        showConfirmButton: false,
+        showConfirmButton: false
       });
-
+      
       // Call success callback
       if (onSuccess) {
         onSuccess();
       }
-
+      
       // Close both modals
       setShowEmailModal(false);
       onClose();
+      
     } catch (error) {
-      console.error("Submission failed:", error);
+      console.error('Submission failed:', error);
       Swal.fire({
-        icon: "error",
-        title: "Update Failed",
-        text: "Failed to update amendment. Please try again.",
+        icon: 'error',
+        title: 'Update Failed',
+        text: 'Failed to update amendment. Please try again.'
       });
     } finally {
       setLoading(false);
@@ -400,12 +395,12 @@ const AmendUpdateModal = ({
   };
 
   // List of processes that require received date
-  const receivedDateProcesses = [
-    "Received TOR",
-    "EC (Environmetal Clearance)",
-    "Application for CFE",
-    "Received CFE",
-  ];
+const receivedDateProcesses = [
+  "Received TOR",
+  "EC (Environmetal Clearance)",
+  "Application for CFE",
+  "Received CFE",
+]
 
   return (
     <>
@@ -435,7 +430,11 @@ const AmendUpdateModal = ({
             {/* PROCESS */}
             <Form.Group className="mb-3">
               <Form.Label>Process</Form.Label>
-              <Form.Control type="text" value={amendData.process} readOnly />
+              <Form.Control 
+                type="text" 
+                value={amendData.process} 
+                readOnly 
+              />
             </Form.Group>
 
             {/* APPLY DATE - EDITABLE */}
@@ -443,86 +442,98 @@ const AmendUpdateModal = ({
               <Form.Label>
                 Apply Date <span style={{ color: "red" }}>*</span>
               </Form.Label>
-              <Form.Control
-                type="text"
-                value={
-                  amendData?.applyDate
-                    ? convertDateForBackend(amendData.applyDate)
-                    : convertDateForBackend(amendData?.amendDate)
-                }
-                readOnly
-              />
+         
+               
+                             <Form.Control
+                               type="text"
+                               value={
+                                 amendData?.applyDate
+                                   ? convertDateForBackend(amendData.applyDate)
+                                   :convertDateForBackend(amendData?.amendDate)
+                               }
+                               readOnly
+                             />
+             
+
+
+        
+             
             </Form.Group>
 
             {/* RECEIVED DATE - EDITABLE (conditional) */}
             {receivedDateProcesses.includes(amendData.process) && (
               <Form.Group className="mb-3">
                 <Form.Label>
-                  Amendment Received Date{" "}
-                  <span style={{ color: "red" }}>*</span>
+                 Amendment Received Date <span style={{ color: "red" }}>*</span>
                 </Form.Label>
                 <Form.Control
                   type="date"
-                  value={amendData.receivedDate || ""}
+                  value={amendData.amendreceivedDate || ""}
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) =>
-                    setAmendData((prev) => ({
-                      ...prev,
-                      receivedDate: e.target.value,
+                    setAmendData((prev) => ({ 
+                      ...prev, 
+                      amendreceivedDate: e.target.value 
                     }))
                   }
                 />
-                {errors.receivedDate && (
+                {errors.amendreceivedDate && (
                   <div className="text-danger" style={{ fontSize: "14px" }}>
-                    {errors.receivedDate}
+                    {errors.amendreceivedDate}
                   </div>
                 )}
+                
               </Form.Group>
             )}
 
+     
             <Form.Group className="mb-3">
               <Form.Label>
                 Amendment Date <span style={{ color: "red" }}>*</span>
               </Form.Label>
-              <Form.Control
-                type="date"
-                value={amendData.amendDate || ""}
-                max={new Date().toISOString().split("T")[0]}
-                onChange={(e) =>
-                  setAmendData((prev) => ({
-                    ...prev,
-                    amendDate: e.target.value,
-                  }))
-                }
-              />
+          <Form.Control
+  type="date"
+  value={amendData.amendDate || ""}
+  max={new Date().toISOString().split("T")[0]}
+  onChange={(e) =>
+    setAmendData((prev) => ({
+      ...prev,
+      amendDate: e.target.value,
+    }))
+  }
+/>
 
               {errors.amendDate && (
                 <div className="text-danger" style={{ fontSize: "14px" }}>
                   {errors.amendDate}
                 </div>
               )}
+      
             </Form.Group>
 
             {/* CATEGORY */}
             <Form.Group className="mb-3">
               <Form.Label>Amendment Category</Form.Label>
-              <Form.Control type="text" value={amendData.category} readOnly />
+              <Form.Control 
+                type="text" 
+                value={amendData.category} 
+                readOnly 
+              />
             </Form.Group>
 
             {/* LATEST COMMENT */}
             <Form.Group className="mb-3">
               <Form.Label>Amendment Comment</Form.Label>
-
+              
               {/* Show date above comment */}
               {amendData.commentDate && (
                 <div className="mb-2 p-2 bg-light rounded">
                   <small className="text-muted d-block">
-                    <strong>Date:</strong>{" "}
-                    {formatDateForDisplay(amendData.commentDate)}
+                    <strong>Date:</strong> {formatDateForDisplay(amendData.commentDate)}
                   </small>
                 </div>
               )}
-
+              
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -533,16 +544,25 @@ const AmendUpdateModal = ({
                     commentText: e.target.value,
                   }))
                 }
-                readOnly
+               readOnly
               />
+           
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={onClose} disabled={loading}>
+          <Button 
+            variant="secondary" 
+            onClick={onClose}
+            disabled={loading}
+          >
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={loading}>
+          <Button 
+            variant="primary" 
+            onClick={handleSubmit}
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <span className="spinner-border spinner-border-sm me-2"></span>
@@ -570,7 +590,7 @@ const AmendUpdateModal = ({
           ...amendData,
           plant,
           process,
-          category,
+          category
         }}
         loading={loading}
       />
