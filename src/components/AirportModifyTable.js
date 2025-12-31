@@ -652,26 +652,46 @@ const AirportModifyTable = () => {
         showConfirmButton: false,
         timer: 2000,
       });
+        // --- START OF CHANGES ---
+      
+      // 1. Clear the selected plant
       setSelectedPlant("");
+      
+      // 2. Clear the Header Data (Project Info Header)
+      setHeaderData(null);
+
+      // 3. Clear the Sidebar Data (This removes the green checks/process history)
+      setStoreData([]);
+      
+      // 4. Reset Step states
       setFirstStep(null);
+      setNextStepDetails(null);
+      setImmediateNextStep(null);
+      setActiveStep(0); 
+
+      // 5. Clear Form Data
       setFormData({
-        plant: formData.plant,
+        plant: "", // Ensure this is empty
         applyDate: "",
         comments: "",
         totalPrjArea: "",
         prjArea: "",
         nocs: "",
         document: "",
+        STATUS: "YES", // Reset status to default
       });
 
       // Clear document states
       setLinkDocs([]);
-      setErrors({}); // Clear errors on successful submission
+      setErrors({}); 
 
-      const res = await axios.get(
-        `${API_BASE_URL}/airport-data?plant=${formData.plant}`
-      );
-      setStoreData(res.data);
+      // REMOVED THE FOLLOWING LINES:
+      // const res = await axios.get(
+      //   `${API_BASE_URL}/airport-data?plant=${formData.plant}`
+      // );
+      // setStoreData(res.data);
+
+      // --- END OF CHANGES ---
     } catch (error) {
       console.error("Submission failed:", error);
       Swal.fire(

@@ -1906,19 +1906,17 @@ const handleSendEmail = async (selectedEmails) => {
                         )}
                       </td>
 
-                      <td>
+                       <td>
                         {isAmendExists ? (
                           <button
-                            className={`btn btn-sm ${
-                              isOriginalUpdated ? "btn-success" : "btn-secondary"
-                            }`}
+                            className={`btn btn-sm ${isOriginalUpdated ? "btn-success" : "btn-secondary"
+                              }`}
                             disabled
                           >
                             {isOriginalUpdated ? "Updated" : "Pending"}
                           </button>
                         ) : isNextStep ? (
-                          <button
-                            className="btn btn-primary btn-sm"
+                          <button className="btn btn-primary btn-sm"
                             onClick={async () => {
                               if (
                                 !storeInfo?.APPLY_DT ||
@@ -1938,7 +1936,7 @@ const handleSendEmail = async (selectedEmails) => {
                             Update
                           </button>
                         ) : (
-                          <button className="btn btn-success btn-sm" disabled>
+                          <button className={`btn btn-sm ${isOriginalUpdated ? "btn-success" : "btn-secondary"}`} disabled>
                             {isOriginalUpdated ? "Updated" : "Pending"}
                           </button>
                         )}

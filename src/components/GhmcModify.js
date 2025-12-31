@@ -1573,9 +1573,51 @@ useEffect(() => {
       }));
     } else if (name === "loc") {
       // setFormData((prev) => ({ ...prev, loc: value }));
-      setFormData((prev) => ({ ...prev, loc: value, Comments: "" })); 
+      // setFormData((prev) => ({ ...prev, loc: value, Comments: "" })); 
+      // setSelectedPlant(value);
+      // setSubmitted(false);
+
+       // --- START OF CHANGES ---
+      
+      // 1. Clear Global Data Immediately
+      setStoreData([]);       // Clears the sidebar steps (green checks)
+      setHeaderData(null);    // Clears the top header info
+      
+      // 2. Clear Step & View States
+      setNextStepDetails(null);
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setActiveStep(0);
+      setViewedStep(null);
+      setViewedStepDetails(null);
+      setIsViewingSpecificStep(false);
+      setSelectedProcessDetails(null); // Clear currently selected history step
+      
+      // 3. Clear Documents
+      setLinkDocs([]);
+      setLandDocs([]);
+      setOthDocs([]);
+      setFeasibilityDocs([]);
+      setAmountPaidDocs([]);
+      
+      // 4. Update Plant Selection
       setSelectedPlant(value);
       setSubmitted(false);
+
+      // 5. Reset Form Data (keep only loc)
+      setFormData((prev) => ({
+        ...prev,
+        loc: value,
+        Comments: "",
+        applyDate: "",
+        noOfTowers: "",
+        TotalProjectArea: "",
+        ProjectBuildArea: "",
+        ProjectName: "",
+        // Add other fields you want to reset here
+      }));
+
+      // --- END OF CHANGES ---
 
       try {
         const res = await getMasterByLoc(value);
@@ -1702,42 +1744,59 @@ const handleViewNextStep = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // ✅ 3️⃣ Refresh data after submission
-      // const refreshed = await axios.get(
-      //   `${API_BASE_URL}/GHMC-data?plant=${formData.loc}`
-      // );
+      
+      // --- START OF RESET LOGIC ---
 
-      // setStoreData(refreshed.data || []);
+      // 1. Clear Global Data (Sidebar & Header)
+      setStoreData([]);       
+      setHeaderData(null);    
 
-      // const master = await getMasterByLoc(formData.loc);
-      // if (master) setHeaderData(master);
-  setStoreData([]);       // Clear sidebar history
-      setHeaderData(null);    // Clear header project info
+      // 2. Clear Plant Selection
       setSelectedPlant("");
-      // ✅ 4️⃣ Reset form
-      setFormData((prev) => ({
-        ...prev,
+
+      // 3. Clear Step Logic (Crucial for resetting the sidebar state)
+      setNextStepDetails(null);
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setActiveStep(0);
+      
+      // 4. Clear Viewing Modes
+      setViewedStep(null);
+      setViewedStepDetails(null);
+      setIsViewingSpecificStep(false);
+      setSelectedProcessDetails(null);
+
+      // 5. Reset Form Data Completely
+      setFormData({
         loc: "",
         applyDate: "",
-        Comments: "", // Clear Comments after submission
+        Comments: "",
+        process: "",
+        organisation: "",
+        project_name: "",
+        location: "",
+        status: "",
+        noOfTowers: "",
+        TotalProjectArea: "",
+        ProjectBuildArea: "",
+        ProjectName: "",
         noOfFlats: "",
         KLD: "",
-        amountPaid: "",
-        status: "",
-        reason: "",
-        noOfTowers: "",
-        ProjectBuildArea: "",
-      }));
+        OldAmount: "",
+        TotalAmount: "",
+        Size: "",
+        Ghmc: "",
+      });
 
+      // 6. Clear Documents & Errors
       setLinkDocs([]);
       setLandDocs([]);
       setOthDocs([]);
       setFeasibilityDocs([]);
       setAmountPaidDocs([]);
-      setNextStepDetails(null);
-        setViewedStep(null);
-      setViewedStepDetails(null);
-      setIsViewingSpecificStep(false);
+      setErrors({});
+      
+      // --- END OF RESET LOGIC ---
       setSubmitted(true);
 
       setRespModifyData && setRespModifyData(res?.data?.data);

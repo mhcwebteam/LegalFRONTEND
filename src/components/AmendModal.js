@@ -674,12 +674,37 @@ const AmendModal = ({
 //---------------------------------------------------------------------------------------------------------------------
 
   // ✅ Handle Email Modal Submit
+  // const handleSendAmendEmail = async (amendEmailData) => {
+  //   setLoading(true); // ⏳ START LOADING
+  //   setShowEmailModal(false);
+
+  //   try {
+  //     await onSendAmendEmail(amendData, amendEmailData); // API call from parent
+  //   } catch (error) {
+  //     console.error("Email Send Failed:", error);
+  //   }
+
+  //   setLoading(false); // ⏳ STOP LOADING
+  // };
+
+  // ✅ Handle Email Modal Submit
   const handleSendAmendEmail = async (amendEmailData) => {
+    
+    // 🔍 DEBUGGING: Check what is being sent to the parent
+    console.log("🚀 SENDING TO PARENT:", {
+      formData: amendData,
+      emailsFromArg: amendEmailData,       // Data passed from Child via function argument
+      emailsFromState: selectedAmendEmails // Data stored in Local State
+    });
+
     setLoading(true); // ⏳ START LOADING
     setShowEmailModal(false);
 
     try {
-      await onSendAmendEmail(amendData, amendEmailData); // API call from parent
+      // ⚠️ CRITICAL CHECK: 
+      // Ensure you are passing the one that actually has data.
+      // Usually, it's either amendEmailData OR selectedAmendEmails.
+      await onSendAmendEmail(amendData, amendEmailData); 
     } catch (error) {
       console.error("Email Send Failed:", error);
     }
@@ -740,18 +765,28 @@ const AmendModal = ({
             </Form.Group>
 
             {/* APPLY DATE */}
-            <Form.Group className="mb-3">
+               <Form.Group className="mb-3">
               <Form.Label>
-                {" "}
                 Apply Date
                 <span style={{ color: "red" }}>*</span>
               </Form.Label>
 
               <Form.Control
                 type="text"
-                value={formatDate(amendData?.applyDate)}
+                value={
+                  amendData?.applyDate
+                    ? formatDate(amendData.applyDate)
+                    : formatDate(amendData?.amendDate) || ""
+                }
                 readOnly
               />
+
+              {/* Optional: Show a tooltip or note when showing amendDate instead of applyDate */}
+              {!amendData?.applyDate && amendData?.amendDate && (
+                <Form.Text className="text-muted">
+                  Showing Amendment Date as Apply Date was not available
+                </Form.Text>
+              )}
             </Form.Group>
 
             {/*------------------------------update on 26-12-2025 by rajakumari.m ------------------------------------------ */}

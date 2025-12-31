@@ -31,6 +31,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const ProjectDetails = () => {
+    const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const { setMasterData, setMasterGetData, masterPostData, totalMasterCode } = useContext(Context);
 
@@ -39,6 +40,7 @@ const ProjectDetails = () => {
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  const [loggedInUser, setLoggedInUser] = useState(null);  //---------------login user state
   // Enhanced Address dialog state and validation
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [addressFields, setAddressFields] = useState({
@@ -75,6 +77,24 @@ const ProjectDetails = () => {
   });
 
 
+
+  // --- 2. Check User Login ---
+          useEffect(() => {
+            if (!token) {
+              navigate('/');
+              return;
+            }
+            const userString = localStorage.getItem('user'); // Changed to 'user' to be safe
+            if (userString) {
+              try {
+                const userObj = JSON.parse(userString);
+                setLoggedInUser(userObj);
+              } catch (error) {
+                console.error("Error parsing user data:", error);
+              }
+            }
+            
+          }, [token, navigate]);
 
     const checkIfPlantExists = async (plant) => {
         try {
@@ -264,6 +284,9 @@ const ProjectDetails = () => {
     setConfirmOpen(false);
     setIsSubmitting(true);
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const formPayload = new FormData();
     formPayload.append('plantcode', formData.plantcode);
     formPayload.append('loc', formData.loc);
@@ -280,6 +303,7 @@ const ProjectDetails = () => {
     formPayload.append('city', formData.city);
     formPayload.append('mandal', formData.mandal);
     formPayload.append('pincode', formData.pincode);
+    formPayload.append('username', currentUserName);
 
     try {
       const data = await createMaster(formPayload);

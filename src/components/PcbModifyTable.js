@@ -2417,7 +2417,7 @@ const PcbModifyTable = () => {
     // Add all normal fields
     payload.append("plant", amendDataFromModal.plant);
     payload.append("process", amendDataFromModal.process);
-    payload.append("applyDate", amendDataFromModal.applyDate);
+    payload.append("applyDate", amendDataFromModal.applyDate || amendDataFromModal.amendDate);
     payload.append("receivedDate", amendDataFromModal.receivedDate || "");
     // payload.append("receivedDate", amendDataFromModal.receivedDate);
     payload.append("amendDate", amendDataFromModal.amendDate);
@@ -2425,10 +2425,29 @@ const PcbModifyTable = () => {
     payload.append("category", amendDataFromModal.category);
 
     // Emails → convert to JSON
-    payload.append(
-      "emails",
-      JSON.stringify(selectedEmails.selectedAmendEmails || [])
-    );
+    // payload.append(
+    //   "emails",
+    //   JSON.stringify(selectedEmails.selectedAmendEmails || [])
+    // );
+     // ✅ FIX START: Handle Email Array Correctly
+    // ---------------------------------------------------------
+    
+    // Check if selectedEmails is directly the array (which acts as the list) 
+    // OR if it's wrapped in an object property.
+    let finalEmailList = [];
+    
+    if (Array.isArray(selectedEmails)) {
+        finalEmailList = selectedEmails;
+    } else if (selectedEmails && Array.isArray(selectedEmails.selectedAmendEmails)) {
+        finalEmailList = selectedEmails.selectedAmendEmails;
+    }
+
+    console.log("📧 FINAL EMAIL LIST BEING SENT:", finalEmailList);
+
+    payload.append("emails", JSON.stringify(finalEmailList));
+    
+    // ---------------------------------------------------------
+    // ✅ FIX END
 
     payload.append(
       "existingDocs",
