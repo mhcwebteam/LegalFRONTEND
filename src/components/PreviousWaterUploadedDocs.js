@@ -1,3 +1,7 @@
+
+
+
+
 import React, { useState } from "react";
 import { Card, ListGroup, Button, Modal } from "react-bootstrap";
 import { FaTrashAlt } from "react-icons/fa";
@@ -6,7 +10,15 @@ import Swal from "sweetalert2";
 import { API_BASE_URL, API_BASE_URLS, API_DOC_URL } from "../config/Config";
 import { BoxArrowUpRight } from "react-bootstrap-icons";
 
-const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [], type = "view" }) => {
+const DocumentList = ({ 
+  title, 
+  docs, 
+  docType, 
+  onDelete, 
+  deletedDocs = [], 
+  type = "view",
+  isModifyMode = false  // Add this as a prop instead of calculating here
+}) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [docToDelete, setDocToDelete] = useState(null);
 
@@ -42,8 +54,6 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [], type =
     setDeleteConfirmOpen(false);
     setDocToDelete(null);
   };
-
-  const isModifyMode = type === "modify";
 
   return (
     <>
@@ -104,6 +114,7 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [], type =
 
 // ------------------ Main Panel ------------------
 const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view" }) => {
+
   const [deletedDocuments, setDeletedDocuments] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showLogsModal, setShowLogsModal] = useState(false);
@@ -130,8 +141,18 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
     );
   }
 
+  // Check if we're in modify mode and if step is updatable
+  const isUpdatable = firstStep?.UPDATED !== "YES";
+  const isModifyMode = type === "modify" && isUpdatable;
+
   // Delete API
   const handleDelete = async (docType, fileName) => {
+    // Prevent deletion if not in modify mode or step is not updatable
+    if (!isModifyMode) {
+      Swal.fire("Not Allowed!", "Documents cannot be modified at this stage.", "error");
+      return;
+    }
+
     if (isDeleting) return;
     setIsDeleting(true);
 
@@ -191,15 +212,21 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
   const docs = parseDocs("DOCUMENT_NAME", "DOCUMENT_PATH");
   const amountdocs = parseDocs("AMOUNT_PAID_DOC_NAME", "AMOUNT_PAID_DOC_PATH");
 
-  // Check if we're in modify mode
-  const isModifyMode = type === "modify";
-
   return (
     <Card className="h-100 shadow-sm d-flex flex-column">
       <div style={{ flex: "0 0 80%", overflowY: "auto", padding: "10px" }}>
         <Card.Title as="h5" className="mb-3 border-bottom pb-2">
           Previously Uploaded Documents
-     
+          {!isUpdatable && type === "modify" && (
+            <span className="ms-2 badge bg-danger">
+              Completed - Read Only
+            </span>
+          )}
+          {isModifyMode && (
+            <span className="ms-2 badge bg-success">
+              Editable
+            </span>
+          )}
         </Card.Title>
 
         <DocumentList
@@ -209,6 +236,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}  // Pass the calculated value here
         />
 
         <DocumentList
@@ -218,6 +246,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}
         />
 
         <DocumentList
@@ -227,6 +256,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}
         />
 
         <DocumentList
@@ -236,6 +266,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}
         />
 
         <DocumentList
@@ -245,6 +276,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}
         />
 
         <DocumentList
@@ -254,6 +286,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}
         />
 
         <DocumentList
@@ -263,6 +296,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}
         />
 
         <DocumentList
@@ -272,6 +306,7 @@ const PreviousWaterUploadedDocs = ({ firstStep, onDocumentsChange, type = "view"
           onDelete={handleDelete}
           deletedDocs={deletedDocuments}
           type={type}
+          isModifyMode={isModifyMode}
         />
       </div>
 

@@ -235,218 +235,285 @@ const Report = () => {
   };
 
   // Function to get process steps with completion status and duration
-  const getProcessStepsWithStatus = (plantName, processName) => {
-    const stepsKey = processToStepsKey[processName];
+  // Function to get process steps with completion status and duration
+const getProcessStepsWithStatus = (plantName, processName) => {
+  const stepsKey = processToStepsKey[processName];
 
-    if (!stepsKey) {
-      return [];
-    }
+  if (!stepsKey) {
+    return [];
+  }
 
-    let allSteps = [];
+  let allSteps = [];
 
-    // Get records from the data store first
-    const records = getAllRecordsForPlant(plantName, processName);
+  // Get records from the data store first
+  const records = getAllRecordsForPlant(plantName, processName);
 
-    // Special handling for Fire process - we need to duplicate steps for Provisional NOC and OC Process
-    if (processName === 'Fire' && processSteps['fire_steps']) {
-      // First, get the base steps from fire_steps (should be 5 steps)
-      const baseSteps = [...processSteps['fire_steps']];
-      
-      // For Fire process, we need to show 10 tiles:
-      // First 5 for Provisional NOC, next 5 for OC Process
-      allSteps = baseSteps.map((step, index) => ({
-        ...step,
-        stepType: 'Provisional NOC', // First 5 steps are for Provisional NOC
-        displayName: `${step.PROCESS} (Provisional NOC)`
-      }));
-
-      // Add the same 5 steps again for OC Process
-      const ocSteps = baseSteps.map((step, index) => ({
-        ...step,
-        stepType: 'OC Process', // Next 5 steps are for OC Process
-        displayName: `${step.PROCESS} (OC Process)`
-      }));
-
-      allSteps = [...allSteps, ...ocSteps];
-    }
-    // For GHMC/HMDA, determine which organization steps to use based on the records
-    else if (processName === 'HMDA/GHMC' && Array.isArray(stepsKey)) {
-      // Check the Organization field in the records to determine which steps to load
-      const organization = records.length > 0 ? records[0].Organization : null;
-
-      if (organization) {
-        const orgLower = organization.toLowerCase();
-        if (orgLower.includes('ghmc')) {
-          // Load only GHMC steps
-          if (processSteps['ghmc_steps']) {
-            allSteps = [...processSteps['ghmc_steps']];
-          }
-        } else if (orgLower.includes('hmda')) {
-          // Load only HMDA steps
-          if (processSteps['hmda_steps']) {
-            allSteps = [...processSteps['hmda_steps']];
-          }
-        }
-      } else {
-        // No records yet - show default GHMC steps
-        if (processSteps['ghmc_steps']) {
-          allSteps = [...processSteps['ghmc_steps']];
-        }
-      }
-    } else {
-      // Handle both single key and array of keys for other processes
-      const keys = Array.isArray(stepsKey) ? stepsKey : [stepsKey];
-
-      keys.forEach(key => {
-        if (processSteps[key]) {
-          allSteps = [...allSteps, ...processSteps[key]];
-        }
-      });
-    }
-
-    if (allSteps.length === 0) {
-      return [];
-    }
-
-    // Sort steps by LEVEL
-    const sortedSteps = [...allSteps].sort((a, b) => {
+  // Special handling for Fire process - duplicate steps for Provisional NOC and OC Process
+  if (processName === 'Fire' && processSteps['fire_steps']) {
+    const baseSteps = [...processSteps['fire_steps']];
+    
+    // Make sure baseSteps are sorted by LEVEL
+    const sortedBaseSteps = [...baseSteps].sort((a, b) => {
       const levelA = parseInt(a.LEVEL) || 0;
       const levelB = parseInt(b.LEVEL) || 0;
       return levelA - levelB;
     });
 
-    const appCreatedDate = applicationCreatedDates[plantName];
+    // First 5 tiles for Provisional NOC (use the first 5 steps)
+    const provisionalSteps = sortedBaseSteps.slice(0, 5).map((step, index) => ({
+      ...step,
+      stepType: 'Provisional NOC',
+      displayName: `${step.PROCESS} (Provisional NOC)`,
+      originalIndex: index
+    }));
 
-    return sortedSteps.map((step, index) => {
-      // Find matching record for this step
-      let matchingRecord = null;
-      
-      if (processName === 'Fire' && step.stepType) {
-        // For Fire process, match both PROCESS name AND STEPTYPE
-        matchingRecord = records.find(record => {
-          const recordProcess = record.PROCESS || record.STATUS || '';
-          const recordStepType = record.STEPTYPE || '';
-          
-          return recordProcess.trim().toLowerCase() === step.PROCESS.trim().toLowerCase() &&
-                 recordStepType.trim().toLowerCase() === step.stepType.trim().toLowerCase();
-        });
-      } else {
-        // For other processes, match only by PROCESS name
-        matchingRecord = records.find(record => {
-          const recordProcess = record.PROCESS || record.STATUS || '';
-          return recordProcess.trim().toLowerCase() === step.PROCESS.trim().toLowerCase();
-        });
+    // Next 5 tiles for OC Process (use the same 5 steps but with different type)
+    const ocSteps = sortedBaseSteps.slice(0, 5).map((step, index) => ({
+      ...step,
+      stepType: 'OC Process',
+      displayName: `${step.PROCESS} (OC Process)`,
+      originalIndex: index
+    }));
+
+    allSteps = [...provisionalSteps, ...ocSteps];
+  }
+  // For GHMC/HMDA, determine which organization steps to use
+  else if (processName === 'HMDA/GHMC' && Array.isArray(stepsKey)) {
+    const organization = records.length > 0 ? records[0].Organization : null;
+
+    if (organization) {
+      const orgLower = organization.toLowerCase();
+      if (orgLower.includes('ghmc')) {
+        if (processSteps['ghmc_steps']) {
+          allSteps = [...processSteps['ghmc_steps']];
+        }
+      } else if (orgLower.includes('hmda')) {
+        if (processSteps['hmda_steps']) {
+          allSteps = [...processSteps['hmda_steps']];
+        }
       }
+    } else {
+      if (processSteps['ghmc_steps']) {
+        allSteps = [...processSteps['ghmc_steps']];
+      }
+    }
+  } else {
+    const keys = Array.isArray(stepsKey) ? stepsKey : [stepsKey];
 
-      const isUpdated = matchingRecord &&
-        matchingRecord.UPDATED &&
-        matchingRecord.UPDATED.toString().trim().toUpperCase() === 'YES';
+    keys.forEach(key => {
+      if (processSteps[key]) {
+        allSteps = [...allSteps, ...processSteps[key]];
+      }
+    });
+  }
 
-      if (isUpdated) {
-        let duration = null;
-        let startDate = null;
-        let endDate = matchingRecord.updated_at || matchingRecord.APPLY_DT;
+  if (allSteps.length === 0) {
+    return [];
+  }
 
-        if (index === 0) {
-          startDate = appCreatedDate || matchingRecord.created_at;
-        } else {
-          let prevCompletedStep = null;
-          for (let i = index - 1; i >= 0; i--) {
-            const prevStepName = sortedSteps[i].PROCESS;
-            const prevStepType = sortedSteps[i].stepType;
-            
-            let prevRecord = null;
-            
-            if (processName === 'Fire' && prevStepType) {
-              // For Fire process, find previous record with matching PROCESS and STEPTYPE
-              prevRecord = records.find(record => {
-                const recordProcess = record.PROCESS || record.STATUS || '';
-                const recordStepType = record.STEPTYPE || '';
-                
-                return recordProcess.trim().toLowerCase() === prevStepName.trim().toLowerCase() &&
-                       recordStepType.trim().toLowerCase() === prevStepType.trim().toLowerCase();
-              });
-            } else {
-              // For other processes
-              prevRecord = records.find(record => {
-                const recordProcess = record.PROCESS || record.STATUS || '';
-                return recordProcess.trim().toLowerCase() === prevStepName.trim().toLowerCase();
-              });
-            }
+  // Sort steps by LEVEL first, then by stepType to ensure Provisional NOC comes first
+  const sortedSteps = [...allSteps].sort((a, b) => {
+    const levelA = parseInt(a.LEVEL) || 0;
+    const levelB = parseInt(b.LEVEL) || 0;
+    
+    // For Fire process, also sort by stepType to ensure Provisional NOC comes first
+    if (processName === 'Fire' && a.stepType && b.stepType) {
+      if (a.stepType !== b.stepType) {
+        return a.stepType === 'Provisional NOC' ? -1 : 1;
+      }
+    }
+    
+    return levelA - levelB;
+  });
 
-            if (prevRecord && prevRecord.UPDATED &&
-              prevRecord.UPDATED.toString().trim().toUpperCase() === 'YES') {
-              prevCompletedStep = prevRecord;
-              break;
-            }
+  const appCreatedDate = applicationCreatedDates[plantName];
+
+  return sortedSteps.map((step, index) => {
+    // Find matching record for this step
+    let matchingRecord = null;
+
+    if (processName === 'Fire' && step.stepType) {
+      // For Fire process, match both PROCESS name AND STEPTYPE
+      matchingRecord = records.find(record => {
+        const recordProcess = record.PROCESS || record.STATUS || '';
+        const recordStepType = (record.STEPTYPE || '').toString().trim();
+        
+        // Normalize the step type comparison
+        const normalizedRecordStepType = recordStepType.toLowerCase();
+        const normalizedStepType = step.stepType.toLowerCase();
+        
+        const normalizedRecordProcess = recordProcess.trim().toLowerCase();
+        const normalizedStepProcess = step.PROCESS.trim().toLowerCase();
+        
+        // Debug logging
+        console.log('Matching Fire step:', {
+          stepProcess: normalizedStepProcess,
+          stepType: normalizedStepType,
+          recordProcess: normalizedRecordProcess,
+          recordStepType: normalizedRecordStepType
+        });
+        
+        // Match by process name
+        const processMatch = normalizedRecordProcess === normalizedStepProcess;
+        
+        // Match by step type - more flexible matching
+        const stepTypeMatch = 
+          normalizedRecordStepType.includes(normalizedStepType) || 
+          normalizedStepType.includes(normalizedRecordStepType) ||
+          (normalizedStepType.includes('provisional') && normalizedRecordStepType.includes('provisional')) ||
+          (normalizedStepType.includes('noc') && normalizedRecordStepType.includes('noc')) ||
+          (normalizedStepType.includes('oc') && normalizedRecordStepType.includes('oc') && !normalizedRecordStepType.includes('noc'));
+        
+        return processMatch && stepTypeMatch;
+      });
+    } else {
+      // For other processes, match only by PROCESS name
+      matchingRecord = records.find(record => {
+        const recordProcess = record.PROCESS || record.STATUS || '';
+        return recordProcess.trim().toLowerCase() === step.PROCESS.trim().toLowerCase();
+      });
+    }
+
+    // Check if this step is COMPLETED
+    const isCompleted = matchingRecord &&
+      matchingRecord.UPDATED !== null &&
+      matchingRecord.UPDATED !== undefined &&
+      (
+        matchingRecord.UPDATED.toString().trim().toUpperCase() === 'YES' ||
+        matchingRecord.UPDATED.toString().trim() === '1' ||
+        matchingRecord.UPDATED === 1 ||
+        matchingRecord.UPDATED === true ||
+        matchingRecord.UPDATED.toString().trim().toUpperCase() === 'COMPLETED' ||
+        matchingRecord.UPDATED.toString().trim().toUpperCase() === 'DONE'
+      );
+
+    if (isCompleted) {
+      // Step is COMPLETED
+      let duration = null;
+      let startDate = null;
+      let endDate = matchingRecord.updated_at || matchingRecord.APPLY_DT || matchingRecord.applyDate;
+
+      if (index === 0) {
+        startDate = appCreatedDate || matchingRecord.created_at;
+      } else {
+        let prevCompletedStep = null;
+        for (let i = index - 1; i >= 0; i--) {
+          const prevStepName = sortedSteps[i].PROCESS;
+          const prevStepType = sortedSteps[i].stepType;
+
+          let prevRecord = null;
+
+          if (processName === 'Fire' && prevStepType) {
+            prevRecord = records.find(record => {
+              const recordProcess = record.PROCESS || record.STATUS || '';
+              const recordStepType = record.STEPTYPE || '';
+              
+              const normalizedRecordStepType = recordStepType.trim().toLowerCase();
+              const normalizedPrevStepType = prevStepType.trim().toLowerCase();
+              
+              const normalizedRecordProcess = recordProcess.trim().toLowerCase();
+              const normalizedPrevStepProcess = prevStepName.trim().toLowerCase();
+              
+              return normalizedRecordProcess === normalizedPrevStepProcess &&
+                     (normalizedRecordStepType.includes(normalizedPrevStepType) || 
+                      normalizedPrevStepType.includes(normalizedRecordStepType));
+            });
+          } else {
+            prevRecord = records.find(record => {
+              const recordProcess = record.PROCESS || record.STATUS || '';
+              return recordProcess.trim().toLowerCase() === prevStepName.trim().toLowerCase();
+            });
           }
 
-          if (prevCompletedStep) {
-            startDate = prevCompletedStep.updated_at || prevCompletedStep.APPLY_DT;
-          } else {
-            startDate = appCreatedDate || matchingRecord.created_at;
+          if (prevRecord && prevRecord.UPDATED !== null &&
+            prevRecord.UPDATED !== undefined &&
+            (prevRecord.UPDATED.toString().trim().toUpperCase() === 'YES' ||
+              prevRecord.UPDATED.toString().trim() === '1' ||
+              prevRecord.UPDATED === 1 ||
+              prevRecord.UPDATED === true ||
+              prevRecord.UPDATED.toString().trim().toUpperCase() === 'COMPLETED' ||
+              prevRecord.UPDATED.toString().trim().toUpperCase() === 'DONE')) {
+            prevCompletedStep = prevRecord;
+            break;
           }
         }
 
-        duration = calculateDuration(startDate, endDate);
-
-        return {
-          stepName: step.displayName || step.PROCESS,
-          level: step.LEVEL,
-          status: 'COMPLETED',
-          date: matchingRecord.APPLY_DT || matchingRecord.applyDate || '',
-          comments: matchingRecord.COMMENTS || matchingRecord.Comments || '',
-          duration: duration,
-          createdAt: matchingRecord.created_at,
-          updatedAt: matchingRecord.updated_at,
-          stepType: step.stepType || null
-        };
-      } else {
-        const isModified = matchingRecord &&
-          matchingRecord.UPDATED &&
-          matchingRecord.UPDATED.toString().trim().toUpperCase() !== 'YES';
-
-        return {
-          stepName: step.displayName || step.PROCESS,
-          level: step.LEVEL,
-          status: isModified ? 'MODIFIED' : 'PENDING',
-          date: matchingRecord ? (matchingRecord.APPLY_DT || matchingRecord.applyDate || '') : '',
-          comments: matchingRecord ? (matchingRecord.COMMENTS || matchingRecord.Comments || '') : '',
-          duration: null,
-          createdAt: matchingRecord ? matchingRecord.created_at : null,
-          updatedAt: matchingRecord ? matchingRecord.updated_at : null,
-          stepType: step.stepType || null
-        };
+        if (prevCompletedStep) {
+          startDate = prevCompletedStep.updated_at || prevCompletedStep.APPLY_DT || prevCompletedStep.applyDate;
+        } else {
+          startDate = appCreatedDate || matchingRecord.created_at;
+        }
       }
-    });
-  };
 
-  const hasCompletedAllProcesses = (plantName) => {
-  for (const process of processes) {
-    const stepsWithStatus = getProcessStepsWithStatus(plantName, process);
-    
-    if (stepsWithStatus.length === 0) {
-      return false;
+      duration = calculateDuration(startDate, endDate);
+
+      return {
+        stepName: step.displayName || step.PROCESS,
+        level: step.LEVEL,
+        status: 'COMPLETED',
+        date: matchingRecord.APPLY_DT || matchingRecord.applyDate || '',
+        comments: matchingRecord.COMMENTS || matchingRecord.Comments || '',
+        duration: duration,
+        createdAt: matchingRecord.created_at,
+        updatedAt: matchingRecord.updated_at,
+        stepType: step.stepType || null
+      };
+    } else if (matchingRecord) {
+      // Step has a record but is not completed - show as PENDING with record info
+      return {
+        stepName: step.displayName || step.PROCESS,
+        level: step.LEVEL,
+        status: 'PENDING',
+        date: matchingRecord.APPLY_DT || matchingRecord.applyDate || '',
+        comments: matchingRecord.COMMENTS || matchingRecord.Comments || '',
+        duration: null,
+        createdAt: matchingRecord.created_at,
+        updatedAt: matchingRecord.updated_at,
+        stepType: step.stepType || null
+      };
+    } else {
+      // No record found for this step
+      return {
+        stepName: step.displayName || step.PROCESS,
+        level: step.LEVEL,
+        status: 'PENDING',
+        date: '',
+        comments: '',
+        duration: null,
+        createdAt: null,
+        updatedAt: null,
+        stepType: step.stepType || null
+      };
     }
-    
-    const allCompleted = stepsWithStatus.every(step => step.status === 'COMPLETED');
-    
-    if (!allCompleted) {
-      return false;
-    }
-  }
-  
-  return true;
+  });
 };
 
-// Then, use it in the filter (place this AFTER hasCompletedAllProcesses function)
-const filteredPlants1 = plants
-  .filter(plant => !hasCompletedAllProcesses(plant.plant_name))
-  .filter(plant => plant.plant_name?.toLowerCase().includes(searchTerm1.toLowerCase()));
+  const hasCompletedAllProcesses = (plantName) => {
+    for (const process of processes) {
+      const stepsWithStatus = getProcessStepsWithStatus(plantName, process);
 
-const filteredPlants2 = plants
-  .filter(plant => !hasCompletedAllProcesses(plant.plant_name))
-  .filter(plant => plant.plant_name?.toLowerCase().includes(searchTerm2.toLowerCase()));
+      if (stepsWithStatus.length === 0) {
+        return false;
+      }
+
+      const allCompleted = stepsWithStatus.every(step => step.status === 'COMPLETED');
+
+      if (!allCompleted) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Then, use it in the filter (place this AFTER hasCompletedAllProcesses function)
+  const filteredPlants1 = plants
+    .filter(plant => !hasCompletedAllProcesses(plant.plant_name))
+    .filter(plant => plant.plant_name?.toLowerCase().includes(searchTerm1.toLowerCase()));
+
+  const filteredPlants2 = plants
+    .filter(plant => !hasCompletedAllProcesses(plant.plant_name))
+    .filter(plant => plant.plant_name?.toLowerCase().includes(searchTerm2.toLowerCase()));
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -463,6 +530,7 @@ const filteredPlants2 = plants
   };
 
   // Function to get cell data - returns ONLY the latest record (for first table)
+  // Updated getCellData function for First Table - Fire Process
   const getCellData = (plantName, processName) => {
     const dataKey = processToDataKey[processName];
 
@@ -481,52 +549,80 @@ const filteredPlants2 = plants
       return { process: '-', date: '', comments: '' };
     }
 
-    // For Fire process, we need to handle both Provisional NOC and OC Process
+    // For Fire process - show current active step type and progress
     if (processName === 'Fire') {
-      // Group records by STEPTYPE
-      const provisionalRecords = matchingRecords.filter(record => 
-        record.STEPTYPE && record.STEPTYPE.toLowerCase().includes('provisional')
-      );
-      const ocRecords = matchingRecords.filter(record => 
-        record.STEPTYPE && record.STEPTYPE.toLowerCase().includes('oc')
-      );
+      // Separate records by STEPTYPE (more flexible matching)
+      const provisionalRecords = matchingRecords.filter(record => {
+        const stepType = (record.STEPTYPE || '').toString().trim().toLowerCase();
+        return stepType.includes('provisional') || stepType.includes('noc');
+      });
 
-      // Get latest from each group
-      const latestProvisional = provisionalRecords.length > 0 
-        ? provisionalRecords[provisionalRecords.length - 1] 
+      const ocRecords = matchingRecords.filter(record => {
+        const stepType = (record.STEPTYPE || '').toString().trim().toLowerCase();
+        return stepType.includes('oc') && !stepType.includes('noc');
+      });
+      // Get all steps for comparison
+      const totalSteps = processSteps['fire_steps'] ? processSteps['fire_steps'].length : 5;
+
+      // Count completed steps in Provisional NOC
+      const provisionalCompleted = provisionalRecords.filter(record =>
+        record.UPDATED &&
+        record.UPDATED.toString().trim().toUpperCase() === 'YES'
+      ).length;
+
+      // Count completed steps in OC Process
+      const ocCompleted = ocRecords.filter(record =>
+        record.UPDATED &&
+        record.UPDATED.toString().trim().toUpperCase() === 'YES'
+      ).length;
+
+      // Determine current active process
+      let currentStepType = '';
+      let currentRecords = [];
+
+      if (provisionalCompleted < totalSteps) {
+        // Still working on Provisional NOC
+        currentStepType = 'Provisional NOC';
+        currentRecords = provisionalRecords;
+      } else {
+        // Provisional NOC complete, now on OC Process
+        currentStepType = 'OC Process';
+        currentRecords = ocRecords;
+      }
+
+      // Get the latest step from current process
+      const latestStep = currentRecords.length > 0
+        ? currentRecords.sort((a, b) => {
+          const dateA = new Date(a.updated_at || a.created_at || a.APPLY_DT || 0);
+          const dateB = new Date(b.updated_at || b.created_at || b.APPLY_DT || 0);
+          return dateB - dateA;
+        })[0]
         : null;
-      const latestOC = ocRecords.length > 0 
-        ? ocRecords[ocRecords.length - 1] 
-        : null;
 
-      // Combine information for display
-      if (latestProvisional || latestOC) {
-        const processes = [];
-        const dates = [];
-        const comments = [];
-
-        if (latestProvisional) {
-          processes.push(`Provisional: ${latestProvisional.PROCESS || 'PENDING'}`);
-          dates.push(latestProvisional.APPLY_DT || '');
-          comments.push(latestProvisional.COMMENTS || '');
-        }
-
-        if (latestOC) {
-          processes.push(`OC: ${latestOC.PROCESS || 'PENDING'}`);
-          dates.push(latestOC.APPLY_DT || '');
-          comments.push(latestOC.COMMENTS || '');
-        }
+      if (latestStep) {
+        const isCompleted = latestStep.UPDATED &&
+          latestStep.UPDATED.toString().trim().toUpperCase() === 'YES';
 
         return {
-          process: processes.join(' | '),
-          date: dates.filter(d => d).join(' | '),
-          comments: comments.filter(c => c).join(' | ')
+          process: `${currentStepType}: ${latestStep.PROCESS || 'In Progress'}`,
+          date: isCompleted ? (latestStep.APPLY_DT || '') : '',
+          comments: latestStep.COMMENTS || ''
+        };
+      } else {
+        return {
+          process: `${currentStepType}: Not Started `,
+          date: '',
+          comments: ''
         };
       }
     }
 
     // For other processes, get the latest record
-    const latestRecord = matchingRecords[matchingRecords.length - 1];
+    const latestRecord = matchingRecords.sort((a, b) => {
+      const dateA = new Date(a.created_at || a.APPLY_DT || 0);
+      const dateB = new Date(b.created_at || b.APPLY_DT || 0);
+      return dateB - dateA;
+    })[0];
 
     let comments = latestRecord.COMMENTS || latestRecord.Comments || '';
     if (processName === 'Water' && !comments && latestRecord.REASON) {

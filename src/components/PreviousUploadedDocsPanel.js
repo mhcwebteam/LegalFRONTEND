@@ -65,7 +65,7 @@ const DocumentList = ({ title, docs, docType, onDelete, deletedDocs = [], isUpda
             </div>
 
             {/* Show delete button only if showDeleteButton is true */}
-            {showDeleteButton && (
+            {showDeleteButton &&  (
               <Button
                 variant="outline-danger"
                 size="sm"

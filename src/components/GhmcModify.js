@@ -1030,6 +1030,7 @@
 
 import React, { useEffect, useState, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL } from "../config/Config";
 import { FaCheckCircle, FaUpload } from "react-icons/fa";
@@ -1043,6 +1044,8 @@ import EmailSelectionModal from "./EmailModal";
 import { toast } from "react-toastify";
 
 const GhmcModify = () => {
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
   const {
     storeData,
     setStoreData,
@@ -1068,6 +1071,7 @@ const GhmcModify = () => {
   const [viewedStepDetails, setViewedStepDetails] = useState(null);
   const [currentProcess, setCurrentProcess] = useState("");
 
+  const [loggedInUser, setLoggedInUser] = useState(null);  //-----------login userstate
 
   // ------updated on 26-12-2025 by rajakumari.m-----------------------------------------
   const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
@@ -1127,6 +1131,24 @@ const GhmcModify = () => {
     return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
 
+  
+    // --- 2. Check User Login ---
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+        return;
+      }
+      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    }, [token, navigate]);
+  
   useEffect(() => {
   setHeaderData(null);
 }, []);
@@ -1540,7 +1562,7 @@ useEffect(() => {
         noOfFlats: value,
         KLD: value ? nocs : "",
       }));
-  } else if (name === "OldAmount") {
+    } else if (name === "OldAmount") {
       const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
       const total = amountPaid + Number(value);
       console.log(total, "total", amountPaid, value);
@@ -1551,55 +1573,12 @@ useEffect(() => {
       }));
     } else if (name === "loc") {
       // setFormData((prev) => ({ ...prev, loc: value }));
-      // setFormData((prev) => ({ ...prev, loc: value, Comments: "" })); 
-      // setSelectedPlant(value);
-      // setSubmitted(false);
-
-       // --- START OF CHANGES ---
-      
-      // 1. Clear Global Data Immediately
-      setStoreData([]);       // Clears the sidebar steps (green checks)
-      setHeaderData(null);    // Clears the top header info
-      
-      // 2. Clear Step & View States
-      setNextStepDetails(null);
-      setImmediateNextStep(null);
-      setImmediateNextStepIndex(-1);
-      setActiveStep(0);
-      setViewedStep(null);
-      setViewedStepDetails(null);
-      setIsViewingSpecificStep(false);
-      setSelectedProcessDetails(null); // Clear currently selected history step
-      
-      // 3. Clear Documents
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      
-      // 4. Update Plant Selection
+      setFormData((prev) => ({ ...prev, loc: value, Comments: "" })); 
       setSelectedPlant(value);
       setSubmitted(false);
 
-      // 5. Reset Form Data (keep only loc)
-      setFormData((prev) => ({
-        ...prev,
-        loc: value,
-        Comments: "",
-        applyDate: "",
-        noOfTowers: "",
-        TotalProjectArea: "",
-        ProjectBuildArea: "",
-        ProjectName: "",
-        // Add other fields you want to reset here
-      }));
-
-      // --- END OF CHANGES ---
-
       try {
         const res = await getMasterByLoc(value);
-
         if (res) {
           setHeaderData(res);
           setFormData((prev) => ({
@@ -1657,6 +1636,9 @@ const handleViewNextStep = () => {
   const handleConfirmSubmit = async (emails) => {
     setIsSubmitting(true);
 
+    //  --- : 'fetch User';
+    let currentUserName = loggedInUser.username;
+
     const payload = new FormData();
 
    
@@ -1677,6 +1659,7 @@ const handleViewNextStep = () => {
     payload.append("projectBuildArea", formData.ProjectBuildArea || "");
     payload.append("noOfTowers", formData.noOfTowers || null);
     payload.append("TotalAmount", formData.TotalAmount || "");
+    payload.append("username", currentUserName || "");
 
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
@@ -1714,64 +1697,47 @@ const handleViewNextStep = () => {
 
       console.log(`🚀 Using ${apiType.toUpperCase()} API:`, apiUrl);
 
-      
- const res = await axios.post(apiUrl, payload, {
+      // ✅ 2️⃣ Send the form data
+      const res = await axios.post(apiUrl, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      
-      // --- START OF RESET LOGIC ---
+      // ✅ 3️⃣ Refresh data after submission
+      // const refreshed = await axios.get(
+      //   `${API_BASE_URL}/GHMC-data?plant=${formData.loc}`
+      // );
 
-      // 1. Clear Global Data (Sidebar & Header)
-      setStoreData([]);       
-      setHeaderData(null);    
+      // setStoreData(refreshed.data || []);
 
-      // 2. Clear Plant Selection
+      // const master = await getMasterByLoc(formData.loc);
+      // if (master) setHeaderData(master);
+  setStoreData([]);       // Clear sidebar history
+      setHeaderData(null);    // Clear header project info
       setSelectedPlant("");
-
-      // 3. Clear Step Logic (Crucial for resetting the sidebar state)
-      setNextStepDetails(null);
-      setImmediateNextStep(null);
-      setImmediateNextStepIndex(-1);
-      setActiveStep(0);
-      
-      // 4. Clear Viewing Modes
-      setViewedStep(null);
-      setViewedStepDetails(null);
-      setIsViewingSpecificStep(false);
-      setSelectedProcessDetails(null);
-
-      // 5. Reset Form Data Completely
-      setFormData({
+      // ✅ 4️⃣ Reset form
+      setFormData((prev) => ({
+        ...prev,
         loc: "",
         applyDate: "",
-        Comments: "",
-        process: "",
-        organisation: "",
-        project_name: "",
-        location: "",
-        status: "",
-        noOfTowers: "",
-        TotalProjectArea: "",
-        ProjectBuildArea: "",
-        ProjectName: "",
+        Comments: "", // Clear Comments after submission
         noOfFlats: "",
         KLD: "",
-        OldAmount: "",
-        TotalAmount: "",
-        Size: "",
-        Ghmc: "",
-      });
+        amountPaid: "",
+        status: "",
+        reason: "",
+        noOfTowers: "",
+        ProjectBuildArea: "",
+      }));
 
-      // 6. Clear Documents & Errors
       setLinkDocs([]);
       setLandDocs([]);
       setOthDocs([]);
       setFeasibilityDocs([]);
       setAmountPaidDocs([]);
-      setErrors({});
-      
-      // --- END OF RESET LOGIC ---
+      setNextStepDetails(null);
+        setViewedStep(null);
+      setViewedStepDetails(null);
+      setIsViewingSpecificStep(false);
       setSubmitted(true);
 
       setRespModifyData && setRespModifyData(res?.data?.data);
@@ -1781,8 +1747,14 @@ const handleViewNextStep = () => {
         confirmText: "OK",
         open: true,
       });
-
-    
+    } catch (err) {
+      console.error("❌ Submission failed:", err);
+      setDialogConfig({
+        title: "Error",
+        message: "Submission failed. Please try again.",
+        confirmText: "OK",
+        open: true,
+      });
     } finally {
       setIsSubmitting(false);
       setConfirmOpen(false);
@@ -2095,7 +2067,7 @@ const handleViewNextStep = () => {
                 )}
 
             
-                  <Button
+                  <Button 
                     variant={submitted ? "success" : "primary"}
                     size="md"
                     onClick={handleEmailSubmit}
@@ -2109,12 +2081,12 @@ const handleViewNextStep = () => {
                         : "Submit"}
                   </Button>
             
-                {viewedStep?.PROCESS !== immediateNextStep?.PROCESS &&
+                {/* {viewedStep?.PROCESS !== immediateNextStep?.PROCESS &&
                   isProcessCompleted(viewedStep?.PROCESS) && (
-                    <Button variant="success" size="md" className="w-100 fw-semibold" disabled>
+                    <Button variant="success" size="md" className="w-100 fw-semibold mt-2" disabled>
                       Updated (View Only)
                     </Button>
-                  )}
+                  )} */}
               </div>
             </Form>
           )}

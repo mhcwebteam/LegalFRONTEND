@@ -1,9 +1,9 @@
-// export const API_BASE_URL = "http://172.20.0.9/laravel/legal/api";
-// export const API_DOC_URL = "http://172.20.0.9/laravel/legal/public";
+export const API_BASE_URL = "http://172.20.0.9/laravel/legal/api";
+export const API_DOC_URL = "http://172.20.0.9/laravel/legal/public";
 
 
-export const API_BASE_URL = "http://172.20.0.12/laravel/legal/api";
-export const API_DOC_URL = "http://172.20.0.12/laravel/legal/public";
+// export const API_BASE_URL = "http://172.20.0.12/laravel/legal/api";
+// export const API_DOC_URL = "http://172.20.0.12/laravel/legal/public";
 
 
 

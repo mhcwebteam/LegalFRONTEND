@@ -44,6 +44,11 @@ const PreviousGhmcDocs = ({ docsData, loc, process, type = "view" }) => {
   // Check if we're in modify mode (should show delete buttons)
   const isModifyMode = type === "modify";
 
+  const isUpdated = docsData?.UPDATED?.toString() === "YES";
+const canDelete = type === "modify" && !isUpdated;
+
+
+
   // Filter out locally deleted documents
   const filterDeletedDocs = (list, docType) => {
     return list.filter(doc => {
@@ -163,20 +168,23 @@ const PreviousGhmcDocs = ({ docsData, loc, process, type = "view" }) => {
                 </div>
 
                 {/* Show delete button only in modify mode */}
-                {isModifyMode && (
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => handleDeleteClick({ 
-                      name: filenameToDisplay, 
-                      path 
-                    }, docType)}
-                    title="Delete document"
-                    disabled={isDeleting}
-                  >
-                    <FaTrashAlt />
-                  </Button>
-                )}
+                {canDelete  && (
+  <Button
+    variant="outline-danger"
+    size="sm"
+    onClick={() =>
+      handleDeleteClick(
+        { name: filenameToDisplay, path },
+        docType
+      )
+    }
+    title="Delete document"
+    disabled={isDeleting}
+  >
+    <FaTrashAlt />
+  </Button>
+)}
+
               </ListGroup.Item>
             );
           })}
@@ -244,7 +252,7 @@ const PreviousGhmcDocs = ({ docsData, loc, process, type = "view" }) => {
       </Modal>
 
       {/* Delete Confirmation Modal (only shown in modify mode) */}
-      {isModifyMode && (
+      {isModifyMode  && (
         <Modal show={deleteConfirmOpen} onHide={cancelDelete} centered>
           <Modal.Header closeButton>
             <Modal.Title>Confirm Deletion</Modal.Title>
