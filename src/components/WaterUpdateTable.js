@@ -295,7 +295,7 @@ const WaterUpdateTable = () => {
   // Fixed useEffect for selectedProcessDetails
   useEffect(() => {
     if (selectedProcessDetails) {
-      console.log(selectedProcessDetails, "selectedProcessDetailsselectedProcessDetails");
+   
 
       setFormData((prevFormData) => ({
         ...prevFormData,
@@ -703,7 +703,7 @@ const WaterUpdateTable = () => {
               value={formData.applyDate || ""}
               onChange={handleChange}
               isInvalid={!!errors.applyDate}
-              disabled
+              // disabled
             />
             <Form.Control.Feedback type="invalid">
               {errors.applyDate}

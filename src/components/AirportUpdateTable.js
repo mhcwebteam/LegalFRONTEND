@@ -1,4 +1,6 @@
 
+
+
 import React, { useEffect, useState, useRef, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -42,27 +44,26 @@ const AirportUpdateTable = () => {
   const [processingDt, setProcessingdt] = useState(0);
   const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
-   
-      // --- 2. Check User Login ---
-      useEffect(() => {
-        if (!token) {
-          navigate("/");
-          return;
-        }
-        const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
-        if (userString) {
-          try {
-            const userObj = JSON.parse(userString);
-            setLoggedInUser(userObj);
-          } catch (error) {
-            console.error("Error parsing user data:", error);
-          }
-        }
-      }, [token, navigate]);
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
 
   useEffect(() => {
-  setHeaderData(null);
-}, []);
+    setHeaderData(null);
+  }, []);
 
   const renderCompletionMessage = () => {
     return (
@@ -193,8 +194,7 @@ const AirportUpdateTable = () => {
       .catch((err) => console.error("Error fetching plants", err));
   }, []);
 
-
-   const getDateLabel = (processName) => {
+  const getDateLabel = (processName) => {
     if (!processName) return "Date";
     
     if (processName === "Received TOR") {
@@ -211,46 +211,15 @@ const AirportUpdateTable = () => {
       default: return "Date";
     }
   };
-   useEffect(() => {
-      // Set the correct date label based on the next step
-      if (immediateNextStep && immediateNextStep.PROCESS) {
-        setProcessingdt(getDateLabel(immediateNextStep.PROCESS));
-      } else {
-        setProcessingdt("Application Date");
-      }
-    }, [immediateNextStep]);
 
-  // useEffect(() => {
-  //   if (immediateNextStep && immediateNextStep.PROCESS) {
-  //     const processName = immediateNextStep.PROCESS;
-  //     console.log(`[EFFECT] Process changed to: ${processName}. Determining fee.`);
-
-  //     switch (processName) {
-  //       case "Submit Application":
-  //         setProcessingdt('Application');
-  //         break;
-  //       case "Inspection by Consultant":
-  //       case "Inspection by Authority":
-  //         setProcessingdt('Inspection');
-  //         break;
-  //       case "NOC Received or Not":
-  //         setProcessingdt('NOC Received');
-  //         break;
-  //       case "Appeal Filled":
-  //         setProcessingdt('Appeal');
-  //         break;
-  //       case "NOC for Appeal Status":
-  //         setProcessingdt('NOC for Appeal');
-  //         break;
-  //       default:
-  //         setProcessingdt();
-  //         break;
-  //     }
-  //   } else {
-  //     console.log("[EFFECT] No next step. Resetting fee.");
-  //     setProcessingdt();
-  //   }
-  // }, [immediateNextStep]);
+  useEffect(() => {
+    // Set the correct date label based on the next step
+    if (immediateNextStep && immediateNextStep.PROCESS) {
+      setProcessingdt(getDateLabel(immediateNextStep.PROCESS));
+    } else {
+      setProcessingdt("Application Date");
+    }
+  }, [immediateNextStep]);
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -320,7 +289,7 @@ const AirportUpdateTable = () => {
   useEffect(() => {
     if (nextStepDetails && nextStepDetails.length > 0) {
       const details = nextStepDetails[0];
-      console.log("detailssssssssssssssss",details)
+      console.log("detailssssssssssssssss", details)
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: details.APPLY_DT,
@@ -349,7 +318,6 @@ const AirportUpdateTable = () => {
 
   useEffect(() => {
     if (selectedProcessDetails) {
- 
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: selectedProcessDetails.APPLY_DT,
@@ -423,22 +391,10 @@ const AirportUpdateTable = () => {
       return;
     }
 
-    setFormData((prev) => {
-      if (name === "totalPrjArea") {
-        const area = Number(value);
-        const nocs = area > 0 ? Math.ceil(area / 5) : "";
-        return {
-          ...prev,
-          prjArea: value,
-          nocs: nocs,
-        };
-      }
-
-      return {
-        ...prev,
-        [name]: value,
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleConfirmSubmit = async (emails) => {
@@ -454,10 +410,19 @@ const AirportUpdateTable = () => {
       });
       return;
     }
+    // ✅ Add validation for applyDate
+    if (!formData.applyDate) {
+      Swal.fire({
+        icon: "error",
+        title: "Validation Error",
+        text: "Please select a date.",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
- 
-    //  --- : 'fetch User';
+
+  
     let currentUserName = loggedInUser.username;
     const payload = new FormData();
     payload.append("loc", selectedPlant);
@@ -482,6 +447,8 @@ const AirportUpdateTable = () => {
       const res = await axios.get(
         `${API_BASE_URL}/airport-data?plant=${selectedPlant}`
       );
+
+      console.log("resssssssssssssss",res?.data);
       setStoreData(res.data);
       
       // FIX: Reset selected process details after successful update
@@ -527,11 +494,21 @@ const AirportUpdateTable = () => {
     }
   };
 
+  // ✅ Check if the current step is already submitted
+  const isStepAlreadySubmitted = () => {
+    if (!selectedPlant || !immediateNextStep) return false;
+    
+    return storeData.some(
+      (item) => 
+        item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
+        item.UPDATED === "YES"
+    );
+  };
+
   const renderNextStepForm = () => {
     const fields = [];
 
     fields.push(
-      
       <Row key="basic" className="mb-2">
         <Col md={6}>
           <Form.Group>
@@ -540,6 +517,8 @@ const AirportUpdateTable = () => {
               name="plant"
               value={formData.plant || ""}
               onChange={handleChange}
+              disabled={!!selectedProcessDetails} // ✅ Disable when viewing completed steps
+              className={selectedProcessDetails ? "bg-light" : ""}
             >
               <option value="">Select Plant</option>
               {plants.map((p, idx) => (
@@ -552,13 +531,22 @@ const AirportUpdateTable = () => {
         </Col>
         <Col md={6}>
           <Form.Group>
-            <Form.Label>  {processingDt}</Form.Label>
+            <Form.Label>{processingDt}</Form.Label>
             <Form.Control
               type="date"
               name="applyDate"
               value={formData.applyDate || ""}
-              disabled
+              onChange={handleChange}
+              max={new Date().toISOString().split("T")[0]}
+              // ✅ Enable for current step, disable if already submitted or viewing completed step
+              disabled={isStepAlreadySubmitted() || !!selectedProcessDetails}
+              className={(isStepAlreadySubmitted() || selectedProcessDetails) ? "bg-light" : ""}
             />
+            {isStepAlreadySubmitted() && (
+              <Form.Text className="text-muted small">
+                This step is already submitted. Date cannot be modified.
+              </Form.Text>
+            )}
           </Form.Group>
         </Col>
 
@@ -575,7 +563,7 @@ const AirportUpdateTable = () => {
                   value="YES"
                   checked={formData.STATUS === "YES"}
                   onChange={handleChange}
-                  style={{ pointerEvents: "none" }}
+                  disabled={!!selectedProcessDetails}
                 />
                 <Form.Check
                   inline
@@ -586,7 +574,7 @@ const AirportUpdateTable = () => {
                   value="NO"
                   checked={formData.STATUS === "NO"}
                   onChange={handleChange}
-                  style={{ pointerEvents: "none" }}
+                  disabled={!!selectedProcessDetails}
                 />
               </Col>
             </>
@@ -605,7 +593,8 @@ const AirportUpdateTable = () => {
                     name="prjArea"
                     value={formData.prjArea || ""}
                     onChange={handleChange}
-                    readOnly
+                    readOnly={!!selectedProcessDetails}
+                    className={selectedProcessDetails ? "bg-light" : ""}
                   />
                 </Form.Group>
               </Col>
@@ -618,33 +607,32 @@ const AirportUpdateTable = () => {
                     name="nocs"
                     value={formData.nocs || ""}
                     onChange={handleChange}
-                    readOnly
+                    readOnly={!!selectedProcessDetails}
+                    className={selectedProcessDetails ? "bg-light" : ""}
                   />
                 </Form.Group>
               </Col>
-           
             </Row>
           </>
         )}
 
-        
         <Row>
-   <Col md={12}> 
-                <Form.Group>
-                  <Form.Label>Comments</Form.Label>
-                  <Form.Control
-                    readOnly
-                    as="textarea"
-                    rows={1}
-                    name="comments"
-                    value={formData.comments || ""}
-                    onChange={handleChange}
-                  />
-                </Form.Group>
-              </Col>
+          <Col md={12}> 
+            <Form.Group>
+              <Form.Label>Comments</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={1}
+                name="comments"
+                value={formData.comments || ""}
+                onChange={handleChange}
+                // ✅ Make comments read-only when viewing completed steps
+                disabled={isStepAlreadySubmitted() || !!selectedProcessDetails}
+                className={(isStepAlreadySubmitted() || selectedProcessDetails) ? "bg-light" : ""}
+              />
+            </Form.Group>
+          </Col>
         </Row>
-
-        
       </Row>
     );
 
@@ -677,6 +665,7 @@ const AirportUpdateTable = () => {
               type="text"
               value={formData.plant || ""}
               readOnly
+              className="bg-light"
             />
           </Form.Group>
         </Col>
@@ -685,10 +674,11 @@ const AirportUpdateTable = () => {
             <Form.Label>Apply Date</Form.Label>
             <Form.Control
               type="date"
-              disabled
-              value={formData.applyDate || ""}
+              value={formData.applyDate ||  ""}
               max={new Date().toISOString().split("T")[0]}
               readOnly
+              className="bg-light"
+              // ✅ Disable for viewing completed steps
             />
           </Form.Group>
         </Col>
@@ -705,9 +695,10 @@ const AirportUpdateTable = () => {
                   <Form.Label>Number of Flats</Form.Label>
                   <Form.Control
                     type="number"
-                    disabled
                     value={process.TOTAL_PRJ_AREA || ""}
                     readOnly
+                    disabled
+                    className="bg-light"
                   />
                 </Form.Group>
               </Col>
@@ -721,6 +712,7 @@ const AirportUpdateTable = () => {
                     value={process.NO_OF_NOCS || ""}
                     readOnly
                     disabled
+                    className="bg-light"
                   />
                 </Form.Group>
               </Col>
@@ -728,28 +720,28 @@ const AirportUpdateTable = () => {
           </Row>
         );
       }
-
-   
     }
     
-   if (hasFieldData(process.COMMENTS)) {
-        fields.push(
-          <Row key="application-comments" className="mb-3">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>Comments</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={process.COMMENTS || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        );
-      }
+    if (hasFieldData(process.COMMENTS)) {
+      fields.push(
+        <Row key="application-comments" className="mb-3">
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>Comments</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={process.COMMENTS || ""}
+                readOnly
+                disabled
+                className="bg-light"
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
+
     if (processName === "noc received or not") {
       fields.push(
         <Form.Group key="status-group">
@@ -764,7 +756,7 @@ const AirportUpdateTable = () => {
               value="YES"
               checked={formData.STATUS === "YES"}
               onChange={handleChange}
-              style={{ pointerEvents: "none" }}
+              disabled
             />
             <Form.Check
               inline
@@ -775,14 +767,9 @@ const AirportUpdateTable = () => {
               value="NO"
               checked={formData.STATUS === "NO"}
               onChange={handleChange}
-              style={{ pointerEvents: "none" }}
+              disabled
             />
           </div>
-          {(!selectedPlant || formData.STATUS === undefined) && (
-            <Form.Text className="text-muted">
-              {!selectedPlant ? "Select a plant first" : "Loading status..."}
-            </Form.Text>
-          )}
         </Form.Group>
       );
     }
@@ -885,7 +872,6 @@ const AirportUpdateTable = () => {
           className="d-flex flex-column"
           style={{ height: '400px', overflowY: 'auto' }}
         >
-          
           <Form className="p-3 border rounded bg-light">
             {/* Form header showing current view */}
             {selectedProcessDetails ? (
@@ -936,7 +922,7 @@ const AirportUpdateTable = () => {
                   variant="primary" 
                   size="md" 
                   onClick={handleEmailSubmit}
-                  disabled={isSubmitting || !formData.plant || !immediateNextStep}
+                  disabled={isSubmitting || !formData.plant || !immediateNextStep || !formData.applyDate}
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}
                 </Button>
@@ -947,7 +933,7 @@ const AirportUpdateTable = () => {
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousUploadedDocsModal firstStep={firstStep}  type = 'view'/>
+            <PreviousUploadedDocsModal firstStep={firstStep} type='view'/>
           </div>
         </Col>
       </Row>

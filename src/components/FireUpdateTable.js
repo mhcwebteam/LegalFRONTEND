@@ -1104,7 +1104,7 @@ const renderCompletionMessage = () => {
               name="applyDate"
               value={formData.applyDate || ""}
               onChange={handleChange}
-              disabled={true}
+              // disabled={true}
             />
           </Form.Group>
         </Col>

@@ -1156,8 +1156,29 @@ const fetchPlantData = async (plant) => {
                 {selectedProcessDetails ? (
                   <div className="mb-3">
                     <h4 className="mb-2 text-info fw-bold">
-                      Viewing: {selectedProcessDetails.PROCESS} (Completed)
+                      Viewing: {selectedProcessDetails.PROCESS} {totalProjectArea && (
+                      <>
+                        {" "}
+                        | Area:{" "}
+                        <span className="text-dark">{totalProjectArea}</span>
+                      </>
+                    )}
+                    {noofNOCS && (
+                      <>
+                        {" "}
+                        | NOCs: <span className="text-dark">{noofNOCS}</span>
+                      </>
+                    )} (Completed)
                     </h4>
+
+                       {selectedProcessDetails.PROCESS === "NOC Received or Not" && (
+      <div className="mb-2">
+        <strong>Status: </strong>
+        <span className={selectedProcessDetails.STATUS === "YES" ? "text-success" : "text-danger"}>
+          {selectedProcessDetails.STATUS === "YES" ? "✅ Yes" : "❌ No"}
+        </span>
+      </div>
+    )}
                     <Button
                       variant="outline-primary"
                       size="sm"
@@ -1288,25 +1309,26 @@ const fetchPlantData = async (plant) => {
                     )}
                   </>
                   <Row>
-                    <Col md={6} className="mt-2">
-                      <Form.Group>
-                        <Form.Label>Comments</Form.Label>
-                        <Form.Control
-                          as="textarea"
-                          rows={1}
-                          name="comments"
-                          value={formData.comments || ""}
-                          onChange={handleChange}
-                          disabled={!!amendmentStatus || !formData?.plant}
-                        />
-                        {errors.comments && (
-                          <p className="error-text text-danger">
-                            {errors.comments}
-                          </p>
-                        )}
-                      </Form.Group>
-                    </Col>
-
+                   <Col md={6} className="mt-2">
+ <Form.Group>
+  <Form.Label>Comments</Form.Label>
+  <Form.Control
+    as="textarea"
+    rows={1}
+    name="comments"
+    value={formData.comments || ""}
+    onChange={handleChange}
+    // ✅ Use disabled only, not readOnly + disabled
+    disabled={!!selectedProcessDetails || !!amendmentStatus || !formData?.plant}
+    className={(selectedProcessDetails || !!amendmentStatus || !formData?.plant) ? "bg-light" : ""}
+  />
+  {errors.comments && (
+    <p className="error-text text-danger">
+      {errors.comments}
+    </p>
+  )}
+</Form.Group>
+  </Col>
                     <Col md={6} className="mt-2">
                       <Form.Label>Upload Document</Form.Label>
                       <button

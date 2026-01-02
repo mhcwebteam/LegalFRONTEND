@@ -790,7 +790,7 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
                       type="date"
                       name="applyDate"
                       value={formData.applyDate || ""}
-                      readOnly
+                
                       onChange={handleChange}
                       disabled={!isViewingNextStep()}
                     />

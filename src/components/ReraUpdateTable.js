@@ -615,12 +615,22 @@ useEffect(() => {
       </Col>
     </>
   ) : (
+    // <Col md={6}>
+    //   <Form.Group>
+    //     <Form.Label>Application Date</Form.Label>
+    //     <Form.Control type="date" value={viewedStepDetails?.APPLY_DT || ""} disabled />
+    //   </Form.Group>
+    // </Col>
     <Col md={6}>
-      <Form.Group>
-        <Form.Label>Application Date</Form.Label>
-        <Form.Control type="date" value={viewedStepDetails?.APPLY_DT || ""} disabled />
-      </Form.Group>
-    </Col>
+    <Form.Group>
+      <Form.Label>Application Date</Form.Label>
+      <Form.Control 
+        type="date" 
+        value={viewedStepDetails?.APPLY_DT || ""} 
+        onChange={(e) => setViewedStepDetails(prev => ({ ...prev, APPLY_DT: e.target.value }))}
+      />
+    </Form.Group>
+  </Col>
   )}
 </Row>
       <Row className="mb-3">
