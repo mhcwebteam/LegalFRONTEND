@@ -518,24 +518,24 @@ const WaterModifyTable = () => {
         );
       }
 
-      if (hasFieldData(process.COMMENTS)) {
-        fields.push(
-          <Row key="application-comments" className="mb-3">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>Comments</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={process.COMMENTS || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        );
-      }
+      // if (hasFieldData(process.COMMENTS)) {
+      //   fields.push(
+      //     <Row key="application-comments" className="mb-3">
+      //       <Col md={12}>
+      //         <Form.Group>
+      //           <Form.Label>Comments</Form.Label>
+      //           <Form.Control
+      //             as="textarea"
+      //             rows={2}
+      //             value={process.COMMENTS || ""}
+      //             readOnly
+      //             disabled
+      //           />
+      //         </Form.Group>
+      //       </Col>
+      //     </Row>
+      //   );
+      // }
     }
     // Applied For Water Release process fields  
     else if (processName === "applied for water release") {
@@ -1378,6 +1378,8 @@ const WaterModifyTable = () => {
         plantName={formData.loc}
         applyDate={formData.applyDate}
         comments={formData.comments}
+        reason={formData.reason}
+  status={formData.status} 
       />
 
       <ReusableDialog

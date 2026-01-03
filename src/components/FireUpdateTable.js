@@ -27,6 +27,7 @@ const FireUpdateTable = () => {
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recordExists, setRecordExists] = useState(false); 
   const {
     storeData,
     setStoreData,
@@ -72,6 +73,14 @@ const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
     4: "Provisional Status?",
   };
 
+
+
+
+  useEffect(() => {
+  if (!selectedPlant) {
+    setHeaderData({});
+  }
+}, [selectedPlant]);
   // Function to parse and get logs for current viewed step
   const getCurrentStepLogs = useCallback(() => {
     if (!viewedStepDetails?.LOG) {
@@ -86,6 +95,30 @@ const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
       return [];
     }
   }, [viewedStepDetails]);
+
+
+ const checkRecordExists = () => {
+  if (selectedPlant && immediateNextStep) {
+    const exists = storeData.some(item => 
+      item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
+      item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim() &&
+      // Also check for the correct step type
+      item.STEPTYPE?.toLowerCase().trim() === currentProcess.toLowerCase().trim()
+    );
+    setRecordExists(exists);
+    console.log("Record exists check:", exists, "for process:", immediateNextStep?.PROCESS, "plant:", selectedPlant);
+  } else {
+    setRecordExists(false);
+  }
+};
+
+
+
+    useEffect(() => {
+      checkRecordExists();
+    }, [storeData, selectedPlant, immediateNextStep]);
+
+
 
   const fetchStepDetails = useCallback(async (plantId, processName, stepType) => {
 
@@ -124,34 +157,49 @@ const checkAllStepsCompleted = useCallback((fetchedData) => {
   
   return allProvisionalCompleted && allOCCompleted;
 }, [steps, PROVISIONAL_NOC_STEP_INDICES]);
+
+
 const fetchPlantData = useCallback(async (plantId) => {
-  if (!plantId || steps.length === 0) {
+
+if (!plantId || plantId.trim() === "") {
     setStoreData([]);
     setImmediateNextStep(null);
     setImmediateNextStepIndex(-1);
     setViewedStepConceptualIndex(-1);
     setViewedStepDetails(null);
     setProjectInfo({ prjName: "", address: "" });
-    setFormData({
-      loc: plantId,
+    setFormData(prev => ({
+      ...prev,
+      loc: "",
       applyDate: "",
       comments: "",
       prjName: "",
       address: "",
-    });
+      noOfTowers: "",
+      feepaidstatus: "",
+      feePaid: "",
+      feeAmount: "",
+    }));
     setProvisionalNOCCompleted(false);
     setSelectedLogs([]);
     setAllStepsCompleted(false);
     setSelectedProcessDetails(null);
     return;
   }
+  
 
   try {
     const res = await axios.get(`${API_BASE_URL}/fire-data?plant=${plantId}`);
     const fetchedData = res.data;
     setStoreData(fetchedData);
 
-    // Check if all steps are completed
+const stepTypeToCheck = immediateNextStepIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX ? "OCPROCESS" : "ProvisionalNOC";
+const currentProcessExists = fetchedData.some(item => 
+  item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
+  item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim() &&
+  item.STEPTYPE?.toLowerCase().trim() === stepTypeToCheck.toLowerCase().trim()
+);
+setRecordExists(currentProcessExists);
     const allCompleted = checkAllStepsCompleted(fetchedData);
     setAllStepsCompleted(allCompleted);
 
@@ -164,6 +212,7 @@ const fetchPlantData = useCallback(async (plantId) => {
       setProjectInfo({ prjName: currentProjectName, address: currentAddress });
     } else {
       setProjectInfo({ prjName: "", address: "" });
+       setRecordExists(false);
     }
 
     const allProvisionalNOCStepsCompleted = PROVISIONAL_NOC_STEP_INDICES.every(
@@ -255,6 +304,7 @@ const fetchPlantData = useCallback(async (plantId) => {
     console.error("Error fetching plant data:", err);
     Swal.fire("Error", "Failed to load plant data. Please check console.", "error");
     setStoreData([]);
+     setRecordExists(false); 
     setImmediateNextStep(null);
     setImmediateNextStepIndex(-1);
     setViewedStepConceptualIndex(-1);
@@ -313,18 +363,32 @@ const fetchPlantData = useCallback(async (plantId) => {
     fetchPlantData(selectedPlant);
   }, [selectedPlant, steps, fetchPlantData]);
 
+ 
+
+
   const handleEmailSubmit = () => {
-    const newErrors = {};
-    if (!formData.loc) newErrors.loc = "Plant selection is required";
-    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+  const newErrors = {};
+  if (!formData.loc) newErrors.loc = "Plant selection is required";
+  if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
 
-    if (Object.keys(newErrors).length > 0) {
-      Swal.fire("Validation Error", Object.values(newErrors).join("<br>"), "error");
-      return;
-    }
+  if (Object.keys(newErrors).length > 0) {
+    Swal.fire("Validation Error", Object.values(newErrors).join("<br>"), "error");
+    return;
+  }
 
-    setShowEmailModal(true);
-  };
+  // Check if record exists before proceeding
+  if (!recordExists) {
+    Swal.fire({
+      icon: "warning",
+      title: "Process Not Initialized",
+      text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+      confirmButtonText: "OK"
+    });
+    return; // Important: Return here to stop execution
+  }
+
+  setShowEmailModal(true);
+};
 
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
@@ -338,6 +402,9 @@ const fetchPlantData = useCallback(async (plantId) => {
       Swal.fire("Selection Error", "Please select a Plant and ensure an active process step.", "error");
       return;
     }
+
+
+
 
     const currentStepIsOC = immediateNextStepIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX && immediateNextStepIndex < (PROVISIONAL_NOC_STEP_INDICES.length * 2);
     // const stepType = currentStepIsOC ? "OC Process" : "Provisional NOC";
@@ -358,24 +425,53 @@ const fetchPlantData = useCallback(async (plantId) => {
       payload.append(`emails[${i}]`, email);
     });
 
-    try {
-      await axios.post(`${API_BASE_URL}/fire-update`, payload);
-      await Swal.fire({
-        icon: "success",
-        title: "Step Updated!",
-        text: "Process step updated successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-      await fetchPlantData(formData.loc);
-    } catch (error) {
-      console.error("Submission failed:", error);
-      Swal.fire("Submission Failed", "Please check the console for details.", "error");
-    }
-    finally {
-      setIsSubmitting(false);
-    }
-  };
+try {
+    await axios.post(`${API_BASE_URL}/fire-update`, payload);
+    
+    // Reset plant dropdown after successful submission
+    setSelectedPlant("");
+    setFormData(prev => ({
+      ...prev,
+      loc: "",
+      applyDate: "",
+      comments: "",
+      prjName: "",
+      address: "",
+      noOfTowers: "",
+      feepaidstatus: "",
+      feePaid: "",
+      feeAmount: "",
+    }));
+    
+    // Reset other states
+    setViewedStepConceptualIndex(-1);
+    setViewedStepDetails(null);
+    setSelectedProcessDetails(null);
+    setSelectedLogs([]);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setProvisionalNOCCompleted(false);
+    setAllStepsCompleted(false);
+    setStoreData([]);
+    
+    await Swal.fire({
+      icon: "success",
+      title: "Step Updated!",
+      text: "Process step updated successfully. Plant dropdown has been reset.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+    
+    // No need to fetch plant data since we reset it
+    // await fetchPlantData(formData.loc); // Remove this line
+    
+  } catch (error) {
+    console.error("Submission failed:", error);
+    Swal.fire("Submission Failed", "Please check the console for details.", "error");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 const handleViewNextStep = () => {
   setSelectedProcessDetails(null);
   if (immediateNextStep) {
@@ -442,6 +538,7 @@ const handleViewNextStep = () => {
           totalPrjArea: "",
           noOfNocs: "",
         }));
+          setRecordExists(false);
         return;
       }
 
@@ -802,7 +899,7 @@ const renderCompletionMessage = () => {
             <Form.Label>Plant</Form.Label>
             <Form.Select
               name="loc"
-              value={formData.loc}
+              value={selectedPlant}
               onChange={handleChange}
             >
               <option value="">Select Plant</option>
@@ -993,7 +1090,7 @@ const renderCompletionMessage = () => {
       )}
 
       <Form.Group className="mb-3">
-        <Form.Label>Comments</Form.Label>
+        <Form.Label>Comments44444444</Form.Label>
         <Form.Control
           as="textarea"
           rows={2}
@@ -1271,7 +1368,7 @@ const renderCompletionMessage = () => {
       )}
 
       <Form.Group className="mb-3">
-        <Form.Label>Comments</Form.Label>
+        <Form.Label>Comment</Form.Label>
         <Form.Control
           as="textarea"
           rows={2}

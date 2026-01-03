@@ -1309,25 +1309,27 @@ const fetchPlantData = async (plant) => {
                     )}
                   </>
                   <Row>
-                   <Col md={6} className="mt-2">
- <Form.Group>
-  <Form.Label>Comments</Form.Label>
-  <Form.Control
-    as="textarea"
-    rows={1}
-    name="comments"
-    value={formData.comments || ""}
-    onChange={handleChange}
-    // ✅ Use disabled only, not readOnly + disabled
-    disabled={!!selectedProcessDetails || !!amendmentStatus || !formData?.plant}
-    className={(selectedProcessDetails || !!amendmentStatus || !formData?.plant) ? "bg-light" : ""}
-  />
-  {errors.comments && (
-    <p className="error-text text-danger">
-      {errors.comments}
-    </p>
-  )}
-</Form.Group>
+        <Col md={6} className="mt-2">
+                  {/* 3-1-2026 by rajakumari.m */}
+    <Form.Group>
+      <Form.Label>Comments</Form.Label>
+      <Form.Control
+        as="textarea"
+        rows={1}
+        name="comments"
+        value={formData.comments || ""}
+        onChange={handleChange}
+        disabled={!!amendmentStatus || !formData?.plant || selectedProcessDetails}
+        style={{
+          backgroundColor: selectedProcessDetails ? '#e9ecef' : '',
+          color: selectedProcessDetails ? '#6c757d' : '',
+          cursor: selectedProcessDetails ? 'not-allowed' : ''
+        }}
+      />
+      {errors.comments && (
+        <p className="error-text text-danger">{errors.comments}</p>
+      )}
+    </Form.Group>
   </Col>
                     <Col md={6} className="mt-2">
                       <Form.Label>Upload Document</Form.Label>
@@ -1354,37 +1356,74 @@ const fetchPlantData = async (plant) => {
                       </p>
                     </Col>
 
-                    <Row className="mt-2 align-items-end">
-                      {immediateNextStep?.PROCESS == "NOC Received or Not" && (
-                        <>
-                          <Col md={6} className="mb-2">
-                            <Form.Group>
-                              <Form.Label>Status</Form.Label>
-                              <Form.Check
-                                inline
-                                label="Yes"
-                                name="STATUS"
-                                type="radio"
-                                value="YES"
-                                checked={formData.STATUS === "YES"}
-                                disabled={!formData.plant}
-                                onChange={handleChange}
-                              />
-                              <Form.Check
-                                inline
-                                label="No"
-                                name="STATUS"
-                                type="radio"
-                                value="NO"
-                                checked={formData.STATUS === "NO"}
-                                disabled={!formData.plant}
-                                onChange={handleChange}
-                              />
-                            </Form.Group>
-                          </Col>
-                        </>
-                      )}
-                    </Row>
+                 <Row className="mt-2 align-items-end">
+  {/* ✅ Show for current OR completed "NOC Received or Not" step */}
+  {(immediateNextStep?.PROCESS == "NOC Received or Not" || 
+    (selectedProcessDetails && selectedProcessDetails.PROCESS == "NOC Received or Not")) && (
+    <>
+      <Col md={6} className="mb-2">
+        <Form.Group>
+          <Form.Label>Status</Form.Label>
+          
+          {/* ✅ Check if we're viewing a completed step */}
+          {selectedProcessDetails ? (
+            // ✅ Viewing completed "NOC Received or Not" step
+            <div className="d-flex align-items-center gap-3">
+              <Form.Check
+                inline
+                label="Yes"
+                name="STATUS"
+                type="radio"
+                value="YES"
+                checked={selectedProcessDetails.STATUS === "YES"}
+                disabled
+                readOnly
+                className="mb-0"
+              />
+              <Form.Check
+                inline
+                label="No"
+                name="STATUS"
+                type="radio"
+                value="NO"
+                checked={selectedProcessDetails.STATUS === "NO"}
+                disabled
+                readOnly
+                className="mb-0"
+              />
+            </div>
+          ) : (
+            // ✅ Current "NOC Received or Not" step
+            <div className="d-flex align-items-center gap-3">
+              <Form.Check
+                inline
+                label="Yes"
+                name="STATUS"
+                type="radio"
+                value="YES"
+                checked={formData.STATUS === "YES"}
+                disabled={!formData.plant}
+                onChange={handleChange}
+                className="mb-0"
+              />
+              <Form.Check
+                inline
+                label="No"
+                name="STATUS"
+                type="radio"
+                value="NO"
+                checked={formData.STATUS === "NO"}
+                disabled={!formData.plant}
+                onChange={handleChange}
+                className="mb-0"
+              />
+            </div>
+          )}
+        </Form.Group>
+      </Col>
+    </>
+  )}
+</Row>
                   </Row>
                 </div>
 

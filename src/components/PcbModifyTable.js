@@ -320,16 +320,16 @@ const PcbModifyTable = () => {
   // 🔥 Determine which mode timeline should use
   let currentTimelineMode = "action";
   if (status === "created") {
-    if (amendCategories.includes("AMEND2")) {
+    if (amendCategories.includes("AMEND5")) {
+      currentTimelineMode = "AMEND5";
+    } else if (amendCategories.includes("AMEND4")) {
+      currentTimelineMode = "AMEND4";
+    } else if (amendCategories.includes("AMEND3")) {
+      currentTimelineMode = "AMEND3";
+    } else if (amendCategories.includes("AMEND2")) {
       currentTimelineMode = "AMEND2";
     } else if (amendCategories.includes("AMEND1")) {
       currentTimelineMode = "AMEND1";
-    } else if (amendCategories.includes("AMEND3")) {
-      currentTimelineMode = "AMEND3";
-    } else if (amendCategories.includes("AMEND4")) {
-      currentTimelineMode = "AMEND4";
-    } else if (amendCategories.includes("AMEND5")) {
-      currentTimelineMode = "AMEND5";
     }
   }
 

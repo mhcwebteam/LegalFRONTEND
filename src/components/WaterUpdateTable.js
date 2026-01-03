@@ -22,7 +22,6 @@ import { Send } from "react-bootstrap-icons";
 import EmailSelectionModal from "./EmailModal";
 import PreviousUploadedDocsPanel1 from "./PreviousUploadedDocsPanel1";
 
-
 const WaterUpdateTable = () => {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -39,7 +38,8 @@ const WaterUpdateTable = () => {
   const [loc, setLoc] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
   const [showEmailModal, setShowEmailModal] = useState(false);
-      const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
+  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [recordExists, setRecordExists] = useState(false); 
 
   const [dialogConfig, setDialogConfig] = useState({
     title: '',
@@ -84,32 +84,55 @@ const WaterUpdateTable = () => {
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
   const [isFirstProcess, setIsFirstProcess] = useState(true);
-    const [allStepsCompleted, setAllStepsCompleted] = useState(false);
+  const [allStepsCompleted, setAllStepsCompleted] = useState(false);
 
-  
-     // --- 2. Check User Login ---
-     useEffect(() => {
-       if (!token) {
-         navigate("/");
-         return;
-       }
-       const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
-       if (userString) {
-         try {
-           const userObj = JSON.parse(userString);
-           setLoggedInUser(userObj);
-         } catch (error) {
-           console.error("Error parsing user data:", error);
-         }
-       }
-     }, [token, navigate]);
-      
+  // --- 2. Check User Login ---
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const userString = localStorage.getItem("user");
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [token, navigate]);
 
-     useEffect(() => {
-        setHeaderData(null);
-      }, []);
+  useEffect(() => {
+    setHeaderData(null);
+  }, []);
+
+  // ✅ NEW: Function to check if record exists in database
+  const checkRecordExists = () => {
+    if (selectedPlant && immediateNextStep) {
+      const exists = storeData.some(item => 
+        item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
+        item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+      );
+      setRecordExists(exists);
+      console.log("Record exists check:", exists, "for process:", immediateNextStep?.PROCESS, "plant:", selectedPlant);
+    } else {
+      setRecordExists(false);
+    }
+  };
 
   const handleEmailSubmit = () => {
+    // ✅ Check if record exists in database
+    if (!recordExists) {
+      Swal.fire({
+        icon: "warning",
+        title: "Process Not Initialized",
+        text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+        confirmButtonText: "OK"
+      });
+      return;
+    }
+
     const newErrors = {};
     if (!formData.loc) newErrors.loc = "Plant selection is required";
     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
@@ -132,11 +155,6 @@ const WaterUpdateTable = () => {
     await handleConfirmSubmit(emails);
   };
 
-
-
-
-
-
   // Fetch locations
   useEffect(() => {
     axios
@@ -157,7 +175,9 @@ const WaterUpdateTable = () => {
   }, [immediateNextStepIndex]);
 
   // Fetch steps
-  useEffect(() => {
+useEffect(() => {
+  // Only fetch steps if a plant is selected
+  if (selectedPlant) {
     axios
       .get(`${API_BASE_URL}/water-process`)
       .then((res) => {
@@ -165,7 +185,11 @@ const WaterUpdateTable = () => {
         if (res.data.length > 0) setActiveStep(0);
       })
       .catch((err) => console.error("Error fetching processes", err));
-  }, []);
+  } else {
+    // Clear steps when no plant is selected
+    setSteps([]);
+  }
+}, [selectedPlant]); 
 
   useEffect(() => {
     if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
@@ -197,10 +221,11 @@ const WaterUpdateTable = () => {
         (step) => !completedProcesses.includes(step.PROCESS)
       );
 
-       const allCompleted = steps.every(step =>
+      const allCompleted = steps.every(step =>
         completedProcesses.includes(step.PROCESS?.trim())
       );
-         setAllStepsCompleted(allCompleted);
+      setAllStepsCompleted(allCompleted);
+      
       if (nextStep) {
         setImmediateNextStep(nextStep);
         setImmediateNextStepIndex(steps.indexOf(nextStep));
@@ -210,6 +235,11 @@ const WaterUpdateTable = () => {
       }
     }
   }, [steps, storeData]);
+
+  // ✅ Update record existence check when storeData changes
+  useEffect(() => {
+    checkRecordExists();
+  }, [storeData, selectedPlant, immediateNextStep]);
 
   useEffect(() => {
     if (nextStepDetails && !selectedProcessDetails) {
@@ -260,6 +290,15 @@ const WaterUpdateTable = () => {
         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
         .then((res) => {
           setStoreData(res.data);
+          
+          // ✅ Check if current process exists for this plant
+          const currentProcessExists = res.data.some(item => 
+            item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
+            item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+          );
+          
+          setRecordExists(currentProcessExists);
+          
           if (res.data.length > 0) {
             setFormData((prev) => ({
               ...prev,
@@ -269,10 +308,11 @@ const WaterUpdateTable = () => {
           }
         })
         .catch((err) => console.error("Error fetching step data", err));
+    } else {
+      setRecordExists(false);
     }
-  }, [selectedPlant]);
+  }, [selectedPlant, immediateNextStep]);
 
-  // Fixed handleProcessClick function
   const handleProcessClick = (e, process) => {
     e.stopPropagation();
     const processDetails = storeData.find(
@@ -281,7 +321,6 @@ const WaterUpdateTable = () => {
 
     setSelectedProcessDetails(processDetails || null);
 
- 
     if (processDetails) {
       const stepIndex = steps.findIndex(step =>
         step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
@@ -292,11 +331,8 @@ const WaterUpdateTable = () => {
     }
   };
 
-  // Fixed useEffect for selectedProcessDetails
   useEffect(() => {
     if (selectedProcessDetails) {
-   
-
       setFormData((prevFormData) => ({
         ...prevFormData,
         loc: selectedPlant,
@@ -326,8 +362,7 @@ const WaterUpdateTable = () => {
   };
 
   const renderFormFields = () => {
-
-      if (allStepsCompleted && !selectedProcessDetails) {
+    if (allStepsCompleted && !selectedProcessDetails) {
       return (
         <Alert variant="success" className="text-center">
           <FaCheckCircle size={48} className="text-success mb-3" />
@@ -342,13 +377,12 @@ const WaterUpdateTable = () => {
       return renderNextStepForm();
     }
 
-
     const fields = [];
-  const process = selectedProcessDetails;
+    const process = selectedProcessDetails;
     const processName = process.PROCESS?.toLowerCase()?.trim();
-  const isSecondStep = processName === "applied for water release";
-  const shouldHideComments = isSecondStep && process.STATUS === "NO";
-    // Always show basic info
+    const isSecondStep = processName === "applied for water release";
+    const shouldHideComments = isSecondStep && process.STATUS === "NO";
+    
     fields.push(
       <Row key="basic" className="mb-2">
         <Col md={6}>
@@ -372,39 +406,29 @@ const WaterUpdateTable = () => {
             />
           </Form.Group>
         </Col>
-         
-      </Row>
-
-  
-    );
-   if (!shouldHideComments && hasFieldData(process.COMMENTS)) {
-    fields.push(
-      <Row key="comments" className="mb-3">
-        <Col md={12}>
-          <Form.Group>
-            <Form.Label>Comments</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              value={process.COMMENTS || ""}
-              readOnly
-              disabled
-            />
-          </Form.Group>
-        </Col>
       </Row>
     );
-  }
-  
 
-    // Determine which fields to show based on the specific process
-  
-    console.log("Process Name:", processName, "Process Data:", process);
+    if (!shouldHideComments && hasFieldData(process.COMMENTS)) {
+      fields.push(
+        <Row key="comments" className="mb-3">
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>Comments</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={process.COMMENTS || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
 
-    // Application Filling process fields
     if (processName === "application filling") {
-      console.log("Showing Application Filling fields");
-
       if (hasFieldData(process.NO_OF_FLATS) || hasFieldData(process.KLD) || hasFieldData(process.AMOUNT_PAID)) {
         fields.push(
           <Row key="application-fields" className="mb-3">
@@ -489,61 +513,34 @@ const WaterUpdateTable = () => {
           </Row>
         );
       }
- 
-      // Show comments for Application Filling if available
-      // if (hasFieldData(process.COMMENTS)) {
-      //   fields.push(
-      //     <Row key="application-comments" className="mb-3">
-      //       <Col md={12}>
-      //         <Form.Group>
-      //           <Form.Label>Comments</Form.Label>
-      //           <Form.Control
-      //             as="textarea"
-      //             rows={2}
-      //             value={process.COMMENTS || ""}
-      //             readOnly
-      //             disabled
-      //           />
-      //         </Form.Group>
-      //       </Col>
-      //     </Row>
-      //   );
-      // }
-    }
-    // Applied For Water Release process fields  
-    else if (processName === "applied for water release") {
-      console.log("Showing Applied for Water Release fields");
-
+    } else if (processName === "applied for water release") {
       if(hasFieldData(process.STATUS)) {
         fields.push(
-           <Row key="size" className="mb-2">
-      <Form.Group>
-        <Form.Label>STATUS</Form.Label>
-        <div>
-          <Form.Check
-            inline
-            label="Yes"
-            name="status"
-            type="radio"
-            value="YES"
-            checked={formData.status === "YES"}
-         disabled
-          />
-
-          <Form.Check
-            inline
-            label="No"
-            name="status"
-            type="radio"
-            value="NO"
-            checked={formData.status === "NO"}
-          disabled
-          />
-        </div>
-      </Form.Group>
-  
-  
-</Row>
+          <Row key="size" className="mb-2">
+            <Form.Group>
+              <Form.Label>STATUS</Form.Label>
+              <div>
+                <Form.Check
+                  inline
+                  label="Yes"
+                  name="status"
+                  type="radio"
+                  value="YES"
+                  checked={formData.status === "YES"}
+                  disabled
+                />
+                <Form.Check
+                  inline
+                  label="No"
+                  name="status"
+                  type="radio"
+                  value="NO"
+                  checked={formData.status === "NO"}
+                  disabled
+                />
+              </div>
+            </Form.Group>
+          </Row>
         )
       }
 
@@ -579,11 +576,7 @@ const WaterUpdateTable = () => {
           </Row>
         );
       }
-    }
-    // Community Inspection process fields
-    else if (processName === "community inspection") {
-      console.log("Showing Community Inspection fields");
-
+    } else if (processName === "community inspection") {
       if (hasFieldData(process.SIZE_OF_CONNECTION)) {
         fields.push(
           <Row key="size" className="mb-2">
@@ -601,12 +594,7 @@ const WaterUpdateTable = () => {
           </Row>
         );
       }
-    }
-    // Other processes
-    else {
-      console.log("Showing other process fields");
-
-      // Show GHMC field if it has data
+    } else {
       if (hasFieldData(process.GHMC)) {
         fields.push(
           <Row key="ghmc" className="mb-2">
@@ -625,7 +613,6 @@ const WaterUpdateTable = () => {
         );
       }
 
-      // Show any other process specific fields
       if (hasFieldData(process.SIZE_OF_CONNECTION)) {
         fields.push(
           <Row key="size" className="mb-2">
@@ -670,7 +657,6 @@ const WaterUpdateTable = () => {
   const renderNextStepForm = () => {
     const fields = [];
 
-    // Basic info
     fields.push(
       <Row key="basic" className="mb-2">
         <Col md={6}>
@@ -681,7 +667,7 @@ const WaterUpdateTable = () => {
               value={formData.loc || ""}
               onChange={handleChange}
               isInvalid={!!errors.loc}
-           >
+            >
               <option value="">Select Plant</option>
               {loc.map((ele, index) => (
                 <option key={index} value={ele.loc}>
@@ -702,24 +688,17 @@ const WaterUpdateTable = () => {
               name="applyDate"
               value={formData.applyDate || ""}
               onChange={handleChange}
+              max={new Date().toISOString().split("T")[0]}
               isInvalid={!!errors.applyDate}
-              // disabled
             />
             <Form.Control.Feedback type="invalid">
               {errors.applyDate}
             </Form.Control.Feedback>
           </Form.Group>
         </Col>
-
-
-
-   
       </Row>
     );
 
-
-
-    // Process-specific fields based on step
     if (!isFirstProcess) {
       if (immediateNextStepIndex === 1) {
         fields.push(
@@ -757,11 +736,7 @@ const WaterUpdateTable = () => {
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
-
-
-
           </Row>
-
         );
       }
 
@@ -785,50 +760,38 @@ const WaterUpdateTable = () => {
           </Row>
         );
       }
- 
-
-
     }
 
+    if(immediateNextStepIndex === 1) {
+      fields.push(
+        <Row key="size" className="mb-2">
+          <Form.Group>
+            <Form.Label>STATUS</Form.Label>
+            <div>
+              <Form.Check
+                inline
+                label="Yes"
+                name="status"
+                type="radio"
+                value="YES"
+                checked={formData.status === "YES"}
+                disabled
+              />
+              <Form.Check
+                inline
+                label="No"
+                name="status"
+                type="radio"
+                value="NO"
+                checked={formData.status === "NO"}
+                disabled
+              />
+            </div>
+          </Form.Group>
+        </Row>
+      )
+    }
 
-
-if(immediateNextStepIndex === 1) {
- fields.push(
-              <Row key="size" className="mb-2">
-      <Form.Group>
-        <Form.Label>STATUS</Form.Label>
-        <div>
-          <Form.Check
-            inline
-            label="Yes"
-            name="status"
-            type="radio"
-            value="YES"
-            checked={formData.status === "YES"}
-         disabled
-          />
-
-          <Form.Check
-            inline
-            label="No"
-            name="status"
-            type="radio"
-            value="NO"
-            checked={formData.status === "NO"}
-          disabled
-          />
-        </div>
-      </Form.Group>
-  
-  
-</Row>
-    )
-}
-   
-
-   
-
-    // Status-based fields
     if (formData.status === "YES") {
       fields.push(
         <Row key="comments" className="mb-3">
@@ -871,7 +834,6 @@ if(immediateNextStepIndex === 1) {
       );
     }
 
-    // First process specific fields
     if (isFirstProcess) {
       fields.push(
         <Row key="flats-info" className="mb-3">
@@ -884,7 +846,7 @@ if(immediateNextStepIndex === 1) {
                 value={formData.noOfFlats || ""}
                 disabled
                 isInvalid={!!errors.loc}
-               onChange={handleChange}
+                onChange={handleChange}
               />
             </Form.Group>
           </Col>
@@ -958,11 +920,6 @@ if(immediateNextStepIndex === 1) {
       );
     }
 
-
-  
-
-
-
     return fields;
   };
 
@@ -984,7 +941,6 @@ if(immediateNextStepIndex === 1) {
     } else if (name === "OldAmount") {
       const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
       const total = amountPaid + Number(value);
-      console.log(total, "total", amountPaid, value);
       setFormData((prev) => ({
         ...prev,
         OldAmount: value,
@@ -994,6 +950,7 @@ if(immediateNextStepIndex === 1) {
       setFormData(prev => ({ ...prev, loc: value }));
       setSelectedPlant(value);
       setSubmitted(false);
+      setRecordExists(false); // ✅ Reset when plant changes
 
       try {
         const res = await getMasterByLoc(value);
@@ -1038,13 +995,9 @@ if(immediateNextStepIndex === 1) {
     }
   };
 
- 
-
-
   const handleConfirmSubmit = async (emails) => {
     setIsSubmitting(true);
 
-    //  --- : 'fetch User';
     let currentUserName = loggedInUser.username;
 
     const payload = new FormData();
@@ -1064,7 +1017,6 @@ if(immediateNextStepIndex === 1) {
     landDocs.forEach(f => payload.append("Title_Doc[]", f));
     othDocs.forEach(f => payload.append("Oth_Doc[]", f));
     
-    // Add selected emails to payload
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
@@ -1083,16 +1035,22 @@ if(immediateNextStepIndex === 1) {
       const result = await axios.post(`${API_BASE_URL}/water-update`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+  setSelectedPlant(""); 
 
-      console.log('✅ Form submitted successfully:', result.data);
 
-      const res = await axios.get(
-        `${API_BASE_URL}/water-data?plant=${selectedPlant}`
-      );
-      setStoreData(res.data);
+   // ✅ Clear everything after submission
+    setStoreData([]);       // Clear sidebar history
+    setHeaderData(null);    // Clear header project info
+    setSelectedPlant("");   // This will hide the process steps
+    setSteps([]);          // ADD THIS LINE to clear the steps array
+
+      // const res = await axios.get(
+      //   `${API_BASE_URL}/water-data?plant=${selectedPlant}`
+      // );
+      // setStoreData(res.data);
 
       setFormData({
-        loc: selectedPlant,
+        loc: "",
         applyDate: "",
         comments: "",
         noOfFlats: "",
@@ -1110,8 +1068,21 @@ if(immediateNextStepIndex === 1) {
         ProjectBuildArea: "",
         TotalProjectArea: ""
       });
+       setStoreData([]); 
+      setHeaderData(null);
+   // Optional: keep response data if needed, or set to null
 
-      // Clear ALL document arrays
+      // 3. Clear Local State (Navigation & Process Tracking)
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setNextStepDetails(null);
+      setAllStepsCompleted(false);
+      setActiveStep(0);
+      setSelectedProcessDetails(null); // Exit "View History" mode if active
+setAllStepsCompleted(false);
+      // 4. Clear Documents (Right Side & Pending Uploads)
+      setFirstStep(null); 
+
       setLinkDocs([]);
       setLandDocs([]);
       setOthDocs([]);
@@ -1119,9 +1090,6 @@ if(immediateNextStepIndex === 1) {
       setAmountPaidDocs([]);
       setSelectedEmails([]);
 
-      setFirstStep(null);
-      setNextStepDetails(null);
-      setSelectedProcessDetails(null);
       setSubmitted(true);
 
       setDialogConfig({
@@ -1149,11 +1117,9 @@ if(immediateNextStepIndex === 1) {
     }
   };
 
-  // Function to switch back to next step view
   const handleViewNextStep = () => {
     setSelectedProcessDetails(null);
 
-    // Re-fetch next step details if available
     if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
       const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
       if (nextStepName) {
@@ -1180,64 +1146,71 @@ if(immediateNextStepIndex === 1) {
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-light flex-fill">
             <h6 className="text-center mb-3">Process Steps</h6>
-            <Nav variant="pills" className="flex-column">
-              {steps.map((step, idx) => {
-                let variant = "secondary";
-                let clickable = false;
-                let statusIcon = "⏸️";
+        {/* ADD THIS CONDITION */}
+    {!selectedPlant ? (
+      <div className="text-center text-muted mt-4 p-3">
+        <p>Please select a plant to view process steps</p>
+      </div>
+    ) : (
+      <Nav variant="pills" className="flex-column">
+        {steps.map((step, idx) => {
+          let variant = "secondary";
+          let clickable = false;
+          let statusIcon = "⏸️";
 
-                // Check if this step is completed
-                const isCompleted = storeData.some(
-                  (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
-                    item.UPDATED === "YES"
-                );
+          // Check if this step is completed
+          const isCompleted = storeData.some(
+            (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
+              item.UPDATED === "YES"
+          );
 
-                if (isCompleted) {
-                  variant = "success";
-                  clickable = true;
-                  statusIcon = "✅";
-                } else if (idx === immediateNextStepIndex) {
-                  variant = "warning";
-                  clickable = true;
-                  statusIcon = "⚠️";
-                }
+          if (isCompleted) {
+            variant = "success";
+            clickable = true;
+            statusIcon = "✅";
+          } else if (idx === immediateNextStepIndex) {
+            variant = "warning";
+            clickable = true;
+            statusIcon = "⚠️";
+          }
 
-                return (
-                  <Nav.Item key={idx} className="mb-2">
-                    <Nav.Link
-                      eventKey={idx}
-                      disabled={!clickable}
-                      onClick={() => {
-                        if (!clickable) return;
-                        setActiveStep(idx);
-                      }}
-                      className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-                      style={{
-                        cursor: clickable ? "pointer" : "not-allowed"
-                      }}
-                    >
-                      {statusIcon}
-                      <span
-                        onClick={(e) => {
-                          if (isCompleted) {
-                            handleProcessClick(e, step.PROCESS);
-                          }
-                        }}
-                        style={{
-                          cursor: isCompleted ? "pointer" : "default",
-                          textDecoration: isCompleted ? "underline" : "none"
-                        }}
-                      >
-                        {step.PROCESS}
-                      </span>
-                    </Nav.Link>
-                  </Nav.Item>
-                );
-              })}
-            </Nav>
+          return (
+            <Nav.Item key={idx} className="mb-2">
+              <Nav.Link
+                eventKey={idx}
+                disabled={!clickable}
+                onClick={() => {
+                  if (!clickable) return;
+                  setActiveStep(idx);
+                }}
+                className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+                style={{
+                  cursor: clickable ? "pointer" : "not-allowed"
+                }}
+              >
+                {statusIcon}
+                <span
+                  onClick={(e) => {
+                    if (isCompleted) {
+                      handleProcessClick(e, step.PROCESS);
+                    }
+                  }}
+                  style={{
+                    cursor: isCompleted ? "pointer" : "default",
+                    textDecoration: isCompleted ? "underline" : "none"
+                  }}
+                >
+                  {step.PROCESS}
+                </span>
+              </Nav.Link>
+            </Nav.Item>
+          );
+        })}
+      </Nav>
+    )}
           </div>
         </Col>
-   <Col
+        <Col
           md={6}
           className="d-flex flex-column"
           style={{ height: '400px', overflowY: 'auto' }}
@@ -1276,22 +1249,34 @@ if(immediateNextStepIndex === 1) {
                   You are viewing historical data. To make changes, select the current step.
                 </div>
               ) : !allStepsCompleted ? (
-                <Button
-                  variant={submitted ? "success" : "primary"}
-                  size="md"
-                  onClick={handleEmailSubmit}
-                  className="w-100 fw-semibold"
-                  disabled={!formData.loc || isSubmitting || submitted}
-                >
-                  {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
-                </Button>
+                <>
+                  {/* Show different messages based on state */}
+                  {!formData.loc ? (
+                    <Alert variant="secondary" className="mb-2">
+                      <i className="fas fa-info-circle me-2"></i>
+                      Please select a plant to enable submission.
+                    </Alert>
+                  ) : !recordExists ? (
+                 ""
+                  ) : null}
+                  
+                  <Button
+                    variant={submitted ? "success" : "primary"}
+                    size="md"
+                    onClick={handleEmailSubmit}
+                    className="w-100 fw-semibold"
+                    disabled={!formData.loc || isSubmitting || submitted}
+                  >
+                    {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
+                  </Button>
+                </>
               ) : null}
             </div>
           </Form>
         </Col>
 
         <Col md={3} className="d-flex">
-          <div className="border rounded p-3 bg-white flex-fill  w-50">
+          <div className="border rounded p-3 bg-white flex-fill w-50">
             <PreviousUploadedDocsPanel1 firstStep={firstStep} />
           </div>
         </Col>
@@ -1301,11 +1286,13 @@ if(immediateNextStepIndex === 1) {
       <EmailSelectionModal
         show={showEmailModal}
         onHide={() => setShowEmailModal(false)}
-         onSubmit={handleEmailSelectionSubmit}
+        onSubmit={handleEmailSelectionSubmit}
         processName={immediateNextStep?.PROCESS}
         plantName={formData.loc}
         applyDate={formData.applyDate}
         comments={formData.comments}
+        reason={formData.reason}
+        status={formData.status} 
       />
 
       {/* Confirmation Dialog */}

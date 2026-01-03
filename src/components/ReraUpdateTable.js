@@ -38,15 +38,15 @@ const ReraUpdateTable = () => {
   const [selectedLogs, setSelectedLogs] = useState([]);
 const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
 const [isSubmitting, setIsSubmitting] = useState(false);
-  // ✅ NEW: 'viewedStep' tracks which step the user is currently looking at (could be an old one).
-  const [viewedStep, setViewedStep] = useState(null);
-  // ✅ NEW: 'viewedStepDetails' holds the data for the step being looked at.
-  const [viewedStepDetails, setViewedStepDetails] = useState(null);
 
+  const [viewedStep, setViewedStep] = useState(null);
+
+  const [viewedStepDetails, setViewedStepDetails] = useState(null);
+const [recordExists, setRecordExists] = useState(false); 
   const [projectInfo, setProjectInfo] = useState({ prjName: "", address: "" });
       const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
-  console.log("storeDatastoreDatastoreDatastoreDatastoreData", storeData);
+
 
  const areAllStepsCompleted = () => {
   if (!steps.length || !storeData.length) return false;
@@ -57,8 +57,32 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
   return steps.every((step) => completedSteps.includes(step.PROCESS?.trim()));
 };
+const isCurrentStepEditable = immediateNextStep && 
+  viewedStep && 
+  immediateNextStep.PROCESS === viewedStep.PROCESS &&
+  !storeData.some(item => item.PROCESS === viewedStep.PROCESS && item.UPDATED === "YES");
+  
+
+  const checkRecordExists = () => {
+    if (selectedPlant && immediateNextStep) {
+      const exists = storeData.some(item => 
+        item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
+        item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+      );
+
+
+      setRecordExists(exists);
+      console.log("Record exists check:", exists, "for process:", immediateNextStep?.PROCESS, "plant:", selectedPlant);
+    } else {
+      setRecordExists(false);
+    }
+  };
+
 
   
+    useEffect(() => {
+      checkRecordExists();
+    }, [storeData, selectedPlant, immediateNextStep]);
     // --- 2. Check User Login ---
     useEffect(() => {
       if (!token) {
@@ -80,47 +104,26 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         setHeaderData(null);
       }, []);
 
-  const renderCompletionMessage = () => {
-    return (
-      <Alert variant="success" className="mb-3">
-        <div className="d-flex align-items-center">
-          <FaCheckCircle size={24} className="text-success me-3" />
-          <div>
-            <Alert.Heading className="mb-1">Congratulations! 🎉</Alert.Heading>
-            <p className="mb-0">
-              All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully!
-            </p>
-          </div>
-        </div>
-      </Alert>
-    );
-  };
 
-  // const handleEmailSubmit = () => {
-  //   console.log("Submit clicked - opening email modal");
-  //   console.log("selectedPlant:", selectedPlant);
-  //   console.log("immediateNextStep:", immediateNextStep);
-  //   console.log("viewedStepDetails:", viewedStepDetails);
 
-  //   if (!selectedPlant || !immediateNextStep) {
-  //     Swal.fire("Validation Error", "Please select a plant and ensure a step is active.", "error");
-  //     return;
-  //   }
 
-  //   console.log("Setting showEmailModal to true");
-  //   setShowEmailModal(true);
-  // };
 
  const handleEmailSubmit = () => {
-  console.log("Submit clicked - opening email modal");
-  console.log("selectedPlant:", selectedPlant);
-  console.log("immediateNextStep:", immediateNextStep);
-  console.log("viewedStepDetails:", viewedStepDetails);
 
   if (!selectedPlant || !immediateNextStep) {
     Swal.fire("Validation Error", "Please select a plant and ensure a step is active.", "error");
     return;
   }
+
+     if (!recordExists) {
+        Swal.fire({
+          icon: "warning",
+          title: "Process Not Initialized",
+          text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+          confirmButtonText: "OK"
+        });
+        return;
+      }
 
   // ✅ NEW: Check if Step 2 has completed all 4 levels
   if (immediateNextStep.PROCESS === "Status of the Application") {
@@ -178,6 +181,13 @@ const [isSubmitting, setIsSubmitting] = useState(false);
             const firstRecord = fetchedData[0];
             setProjectInfo({ prjName: firstRecord.PROJECT_NAME || "", address: firstRecord.ADDRESS || "" });
           }
+
+                         const currentProcessExists = res.data.some(item => 
+            item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
+            item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+          );
+       
+        setRecordExists(currentProcessExists);
           const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
           const nextStep = steps.find((step) => !completedProcesses.includes(step.PROCESS));
 
@@ -186,6 +196,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
             setImmediateNextStepIndex(steps.indexOf(nextStep));
             handleStepClick(nextStep, selectedPlant); // ✅ Automatically click/load details for the active step
           } else {
+
+             setRecordExists(false);
             // Handle case where all steps are complete
             if (completedProcesses.length === steps.length && steps.length > 0) {
               setImmediateNextStepIndex(steps.length);
@@ -199,11 +211,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         .catch((err) => console.error("Error during data fetching process:", err));
     }
   }, [selectedPlant, steps]);
+
+
 useEffect(() => {
   console.log("viewedStepDetails changed:", viewedStepDetails);
   console.log("viewedStepDetails.APPLY_DT:", viewedStepDetails?.APPLY_DT);
   console.log("viewedStepDetails.COMMENTS:", viewedStepDetails?.COMMENTS);
 }, [viewedStepDetails]);
+
+
 const handleViewNextStep = () => {
   setSelectedProcessDetails(null);
   
@@ -239,13 +255,14 @@ const handleViewNextStep = () => {
     setViewedStepDetails({});
   }
 };
-  const handleChange = async (e) => {
-    const { name, value } = e.target;
+const handleChange = async (e) => {
+  const { name, value } = e.target;
 
-    if (name === "loc") {
-      setSelectedPlant(value);
-      console.log(name, "name", value);
+  if (name === "loc") {
+    setSelectedPlant(value);
+    console.log(name, "name", value);
 
+    if (value) { // Only fetch data if a plant is selected
       try {
         const res = await getMasterByLoc(value);
         if (res) {
@@ -255,8 +272,39 @@ const handleViewNextStep = () => {
         console.error("Error fetching master by loc:", err);
         setHeaderData(null);
       }
+    } else {
+      // If value is empty (Select Plant), reset all data
+      setHeaderData(null);
+      setViewedStep(null);
+      setViewedStepDetails(null);
+      setSelectedProcessDetails(null);
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setProjectInfo({ prjName: "", address: "" });
     }
-  };
+  }
+};
+  // const handleChange = async (e) => {
+  //   const { name, value } = e.target;
+
+  //   if (name === "loc") {
+  //     setSelectedPlant(value);
+    
+  //     try {
+  //       const res = await getMasterByLoc(value);
+  //       if (res) {
+  //         setHeaderData(res);
+  //       }
+  //       else{
+        
+  //     setRecordExists(false);
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching master by loc:", err);
+  //       setHeaderData(null);
+  //     }
+  //   }
+  // };
 
   // This logic now correctly calculates sub-level status based on the VIEWED step's details
 const activeSubLevelIndex = useMemo(() => {
@@ -321,7 +369,23 @@ const handleConfirmSubmit = async (emails) => {
     // ✅ FIRST: Refresh the storeData to update step completion status
     const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
     const fetchedData = res.data;
+
+
+
     setStoreData(fetchedData);
+
+
+
+     setSelectedPlant(""); // This will reset the dropdown to "Select Plant"
+    
+    // ✅ RESET ALL RELATED STATES
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setViewedStep(null);
+    setViewedStepDetails(null);
+    setSelectedProcessDetails(null);
+    setHeaderData(null);
+    setProjectInfo({ prjName: "", address: "" });
 
     // ✅ SECOND: Check current step status
     const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
@@ -589,50 +653,105 @@ useEffect(() => {
       ) : (
         <h4 className="mb-3 text-muted">Select a Plant to begin</h4>
       )}
-      <Row className="mb-3">
-        <Col md={6}>
-          <Form.Group>
-            <Form.Label>Plant</Form.Label>
-            <Form.Select name="loc" value={selectedPlant} onChange={handleChange}>
-              <option value="">Select Plant to View</option>
-              {plants.map((p, idx) => (<option key={idx} value={p.loc}>{p.loc}</option>))}
-            </Form.Select>
-          </Form.Group>
-        </Col>
-       {viewedStep?.PROCESS === "Validity of the Certificate" ? (
+  
+
+
+<Row className="mb-3">
+ <Col md={6}>
+  <Form.Group>
+    <Form.Label>Plant</Form.Label>
+    <Form.Select 
+      name="loc" 
+      value={selectedPlant} 
+      onChange={handleChange}
+    >
+      <option value="">Select Plant to View</option>
+      {plants.map((p, idx) => (
+        <option key={idx} value={p.loc}>{p.loc}</option>
+      ))}
+    </Form.Select>
+  </Form.Group>
+</Col>
+  {viewedStep?.PROCESS === "Validity of the Certificate" ? (
     <>
       <Col md={3}>
         <Form.Group>
           <Form.Label>From Date</Form.Label>
-          <Form.Control type="date" value={viewedStepDetails?.FRM_DT || ""} disabled /> 
+          <Form.Control
+            type="date"
+            value={viewedStepDetails?.FRM_DT || ""}
+            disabled
+          />
         </Form.Group>
       </Col>
+
       <Col md={3}>
         <Form.Group>
           <Form.Label>To Date</Form.Label>
-          <Form.Control type="date" value={viewedStepDetails?.TO_DT || ""} disabled />
+          <Form.Control
+            type="date"
+            value={viewedStepDetails?.TO_DT || ""}
+            disabled
+          />
         </Form.Group>
       </Col>
     </>
   ) : (
-    // <Col md={6}>
-    //   <Form.Group>
-    //     <Form.Label>Application Date</Form.Label>
-    //     <Form.Control type="date" value={viewedStepDetails?.APPLY_DT || ""} disabled />
-    //   </Form.Group>
-    // </Col>
-    <Col md={6}>
+    <>
+      {/* Application Date */}
+   <Col md={6}>
     <Form.Group>
       <Form.Label>Application Date</Form.Label>
       <Form.Control 
         type="date" 
         value={viewedStepDetails?.APPLY_DT || ""} 
         onChange={(e) => setViewedStepDetails(prev => ({ ...prev, APPLY_DT: e.target.value }))}
+        readOnly={!isCurrentStepEditable}
+        style={{ 
+          backgroundColor: !isCurrentStepEditable ? "#e9ecef" : "white",
+          cursor: !isCurrentStepEditable ? "not-allowed" : "text"
+        }}
       />
     </Form.Group>
   </Col>
+
+      {/* Project */}
+
+   {viewedStepDetails?.PROCESS === "Application Submission" && (
+  <>
+    <Col md={6}>
+      <Form.Group>
+        <Form.Label>Project Name</Form.Label>
+        <Form.Control
+          type="text"
+          value={viewedStepDetails?.PROJECT_NAME || ""}
+          readOnly
+          disabled
+          placeholder="Enter Project Name"
+        />
+      </Form.Group>
+    </Col>
+
+    <Col md={6} className="mt-2">
+      <Form.Group>
+        <Form.Label>Address</Form.Label>
+        <Form.Control
+          as="textarea"
+          rows={2}
+          value={viewedStepDetails?.ADDRESS || ""}
+          readOnly
+          disabled
+          placeholder="Enter Address"
+        />
+      </Form.Group>
+    </Col>
+  </>
+)}
+
+    </>
   )}
 </Row>
+
       <Row className="mb-3">
         <Col md={6}>
           <Form.Group>

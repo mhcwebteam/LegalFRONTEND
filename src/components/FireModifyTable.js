@@ -2923,15 +2923,23 @@ const FireModifyTable = () => {
                   <Row className="mb-3">
                     {viewedStepDetails?.NO_OF_TOWERS && (
                       <Col md={6}>
-                        <Form.Group>
-                          <Form.Label>Number of Towers</Form.Label>
-                          <Form.Control
-                            type="text"
-                            value={viewedStepDetails.NO_OF_TOWERS}
-                            readOnly
-                            className="bg-white"
-                          />
-                        </Form.Group>
+                       <Col md={4}>
+  <Form.Group>
+    <Form.Label>Number Of Towers</Form.Label>
+    <Form.Control
+      type="text"
+      name="noOfTowers"
+      value={formData.noOfTowers || ""}
+      disabled={!formData.loc || isViewingCompletedStep}
+      onChange={handleChange}
+      style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+    />
+  </Form.Group>
+</Col>
                       </Col>
                     )}
                     {viewedStepDetails?.FEE_AMOUNT && (
@@ -3073,31 +3081,34 @@ const FireModifyTable = () => {
                     </Form.Group>
                   </Col>
 
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>
-                        {immediateNextStepIndex === 1
-                          ? "Inspection Date"
-                          : "Apply Date"}
-                      </Form.Label>
-                      <Form.Control
-                        type="date"
-                        name="applyDate"
-                        max={new Date().toISOString().split("T")[0]}
-                        value={formData.applyDate || ""}
-                        disabled={
-                          !formData.loc ||
-                          (nextStepDetails && nextStepDetails.APPLY_DT) ||
-                          isViewingCompletedStep
-                        }
-                        onChange={handleChange}
-                        isInvalid={!!errors.applyDate}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.applyDate}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
+          <Col md={6}>
+  <Form.Group>
+    <Form.Label>
+      {immediateNextStepIndex === 1 ? "Inspection Date" : "Apply Date"}
+    </Form.Label>
+    <Form.Control
+      type="date"
+      name="applyDate"
+      max={new Date().toISOString().split("T")[0]}
+      value={formData.applyDate || ""}
+      disabled={
+        !formData.loc ||
+        (nextStepDetails && nextStepDetails.APPLY_DT) ||
+        isViewingCompletedStep
+      }
+      onChange={handleChange}
+      isInvalid={!!errors.applyDate}
+      style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+    />
+    <Form.Control.Feedback type="invalid">
+      {errors.applyDate}
+    </Form.Control.Feedback>
+  </Form.Group>
+</Col>
                 </Row>
 
                 {/* Show Number of Towers and Fee Amount only for Application Submission */}
@@ -3173,8 +3184,13 @@ const FireModifyTable = () => {
                           name="feeAmount"
                           value={formData.feeAmount || ""}
                           disabled={!formData.loc || isViewingCompletedStep}
-                          onChange={handleChange}
-                        />
+                           onChange={handleChange}
+      style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+    />
                       </Form.Group>
                     </Col>
                   ) : immediateNextStepIndex === 0 &&
@@ -3190,50 +3206,42 @@ const FireModifyTable = () => {
                       {provisionalRadioLabels[immediateNextStepIndex] ||
                         "Status for this step"}
                     </Form.Label>
-                    <div>
-                      <Form.Check
-                        type="radio"
-                        inline
-                        label="Yes"
-                        name={`stepStatus_${immediateNextStepIndex}`}
-                        id={`stepYes_${immediateNextStepIndex}`}
-                        value="YES"
-                        checked={
-                          formData[`stepStatus_${immediateNextStepIndex}`] ===
-                          "YES"
-                        }
-                        onChange={
-                          (e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              [`stepStatus_${immediateNextStepIndex}`]: "YES",
-                            }))
-                          // setFormData((prev) => ({
-                          //   ...prev,
-                          //   [`stepStatus_${immediateNextStepIndex}`]: e.target.value,
-                          // }))
-                        }
-                      />
-                      <Form.Check
-                        type="radio"
-                        inline
-                        label="No"
-                        name={`stepStatus_${immediateNextStepIndex}`}
-                        id={`stepNo_${immediateNextStepIndex}`}
-                        value="NO"
-                        checked={
-                          formData[`stepStatus_${immediateNextStepIndex}`] ===
-                          "NO"
-                        }
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            [`stepStatus_${immediateNextStepIndex}`]:
-                              e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
+              <div>
+    <Form.Check
+      type="radio"
+      inline
+      label="Yes"
+      name={`stepStatus_${immediateNextStepIndex}`}
+      id={`stepYes_${immediateNextStepIndex}`}
+      value="YES"
+      checked={formData[`stepStatus_${immediateNextStepIndex}`] === "YES"}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          [`stepStatus_${immediateNextStepIndex}`]: "YES",
+        }))
+      }
+      disabled={isViewingCompletedStep}
+      className={isViewingCompletedStep ? 'text-muted' : ''}
+    />
+    <Form.Check
+      type="radio"
+      inline
+      label="No"
+      name={`stepStatus_${immediateNextStepIndex}`}
+      id={`stepNo_${immediateNextStepIndex}`}
+      value="NO"
+      checked={formData[`stepStatus_${immediateNextStepIndex}`] === "NO"}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          [`stepStatus_${immediateNextStepIndex}`]: e.target.value,
+        }))
+      }
+      disabled={isViewingCompletedStep}
+      className={isViewingCompletedStep ? 'text-muted' : ''}
+    />
+  </div>
                   </Form.Group>
                 )}
 
@@ -3244,11 +3252,16 @@ const FireModifyTable = () => {
                       variant="outline-secondary"
                       className="form-control"
                       onClick={() => setShowUploadModal(true)}
-                      disabled={isViewingCompletedStep}
-                    >
-                      Upload Docs{" "}
-                      {newDocs.length > 0 && `(${newDocs.length} files)`}
-                    </Button>
+                     disabled={isViewingCompletedStep}
+    style={{
+      backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+      color: isViewingCompletedStep ? '#6c757d' : '',
+      borderColor: isViewingCompletedStep ? '#dee2e6' : '',
+      cursor: isViewingCompletedStep ? 'not-allowed' : 'pointer'
+    }}
+  >
+    Upload Docs {newDocs.length > 0 && `(${newDocs.length} files)`}
+  </Button>
                     {errors.newDocs && (
                       <div className="text-danger mt-1">{errors.newDocs}</div>
                     )}

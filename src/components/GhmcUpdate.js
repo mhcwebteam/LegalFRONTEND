@@ -14,6 +14,7 @@ import WaterDocUploadModal from "./WaterDocUploadModal";
 import PreviousGhmcDocs from "./PreviousGhmcDocs";
 import { getMasterByLoc } from "../api/Api";
 import EmailSelectionModal from "./EmailModal"
+import Swal from "sweetalert2";
 
 const GhmcUpdate = () => {
   const token = localStorage.getItem("token");
@@ -37,11 +38,11 @@ const GhmcUpdate = () => {
 
   // 👇 NEW STATE: Track if we're viewing a specific step
   const [isViewingSpecificStep, setIsViewingSpecificStep] = useState(false);
-
+const [recordExists, setRecordExists] = useState(false);
   const [viewedStep, setViewedStep] = useState(null);
   const [viewedStepDetails, setViewedStepDetails] = useState(null);
       const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
-
+  const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
@@ -109,13 +110,48 @@ const GhmcUpdate = () => {
     return viewedStep?.PROCESS === immediateNextStep?.PROCESS;
   };
 
+
+    const checkRecordExists = () => {
+    if (selectedPlant && immediateNextStep) {
+      const exists = storeData.some(item => 
+        item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
+        item.loc?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+      );
+
+      
+      setRecordExists(exists);
+      console.log("Record exists check:", exists, "for process:", immediateNextStep?.PROCESS, "plant:", selectedPlant);
+    } else {
+      setRecordExists(false);
+    }
+  };
+
+
+    useEffect(() => {
+      checkRecordExists();
+    }, [storeData, selectedPlant, immediateNextStep]);
+
+
+
   const handleEmailSubmit = () => {
     // Only allow submit if we're viewing the immediate next step
     if (!isViewingNextStep()) {
       alert("Cannot submit a completed step. Please select the next pending step.");
       return;
     }
+
+   if (!recordExists) {
+      Swal.fire({
+        icon: "warning",
+        title: "Process Not Initialized",
+        text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+        confirmButtonText: "OK"
+      });
+      return;
+    }
     
+    
+  
     const newErrors = {};
     if (!formData.loc) newErrors.loc = "Plant selection is required";
     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
@@ -234,6 +270,16 @@ const GhmcUpdate = () => {
         console.log("📦 Full GHMC data:", ghmcData);
 
         setStoreData(ghmcData);
+
+
+                     const currentProcessExists = ghmcData.data.some(item => 
+            item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
+            item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+          );
+       
+        setRecordExists(currentProcessExists);
+
+        
         const plantRecord = ghmcData?.find(
           (item) => item.loc === selectedPlant
         );
@@ -242,6 +288,7 @@ const GhmcUpdate = () => {
           setOrganizationType(plantRecord.Organization);
         } else {
           setOrganizationType(plantRecord?.Organization || "GHMC");
+             setRecordExists(false);
         }
 
         if (ghmcData.length > 0) {
@@ -430,6 +477,7 @@ const GhmcUpdate = () => {
         noOfFlats: value,
         KLD: value ? nocs : "",
       }));
+     
     } else if (name === "OldAmount") {
       const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
       const total = amountPaid + Number(value);
@@ -448,6 +496,7 @@ const GhmcUpdate = () => {
       setViewedStep(null);
       setCurrentProcess("");
       setShowEmailModal(false);
+       setRecordExists(false);
 
       try {
         const res = await getMasterByLoc(value);
@@ -615,7 +664,8 @@ const GhmcUpdate = () => {
       if (storedCompletedStep) {
         console.log("📜 Viewing completed process from storeData:", step.PROCESS);
         dataToParse = storedCompletedStep;
-        setSubmitted(true); // Mark as submitted if already completed
+        setSubmitted(true); 
+             setSelectedProcessDetails(storedCompletedStep);// Mark as submitted if already completed
       } else {
         console.log("🌐 Fetching live step details for:", step.PROCESS);
         const res = await axios.get(
@@ -624,7 +674,9 @@ const GhmcUpdate = () => {
           )}/${encodeURIComponent(step.PROCESS)}`
         );
         dataToParse = res.data || {};
-        setSubmitted(false); // Not submitted yet
+             setSelectedProcessDetails(null);
+        setSubmitted(false);
+    // Not submitted yet
       }
 
       const parsed = {
@@ -783,22 +835,30 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
                   </Form.Group>
                 </Col>
 
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Apply Date</Form.Label>
-                    <Form.Control
-                      type="date"
-                      name="applyDate"
-                      value={formData.applyDate || ""}
-                
-                      onChange={handleChange}
-                      disabled={!isViewingNextStep()}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.applyDate}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
+        <Col md={6}>
+  <Form.Group>
+    <Form.Label>Apply Date</Form.Label>
+    <Form.Control
+      type="date"
+      name="applyDate"
+      value={formData.applyDate || ""}
+      max={new Date().toISOString().split("T")[0]}
+      onChange={handleChange}
+      disabled={
+        // Disable if:
+        // 1. No plant selected OR
+        // 2. We're viewing a completed step (selectedProcessDetails exists) OR
+        // 3. We're not viewing the immediate next step
+        !formData.loc || 
+        !!selectedProcessDetails || 
+        !isViewingNextStep()
+      }
+    />
+    <Form.Control.Feedback type="invalid">
+      {errors.applyDate}
+    </Form.Control.Feedback>
+  </Form.Group>
+</Col>
               </Row>
 
               <Row className="mb-2">
@@ -941,3 +1001,6 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
 };
 
 export default GhmcUpdate;
+
+
+

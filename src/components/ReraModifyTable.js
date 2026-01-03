@@ -701,14 +701,7 @@ const handleDemoteConfirm = (newLevel) => {
   setUploadError("");
 
   try {
-    console.log("=== DEBUG: Starting Submission ===");
-    console.log("Current state:");
-    console.log("- immediateNextStepIndex:", immediateNextStepIndex);
-    console.log("- formData.loc:", formData.loc);
-    console.log("- immediateNextStep:", immediateNextStep);
-    console.log("- formData.subLevelStatus:", formData.subLevelStatus);
-    console.log("- levelToSubmit:", levelToSubmit);
-    console.log("- activeSubLevelIndex:", activeSubLevelIndex);
+const isUpdateMode = selectedProcessDetails !== null;
 
     // --- VALIDATION ---
     if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
@@ -720,6 +713,8 @@ const handleDemoteConfirm = (newLevel) => {
       return;
     }
 
+
+ if (!isUpdateMode) {
     if (immediateNextStepIndex !== 2 && !formData.applyDate) {
       await Swal.fire(
         "Validation Error",
@@ -733,6 +728,15 @@ const handleDemoteConfirm = (newLevel) => {
       await Swal.fire(
         "Validation Error",
         "Please select a Plant and ensure a process step is active.",
+        "error"
+      );
+      return;
+    } }
+
+    if (!formData.loc) {
+      await Swal.fire(
+        "Validation Error",
+        "Please select a Plant.",
         "error"
       );
       return;
@@ -767,121 +771,121 @@ const handleDemoteConfirm = (newLevel) => {
       payload.append(`emails[${i}]`, email);
     });
 
-    if (immediateNextStepIndex === 0) {
-      payload.append("prjName", formData.prjName || "");
-      payload.append("address", formData.address || "");
+   if (isUpdateMode) {
+      // Update mode: updating existing process
+      payload.append("process", selectedProcessDetails.PROCESS);
+      payload.append("applyDate", formData.applyDate);
+      payload.append("comments", formData.comments || "");
+      payload.append("id", selectedProcessDetails.ID); // Pass the ID for update
+      
+      // Add other fields if they exist
+      if (selectedProcessDetails.FRM_DT) payload.append("fromDate", selectedProcessDetails.FRM_DT);
+      if (selectedProcessDetails.TO_DT) payload.append("toDate", selectedProcessDetails.TO_DT);
+      if (selectedProcessDetails.PROJECT_NAME) payload.append("prjName", selectedProcessDetails.PROJECT_NAME);
+      if (selectedProcessDetails.ADDRESS) payload.append("address", selectedProcessDetails.ADDRESS);
+      
+      // For step 2 specific fields
+      const stepIndex = steps.findIndex(
+        step => step.PROCESS?.toLowerCase().trim() === selectedProcessDetails.PROCESS?.toLowerCase().trim()
+      );
+      
+      if (stepIndex === 1 && selectedProcessDetails.LEVEL) {
+        payload.append("pending_task", selectedProcessDetails.LEVEL);
+        payload.append("task_status", selectedProcessDetails.LEVEL_STATUS || "Yes");
+      }
     } else {
-      payload.append("prjName", projectInfo.prjName || "");
-      payload.append("address", projectInfo.address || "");
-    }
-
-    // Determine which date to use as the primary 'applyDate'
-    const applyDateToSend =
-      immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
-    payload.append("applyDate", applyDateToSend);
-    payload.append("fromDate", formData.fromDate);
-    payload.append("toDate", formData.toDate);
-
-    // Handle task status - CRITICAL FIX HERE
-    if (immediateNextStepIndex === 1) {
-      console.log("=== DEBUG: Handling task status ===");
-      console.log("- formData.subLevelStatus:", formData.subLevelStatus);
-      console.log("- levelToSubmit:", levelToSubmit);
-      console.log("- SUB_LEVELS[activeSubLevelIndex]:", SUB_LEVELS[activeSubLevelIndex]);
+      // New submission mode
+      payload.append("process", immediateNextStep.PROCESS);
+      payload.append("comments", formData.comments || "");
       
-      // For "Yes", we should submit the CURRENT active level
-      // For "Reject", we submit the selected rejection level (levelToSubmit)
-      // For "No", we submit the current level
-      let pendingTaskToSubmit = "";
+      // Determine which date to use as the primary 'applyDate'
+      const applyDateToSend =
+        immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
+      payload.append("applyDate", applyDateToSend);
+      payload.append("fromDate", formData.fromDate);
+      payload.append("toDate", formData.toDate);
       
-      if (formData.subLevelStatus === "Yes") {
-        // When "Yes", submit the current active level (will progress to next)
-        pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
-      } else if (formData.subLevelStatus === "Reject") {
-        // When "Reject", submit the selected rejection level
-        pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
-      } else if (formData.subLevelStatus === "No") {
-        // When "No", submit the current level (stay at same)
-        pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+      if (immediateNextStepIndex === 0) {
+        payload.append("prjName", formData.prjName || "");
+        payload.append("address", formData.address || "");
+      } else {
+        payload.append("prjName", projectInfo.prjName || "");
+        payload.append("address", projectInfo.address || "");
       }
-      
-      console.log("- pendingTaskToSubmit:", pendingTaskToSubmit);
-      
-      // Make sure we have a valid pending task
-      if (!pendingTaskToSubmit) {
-        console.error("ERROR: No pending task determined!");
-        pendingTaskToSubmit = SUB_LEVELS[0];
+
+      // Handle task status for step 2
+      if (immediateNextStepIndex === 1) {
+        let pendingTaskToSubmit = "";
+        
+        if (formData.subLevelStatus === "Yes") {
+          pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+        } else if (formData.subLevelStatus === "Reject") {
+          pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
+        } else if (formData.subLevelStatus === "No") {
+          pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+        }
+        
+        if (!pendingTaskToSubmit) {
+          pendingTaskToSubmit = SUB_LEVELS[0];
+        }
+        
+        payload.append("pending_task", pendingTaskToSubmit);
+        const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
+        payload.append("task_status", backendStatus);
       }
-      
-      payload.append("pending_task", pendingTaskToSubmit);
-      
-      // For backend: "Reject" becomes "No"
-      const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
-      payload.append("task_status", backendStatus);
-      
-      console.log("- Backend task_status:", backendStatus);
-    }
 
-    newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
-
-    console.log("=== DEBUG: Final Payload ===");
-    for (const [key, value] of payload.entries()) {
-      console.log(`${key}:`, value);
+      newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
     }
-    console.log("=============================");
 
     // --- SUBMIT TO API ---
-    const existingRecord = storeData.find(
-      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim()
-    );
-    const apiUrl = existingRecord
+    const apiUrl = isUpdateMode 
       ? `${API_BASE_URL}/rera-modify`
       : `${API_BASE_URL}/rera-submit`;
 
-    console.log("=== DEBUG: Making API Call ===");
-    console.log("- API URL:", apiUrl);
-    console.log("- Is existing record?", !!existingRecord);
-
     const response = await axios.post(apiUrl, payload);
-    console.log("=== DEBUG: API Response ===");
-    console.log("- Status:", response.status);
-    console.log("- Data:", response.data);
 
     await Swal.fire({
       icon: "success",
-      title: existingRecord ? "Updated!" : "Submitted!",
+      title: isUpdateMode ? "Updated!" : "Submitted!",
       text: "Your data has been saved successfully.",
       timer: 1500,
       showConfirmButton: false,
     });
 
-    // --- RESET STATE AFTER SUCCESSFUL SUBMISSION ---
-    console.log("=== DEBUG: Resetting state ===");
-    setFormData({
-      loc: "",
-      applyDate: "",
-      fromDate: "",
-      toDate: "",
-      comments: "",
-      prjName: "",
-      address: "",
-      subLevelStatus: "Yes", // Reset to default
-    });
-    setNewDocs([]);
-    setSelectedPlant("");
-    setStoreData([]);
-    setImmediateNextStep(null);
-    setImmediateNextStepIndex(-1);
-    setNextStepDetails(null);
-    setProjectInfo({ prjName: "", address: "" });
-    setIsLevel4Completed(false);
-    setLevelToSubmit(""); // Reset levelToSubmit
+    // Refresh data
+    if (selectedPlant) {
+      const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
+      setStoreData(res.data);
+      
+      // If updating, refresh the selected process details
+      if (isUpdateMode) {
+        const updatedProcess = res.data.find(
+          item => item.PROCESS?.trim() === selectedProcessDetails.PROCESS?.trim()
+        );
+        if (updatedProcess) {
+          setSelectedProcessDetails(updatedProcess);
+        }
+      }
+    }
+
+    // Reset form for new submissions
+    if (!isUpdateMode) {
+      setFormData({
+        loc: "",
+        applyDate: "",
+        fromDate: "",
+        toDate: "",
+        comments: "",
+        prjName: "",
+        address: "",
+        subLevelStatus: "Yes",
+      });
+      setNewDocs([]);
+      setLevelToSubmit("");
+    }
     
   } catch (error) {
-    console.error("=== DEBUG: Submission failed ===");
-    console.error("Error:", error);
-    console.error("Error response:", error.response?.data);
-    console.error("Error message:", error.message);
+    console.error("Submission failed:", error);
     
     let errorMessage = "Please check the console for details.";
     if (error.response?.data?.message) {
@@ -897,7 +901,6 @@ const handleDemoteConfirm = (newLevel) => {
     );
   } finally {
     setIsSubmitting(false);
-    console.log("=== DEBUG: Submission completed ===");
   }
 };
 
@@ -905,57 +908,203 @@ const handleDemoteConfirm = (newLevel) => {
    const isUpdatable = selectedProcessDetails?.UPDATED !== "YES";
 
   
-  const renderDocumentHistory = () => {
-    if (
-      !nextStepDetails ||
-      typeof nextStepDetails !== "object" ||
-      !nextStepDetails.UPLOAD_DOC
-    ) {
-      return (
-        <p className="text-muted text-center mb-0">
-          No previous documents for this step.
-        </p>
-      );
-    }
+  // const renderDocumentHistory = () => {
+  //   if (
+  //     !nextStepDetails ||
+  //     typeof nextStepDetails !== "object" ||
+  //     !nextStepDetails.UPLOAD_DOC
+  //   ) {
+  //     return (
+  //       <p className="text-muted text-center mb-0">
+  //         No previous documents for this step.
+  //       </p>
+  //     );
+  //   }
 
-    let documents = [];
-    try {
-      const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-      documents = parsedDocs.map((doc) => ({
-        name: doc.file_name,
-        url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-      }));
-    } catch (error) {
-      console.error("Failed to parse UPLOAD_DOC JSON:", error);
-      return <p className="text-danger mb-0">Error displaying documents.</p>;
-    }
-
-
+  //   let documents = [];
+  //   try {
+  //     const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
+  //     documents = parsedDocs.map((doc) => ({
+  //       name: doc.file_name,
+  //       url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
+  //     }));
+  //   } catch (error) {
+  //     console.error("Failed to parse UPLOAD_DOC JSON:", error);
+  //     return <p className="text-danger mb-0">Error displaying documents.</p>;
+  //   }
 
 
-    return documents.length > 0 ? (
-      <ListGroup variant="flush">
-        <h6 className="text-primary">Uploaded Documents</h6>
-        {documents.map((doc, idx) => (
-          <ListGroup.Item key={idx} className="d-flex align-items-center">
-            <a
-              href={doc.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-decoration-none d-flex align-items-center w-100"
-              style={{ minWidth: 0 }}
+
+
+  //   return documents.length > 0 ? (
+  //     <ListGroup variant="flush">
+  //       <h6 className="text-primary">Uploaded Documents</h6>
+  //       {documents.map((doc, idx) => (
+  //         <ListGroup.Item key={idx} className="d-flex align-items-center">
+  //           <a
+  //             href={doc.url}
+  //             target="_blank"
+  //             rel="noreferrer"
+  //             className="text-decoration-none d-flex align-items-center w-100"
+  //             style={{ minWidth: 0 }}
+  //           >
+  //             <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
+  //             <span
+  //               className="text-truncate"
+  //               style={{ maxWidth: "250px" }}
+  //               title={doc.name}
+  //             >
+  //               {doc.name}
+  //             </span>
+  //           </a>
+
+  //     {   isUpdatable &&   <Button
+  //             variant="outline-danger"
+  //             size="sm"
+  //             className="flex-shrink-0 ms-2"
+  //             style={{
+  //               padding: "2px 6px",
+  //               fontSize: "11px",
+  //               minWidth: "30px",
+  //               height: "24px",
+  //             }}
+  //             onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
+  //             title="Delete document"
+  //           >
+  //             <i className="fas fa-trash-alt"></i>
+  //           </Button>}
+  //         </ListGroup.Item>
+  //       ))}
+  //     </ListGroup>
+  //   ) : (
+  //     <p className="text-muted text-center mb-0">
+  //       No documents uploaded for this step.
+  //     </p>
+  //   );
+  // };
+
+// const renderDocumentHistory = () => {
+//     // if (
+//     //   !nextStepDetails ||
+//     //   typeof nextStepDetails !== "object" ||
+//     //   !nextStepDetails.UPLOAD_DOC
+//     // ) {
+//     //   return (
+//     //     <p className="text-muted text-center mb-0">
+//     //       No previous documents for this step.
+//     //     </p>
+//     //   );
+//     // }
+
+//     let documents = [];
+//     try {
+//       const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
+//       documents = parsedDocs.map((doc) => ({
+//         name: doc.file_name,
+//         url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
+//       }));
+//     } catch (error) {
+//       console.error("Failed to parse UPLOAD_DOC JSON:", error);
+//       return <p className="text-danger mb-0">Error displaying documents.</p>;
+//     }
+
+
+//     return documents.length > 0 ? (
+//       <ListGroup variant="flush">
+//         <h6 className="text-primary">Uploaded Documents</h6>
+//         {documents.map((doc, idx) => (
+//           <ListGroup.Item key={idx} className="d-flex align-items-center">
+//             <a
+//               href={doc.url}
+//               target="_blank"
+//               rel="noreferrer"
+//               className="text-decoration-none d-flex align-items-center w-100"
+//               style={{ minWidth: 0 }}
+//             >
+//               <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
+//               <span
+//                 className="text-truncate"
+//                 style={{ maxWidth: "250px" }}
+//                 title={doc.name}
+//               >
+//                 {doc.name}
+//               </span>
+//             </a>
+
+//       {   isUpdatable &&   <Button
+//               variant="outline-danger"
+//               size="sm"
+//               className="flex-shrink-0 ms-2"
+//               style={{
+//                 padding: "2px 6px",
+//                 fontSize: "11px",
+//                 minWidth: "30px",
+//                 height: "24px",
+//               }}
+//               onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
+//               title="Delete document"
+//             >
+//               <i className="fas fa-trash-alt"></i>
+//             </Button>}
+//           </ListGroup.Item>
+//         ))}
+//       </ListGroup>
+//     ) : (
+//       <p className="text-muted text-center mb-0">
+//         No documents uploaded for this step.
+//       </p>
+//     );
+//   };
+
+const renderDocumentHistory = () => {
+  // First, check if we're viewing a completed step
+  const sourceData = selectedProcessDetails || nextStepDetails;
+  
+  if (!sourceData || typeof sourceData !== "object" || !sourceData.UPLOAD_DOC) {
+    return (
+      <p className="text-muted text-center mb-0">
+        No previous documents for this step.
+      </p>
+    );
+  }
+
+  let documents = [];
+  try {
+    const parsedDocs = JSON.parse(sourceData.UPLOAD_DOC);
+    documents = parsedDocs.map((doc) => ({
+      name: doc.file_name,
+      url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
+    }));
+  } catch (error) {
+    console.error("Failed to parse UPLOAD_DOC JSON:", error);
+    return <p className="text-danger mb-0">Error displaying documents.</p>;
+  }
+
+  return documents.length > 0 ? (
+    <ListGroup variant="flush">
+      <h6 className="text-primary">Uploaded Documents</h6>
+      {documents.map((doc, idx) => (
+        <ListGroup.Item key={idx} className="d-flex align-items-center">
+          <a
+            href={doc.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-decoration-none d-flex align-items-center w-100"
+            style={{ minWidth: 0 }}
+          >
+            <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
+            <span
+              className="text-truncate"
+              style={{ maxWidth: "250px" }}
+              title={doc.name}
             >
-              <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
-              <span
-                className="text-truncate"
-                style={{ maxWidth: "250px" }}
-                title={doc.name}
-              >
-                {doc.name}
-              </span>
-            </a>
+              {doc.name}
+            </span>
+          </a>
 
-      {   isUpdatable &&   <Button
+          {/* Only show delete button for active step, not completed ones */}
+          {!selectedProcessDetails && isUpdatable && (
+            <Button
               variant="outline-danger"
               size="sm"
               className="flex-shrink-0 ms-2"
@@ -969,16 +1118,379 @@ const handleDemoteConfirm = (newLevel) => {
               title="Delete document"
             >
               <i className="fas fa-trash-alt"></i>
-            </Button>}
-          </ListGroup.Item>
-        ))}
-      </ListGroup>
-    ) : (
-      <p className="text-muted text-center mb-0">
-        No documents uploaded for this step.
-      </p>
-    );
-  };
+            </Button>
+          )}
+        </ListGroup.Item>
+      ))}
+    </ListGroup>
+  ) : (
+    <p className="text-muted text-center mb-0">
+      No documents uploaded for this step.
+    </p>
+  );
+};
+
+  const renderCompletedProcessFields = () => {
+  if (!selectedProcessDetails) return null;
+
+  const process = selectedProcessDetails;
+  const processName = process.PROCESS?.toLowerCase()?.trim();
+  const stepIndex = steps.findIndex(
+    step => step.PROCESS?.toLowerCase().trim() === processName
+  );
+
+  return (
+    <>
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form.Group>
+            <Form.Label>Plant</Form.Label>
+            <Form.Control
+              type="text"
+              value={formData.loc || ""}
+              readOnly
+            />
+          </Form.Group>
+        </Col>
+        
+        {/* Date fields based on step index */}
+        {stepIndex === 2 ? (
+          // For step 3 (index 2): Show From and To dates
+          <>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>From Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={formData.fromDate || ""}
+                  readOnly
+                />
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>To Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={formData.toDate || ""}
+                  readOnly
+                />
+              </Form.Group>
+            </Col>
+          </>
+        ) : (
+          // For other steps: Show Apply Date
+         <Col md={6}>
+            <Form.Group>
+              <Form.Label>Apply Date</Form.Label>
+              <Form.Control
+                type="date"
+                name="applyDate"
+                value={formData.applyDate || ""}
+                onChange={handleChange}
+                isInvalid={!!errors.applyDate}
+                readOnly={!isUpdatable}
+                style={{ 
+                  backgroundColor: !isUpdatable ? "#e9ecef" : "white",
+                  cursor: !isUpdatable ? "not-allowed" : "text"
+                }}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.applyDate}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+        )}
+      </Row>
+
+      {/* Step 2 specific fields (sub-levels) */}
+      {stepIndex === 1 && (
+        <Row className="mb-3">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Pending Task</Form.Label>
+              <Form.Control
+                type="text"
+                disabled
+                value={process.LEVEL || "Not specified"}
+                className="fw-bold"
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Status</Form.Label>
+              <Form.Control
+                type="text"
+                disabled
+                value={process.LEVEL_STATUS === "Completed" ? "Completed" : process.LEVEL_STATUS || "Not specified"}
+                className={
+                  process.LEVEL_STATUS === "Completed" ? "text-success fw-bold" : 
+                  process.LEVEL_STATUS === "No" ? "text-danger fw-bold" : 
+                  process.LEVEL_STATUS === "Yes" ? "text-success fw-bold" : ""
+                }
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      )}
+
+      {/* Step 1 specific fields (Project Name and Address) */}
+      {stepIndex === 0 && (
+        <Row className="mb-3">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Project Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.prjName || ""}
+                readOnly
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Address</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.address || ""}
+                readOnly
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      )}
+
+      {/* Comments field (editable for all steps) */}
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Comments</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={1}
+              name="comments"
+              value={formData.comments || ""}
+              onChange={handleChange}
+              isInvalid={!!errors.comments}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.comments}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+      </Row>
+    </>
+  );
+};
+
+// Function to render fields for next step (original renderNextStepForm logic)
+const renderNextStepFields = () => {
+  return (
+    <>
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form.Group>
+            <Form.Label>Plant</Form.Label>
+            <Form.Select
+              name="loc"
+              value={formData.loc}
+              onChange={handleChange}
+            >
+              <option value="">Select Plant</option>
+              {plants.map((p, idx) => (
+                <option key={idx} value={p.loc}>
+                  {p.loc}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        </Col>
+        
+        {immediateNextStepIndex === 2 ? (
+          <>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>
+                  From Date <span className="text-danger">*</span>
+                </Form.Label>
+                <Form.Control
+                  type="date"
+                  name="fromDate"
+                  value={formData.fromDate || ""}
+                  onChange={handleChange}
+                  isInvalid={!!errors.fromDate}
+                  max={new Date().toISOString().split("T")[0]}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.fromDate}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>
+                  To Date <span className="text-danger">*</span>
+                </Form.Label>
+                <Form.Control
+                  type="date"
+                  name="toDate"
+                  value={formData.toDate || ""}
+                  onChange={handleChange}
+                  isInvalid={!!errors.toDate}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.toDate}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Col>
+          </>
+        ) : (
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>
+                Apply Date <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                type="date"
+                name="applyDate"
+                value={formData.applyDate || ""}
+                onChange={handleChange}
+                isInvalid={!!errors.applyDate}
+                max={new Date().toISOString().split("T")[0]}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.applyDate}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+        )}
+      </Row>
+
+      {immediateNextStepIndex === 1 && (
+        <Row className="mb-3">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Pending Task</Form.Label>
+              <Form.Control
+                type="text"
+                disabled
+                value={
+                  formData.subLevelStatus === "Reject" 
+                    ? `Reject to: ${levelToSubmit || "Level 1"}`
+                    : formData.subLevelStatus === "No"
+                      ? `Stay at: ${SUB_LEVELS[activeSubLevelIndex] || 'Level 1'}`
+                      : formData.subLevelStatus === "Yes"
+                        ? `Progress: ${SUB_LEVELS[activeSubLevelIndex] || 'Level 1'}`
+                        : "All Levels Complete"
+                }
+                className="fw-bold"
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Status</Form.Label>
+              <div className="d-flex align-items-center h-100 gap-3">
+                <Form.Check
+                  type="radio"
+                  label="Yes"
+                  name="subLevelStatus"
+                  value="Yes"
+                  checked={formData.subLevelStatus === "Yes"}
+                  onChange={handleChange}
+                  id="status-yes"
+                />
+                <Form.Check
+                  type="radio"
+                  label="Reject"
+                  name="subLevelStatus"
+                  value="Reject"
+                  checked={formData.subLevelStatus === "Reject"}
+                  onChange={handleChange}
+                  id="status-reject"
+                />
+                <Form.Check
+                  type="radio"
+                  label="No"
+                  name="subLevelStatus"
+                  value="No"
+                  checked={formData.subLevelStatus === "No"}
+                  onChange={handleChange}
+                  id="status-no"
+                />
+              </div>
+            </Form.Group>
+          </Col>
+        </Row>
+      )}
+
+      {immediateNextStepIndex === 0 && (
+        <Row className="mb-3">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Project Name</Form.Label>
+              <Form.Control
+                type="text"
+                name="prjName"
+                value={formData.prjName || ""}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Address</Form.Label>
+              <Form.Control
+                type="text"
+                name="address"
+                value={formData.address || ""}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      )}
+
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form.Label>Upload New Documents</Form.Label>
+          <Button
+            variant="outline-secondary"
+            className="form-control"
+            onClick={() => setShowUploadModal(true)}
+          >
+            Upload Docs
+          </Button>
+          {uploadError && (
+            <div className="text-danger small mt-1">{uploadError}</div>
+          )}
+          <Form.Text className="text-muted d-block mt-1">
+            Only PDF files are allowed
+          </Form.Text>
+        </Col>
+        <Col md={6}>
+          <Form.Group>
+            <Form.Label>
+              Comments <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={1}
+              name="comments"
+              value={formData.comments || ""}
+              onChange={handleChange}
+              isInvalid={!!errors.comments}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.comments}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+      </Row>
+    </>
+  );
+};
 
   return (
     <>
@@ -1100,260 +1612,9 @@ const handleDemoteConfirm = (newLevel) => {
                   {immediateNextStep.PROCESS}
                 </h4>
               ) : null}
-              {/* END OF ADDED CODE */}
-              <Row className="mb-3">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Plant</Form.Label>
-                    <Form.Select
-                      name="loc"
-                      value={formData.loc}
-                      onChange={handleChange}
-                    >
-                      <option value="">Select Plant</option>
-                      {plants.map((p, idx) => (
-                        <option key={idx} value={p.loc}>
-                          {p.loc}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                {/* ✅ 2. CORRECTED CONDITIONAL DATE FIELDS */}
-                {immediateNextStepIndex === 2 ? (
-                  // Show "From" and "To" date for the THIRD step (index 2)
-                  <>
-                    <Col md={3}>
-                      <Form.Group>
-                        <Form.Label>
-                          From Date <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                          type="date"
-                          name="fromDate"
-                          value={formData.fromDate || ""}
-                          onChange={handleChange}
-                          isInvalid={!!errors.fromDate}
-                          max={new Date().toISOString().split("T")[0]}
-                          disabled={!!selectedProcessDetails} // ADD THIS
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {" "}
-                          {/* ADD THIS */}
-                          {errors.fromDate}
-                        </Form.Control.Feedback>
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                      <Form.Group>
-                        <Form.Label>
-                          To Date <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                          type="date"
-                          name="toDate"
-                          value={formData.toDate || ""}
-                          onChange={handleChange}
-                          isInvalid={!!errors.toDate} // ADD THIS
-                          disabled={!!selectedProcessDetails}
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {" "}
-                          {/* ADD THIS */}
-                          {errors.toDate}
-                        </Form.Control.Feedback>
-                      </Form.Group>
-                    </Col>
-                  </>
-                ) : (
-                  // Show a single "Apply Date" for ALL OTHER steps
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>
-                        Apply Date <span className="text-danger">*</span>
-                      </Form.Label>
-                      <Form.Control
-                        type="date"
-                        name="applyDate"
-                        value={formData.applyDate || ""}
-                        onChange={handleChange}
-                        isInvalid={!!errors.applyDate} // ADD THIS
-                        max={new Date().toISOString().split("T")[0]}
-                        disabled={!!selectedProcessDetails}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {" "}
-                        {/* ADD THIS */}
-                        {errors.applyDate}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                )}
-              </Row>
+             
+  {selectedProcessDetails ? renderCompletedProcessFields() : renderNextStepFields()}
 
-              {immediateNextStepIndex === 1 && (
-  <Row className="mb-3">
-    <Col md={6}>
-      {/* <Form.Group>
-        <Form.Label>Pending Task</Form.Label>
-        <Form.Control
-          type="text"
-          disabled
-          value={
-            formData.subLevelStatus === "Reject" 
-              ? `Reset to: ${levelToSubmit}`
-              : formData.subLevelStatus === "No"
-                ? `Stay at: ${SUB_LEVELS[activeSubLevelIndex] || 'Level 1'}`
-                : SUB_LEVELS[activeSubLevelIndex] || "All Levels Complete"
-          }
-          className="fw-bold"
-        />
-        {formData.subLevelStatus === "Reject" && (
-          <Form.Text className="text-danger">
-            Will reset to previous level
-          </Form.Text>
-        )}
-        {formData.subLevelStatus === "No" && (
-          <Form.Text className="text-warning">
-            Will stay at current level
-          </Form.Text>
-        )}
-        {formData.subLevelStatus === "Yes" && (
-          <Form.Text className="text-success">
-            Will progress to next level
-          </Form.Text>
-        )}
-      </Form.Group> */}
-                  {/* ------31-12-2025 by rajakumari.m---------------------------------------------------- */}
-  
-   <Form.Group>
-  <Form.Label>Pending Task</Form.Label>
-  <Form.Control
-    type="text"
-    disabled
-    value={
-      formData.subLevelStatus === "Reject" 
-        ? `Reject to: ${levelToSubmit || "Level 1"}`
-        : formData.subLevelStatus === "No"
-          ? `Stay at: ${SUB_LEVELS[activeSubLevelIndex] || 'Level 1'}`
-          : formData.subLevelStatus === "Yes"
-            ? `Progress: ${SUB_LEVELS[activeSubLevelIndex] || 'Level 1'}`
-            : "All Levels Complete"
-    }
-    className="fw-bold"
-  />
-</Form.Group>
-{/* ------------------------------------------------------------------------------------------------------- */}
-    </Col>
-    <Col md={6}>
-      <Form.Group>
-        <Form.Label>Status</Form.Label>
-        <div className="d-flex align-items-center h-100 gap-3">
-          <Form.Check
-            type="radio"
-            label="Yes"
-            name="subLevelStatus"
-            value="Yes"
-            checked={formData.subLevelStatus === "Yes"}
-            onChange={handleChange}
-            id="status-yes"
-            disabled={!!selectedProcessDetails}
-          />
-          <Form.Check
-            type="radio"
-            label="Reject"
-            name="subLevelStatus"
-            value="Reject"
-            checked={formData.subLevelStatus === "Reject"}
-            onChange={handleChange}
-            id="status-reject"
-            disabled={!!selectedProcessDetails}
-          />
-          <Form.Check
-            type="radio"
-            label="No"
-            name="subLevelStatus"
-            value="No"
-            checked={formData.subLevelStatus === "No"}
-            onChange={handleChange}
-            id="status-no"
-            disabled={!!selectedProcessDetails}
-          />
-        </div>
-        
-      </Form.Group>
-    </Col>
-  </Row>
-)}
-
-              {immediateNextStepIndex === 0 && (
-                <Row className="mb-3">
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>Project Name</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="prjName"
-                        value={formData.prjName || ""}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>Address</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="address"
-                        value={formData.address || ""}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-              )}
-              <Row className="mb-3">
-                <Col md={6}>
-                  <Form.Label>Upload New Documents</Form.Label>
-                  <Button
-                    variant="outline-secondary"
-                    className="form-control"
-                    onClick={() => setShowUploadModal(true)}
-                    disabled={!!selectedProcessDetails}
-                  >
-                    Upload Docs
-                  </Button>
-                  {/* Add this error display */}
-                  {uploadError && (
-                    <div className="text-danger small mt-1">{uploadError}</div>
-                  )}
-                  {/* You can also add this hint text */}
-                  <Form.Text className="text-muted d-block mt-1">
-                    Only PDF files are allowed
-                  </Form.Text>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>
-                      Comments <span className="text-danger">*</span>
-                    </Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={1}
-                      name="comments"
-                      value={formData.comments || ""}
-                      onChange={handleChange}
-                      isInvalid={!!errors.comments} // ADD THIS
-                      disabled={!!selectedProcessDetails}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {" "}
-                      {/* ADD THIS */}
-                      {errors.comments}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-              </Row>
               <div className="d-grid mt-3">
                 <Button
                   variant="primary"

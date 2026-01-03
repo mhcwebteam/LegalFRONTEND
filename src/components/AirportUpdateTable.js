@@ -43,7 +43,7 @@ const AirportUpdateTable = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [processingDt, setProcessingdt] = useState(0);
   const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
-
+const [recordExists, setRecordExists] = useState(false); 
   // --- 2. Check User Login ---
   useEffect(() => {
     if (!token) {
@@ -110,6 +110,24 @@ const AirportUpdateTable = () => {
     }
   }, [immediateNextStepIndex]);
 
+  const checkRecordExists = () => {
+    if (selectedPlant && immediateNextStep) {
+      const exists = storeData.some(item => 
+        item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
+        item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+      );
+
+
+      setRecordExists(exists);
+      console.log("Record exists check:", exists, "for process:", immediateNextStep?.PROCESS, "plant:", selectedPlant);
+    } else {
+      setRecordExists(false);
+    }
+  };
+
+  useEffect(() => {
+    checkRecordExists();
+  }, [storeData, selectedPlant, immediateNextStep]);
   const handleEmailSubmit = () => {
     // FIX: Don't show email modal if viewing completed step
     if (selectedProcessDetails) {
@@ -133,6 +151,16 @@ const AirportUpdateTable = () => {
       return;
     }
 
+   
+    if (!recordExists) {
+      Swal.fire({
+        icon: "warning",
+        title: "Process Not Initialized",
+        text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+        confirmButtonText: "OK"
+      });
+      return;
+    }
     // FIX: Check if immediateNextStep exists
     if (!immediateNextStep) {
       Swal.fire({
@@ -238,9 +266,19 @@ const AirportUpdateTable = () => {
         .then((res) => {
           setStepData(res.data);
           setStoreData(res.data);
-          console.log("stepdata:", res.data);
+
+                   const currentProcessExists = res.data.some(item => 
+            item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
+            item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+          );
+       
+        setRecordExists(currentProcessExists);
         })
         .catch((err) => console.error("Error fetching step data:", err));
+    }
+
+    else{
+       setRecordExists(false);
     }
   }, [selectedPlant]);
 
@@ -289,7 +327,7 @@ const AirportUpdateTable = () => {
   useEffect(() => {
     if (nextStepDetails && nextStepDetails.length > 0) {
       const details = nextStepDetails[0];
-      console.log("detailssssssssssssssss", details)
+    
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: details.APPLY_DT,
@@ -356,6 +394,7 @@ const AirportUpdateTable = () => {
               ? Math.ceil(Number(res.TOTAL_PRJ_AREA) / 5)
               : '' || null,
           }));
+              setRecordExists(false);
         } else {
           console.warn('⚠️ No master data found for location:', value);
           setHeaderData(null);
@@ -397,7 +436,89 @@ const AirportUpdateTable = () => {
     }));
   };
 
-  const handleConfirmSubmit = async (emails) => {
+  // const handleConfirmSubmit = async (emails) => {
+  //   if (!immediateNextStep) {
+  //     Swal.fire({ icon: "info", title: "All steps are complete!" });
+  //     return;
+  //   }
+  //   if (!selectedPlant) {
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "Validation Error",
+  //       text: "Please select a plant.",
+  //     });
+  //     return;
+  //   }
+  //   // ✅ Add validation for applyDate
+  //   if (!formData.applyDate) {
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "Validation Error",
+  //       text: "Please select a date.",
+  //     });
+  //     return;
+  //   }
+
+  //   setIsSubmitting(true);
+
+  
+  //   let currentUserName = loggedInUser.username;
+  //   const payload = new FormData();
+  //   payload.append("loc", selectedPlant);
+  //   payload.append("process", immediateNextStep.PROCESS);
+  //   payload.append("applyDate", formData.applyDate);
+  //   payload.append("comments", formData.comments);
+  //   payload.append("totalPrjArea", formData.prjArea || "");
+  //   payload.append("noOfNocs", formData.nocs || "");
+  //   payload.append("STATUS", formData.STATUS || "");
+  //   payload.append("username", currentUserName || "");
+
+  //   emails.forEach((email, i) => {
+  //     payload.append(`emails[${i}]`, email);
+  //   });
+
+  //   const apiUrl = `${API_BASE_URL}/airport-update`;
+
+  //   try {
+  //     await axios.post(apiUrl, payload);
+
+  //     // Refresh the data to show the new status
+  //     const res = await axios.get(
+  //       `${API_BASE_URL}/airport-data?plant=${selectedPlant}`
+  //     );
+
+  
+  //     setStoreData(res.data);
+  //        setSelectedPlant("");
+      
+  //     // 2. Clear the Header Data (Project Info Header)
+  //     setHeaderData(null);
+
+  //     // 3. Clear the Sidebar Data (This removes the green checks/process history)
+  //     setStoreData([]);
+  //     // FIX: Reset selected process details after successful update
+  //     setSelectedProcessDetails(null);
+     
+  //     Swal.fire({
+  //       icon: "success",
+  //       title: "Step Updated Successfully!",
+  //       showConfirmButton: false,
+  //       timer: 2000,
+  //     });
+  //   } catch (error) {
+  //     console.error("❌ Submission failed:", error);
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "Update Failed",
+  //       text: "Something went wrong. Please check the console for details.",
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+ 
+ const handleConfirmSubmit = async (emails) => {
     if (!immediateNextStep) {
       Swal.fire({ icon: "info", title: "All steps are complete!" });
       return;
@@ -443,17 +564,27 @@ const AirportUpdateTable = () => {
     try {
       await axios.post(apiUrl, payload);
 
-      // Refresh the data to show the new status
-      const res = await axios.get(
-        `${API_BASE_URL}/airport-data?plant=${selectedPlant}`
-      );
+      // IMPORTANT: Reset form data first
+      setFormData({
+        loc: "",
+        applyDate: "",
+        comments: "",
+        prjArea: "",
+        nocs: "",
+        STATUS: ""
+      });
 
-      console.log("resssssssssssssss",res?.data);
-      setStoreData(res.data);
-      
-      // FIX: Reset selected process details after successful update
+      // Reset other states
+      setSelectedPlant(""); // This clears the plant dropdown
+      setHeaderData(null);
+      setStoreData([]);
       setSelectedProcessDetails(null);
-
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      
+      // Optionally, clear any other related states
+      // setProjectInfo({ prjName: "", address: "" }); // If you have this state
+      
       Swal.fire({
         icon: "success",
         title: "Step Updated Successfully!",
@@ -471,7 +602,7 @@ const AirportUpdateTable = () => {
       setIsSubmitting(false);
     }
   };
-
+ 
   const handleProcessClick = (e, process) => {
     e.stopPropagation();
     console.log("Clicked:", process);
@@ -562,7 +693,8 @@ const AirportUpdateTable = () => {
                   id="status-yes"
                   value="YES"
                   checked={formData.STATUS === "YES"}
-                  onChange={handleChange}
+                  readOnly
+                
                   disabled={!!selectedProcessDetails}
                 />
                 <Form.Check
@@ -573,7 +705,7 @@ const AirportUpdateTable = () => {
                   id="status-no"
                   value="NO"
                   checked={formData.STATUS === "NO"}
-                  onChange={handleChange}
+        readOnly
                   disabled={!!selectedProcessDetails}
                 />
               </Col>
@@ -592,8 +724,9 @@ const AirportUpdateTable = () => {
                     rows={1}
                     name="prjArea"
                     value={formData.prjArea || ""}
-                    onChange={handleChange}
-                    readOnly={!!selectedProcessDetails}
+                    readOnly
+                    // onChange={handleChange}
+                    // readOnly={!!selectedProcessDetails}
                     className={selectedProcessDetails ? "bg-light" : ""}
                   />
                 </Form.Group>
@@ -606,8 +739,9 @@ const AirportUpdateTable = () => {
                     rows={1}
                     name="nocs"
                     value={formData.nocs || ""}
-                    onChange={handleChange}
-                    readOnly={!!selectedProcessDetails}
+                    // onChange={handleChange}
+                    // readOnly={!!selectedProcessDetails}
+                    readOnly
                     className={selectedProcessDetails ? "bg-light" : ""}
                   />
                 </Form.Group>
@@ -625,7 +759,7 @@ const AirportUpdateTable = () => {
                 rows={1}
                 name="comments"
                 value={formData.comments || ""}
-                onChange={handleChange}
+              readOnly
                 // ✅ Make comments read-only when viewing completed steps
                 disabled={isStepAlreadySubmitted() || !!selectedProcessDetails}
                 className={(isStepAlreadySubmitted() || selectedProcessDetails) ? "bg-light" : ""}
