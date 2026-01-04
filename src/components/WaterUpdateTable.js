@@ -121,6 +121,11 @@ const WaterUpdateTable = () => {
     }
   };
 
+
+    useEffect(() => {
+      checkRecordExists();
+    }, [storeData, selectedPlant, immediateNextStep]);
+
   const handleEmailSubmit = () => {
     // ✅ Check if record exists in database
     if (!recordExists) {
@@ -237,9 +242,7 @@ useEffect(() => {
   }, [steps, storeData]);
 
   // ✅ Update record existence check when storeData changes
-  useEffect(() => {
-    checkRecordExists();
-  }, [storeData, selectedPlant, immediateNextStep]);
+ 
 
   useEffect(() => {
     if (nextStepDetails && !selectedProcessDetails) {
@@ -1265,7 +1268,7 @@ setAllStepsCompleted(false);
                     size="md"
                     onClick={handleEmailSubmit}
                     className="w-100 fw-semibold"
-                    disabled={!formData.loc || isSubmitting || submitted}
+                    disabled={!formData.loc || isSubmitting || submitted || !recordExists}
                   >
                     {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
                   </Button>

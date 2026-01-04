@@ -1819,7 +1819,7 @@ const PcbUpdateTable = () => {
                         {formatDate(storeInfo?.APPLY_DT) || '-'}
                       </td>
 
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      {/* <td style={{ whiteSpace: 'nowrap' }}>
                         {storeInfo?.DOC_PATH ? (
                           <button
                             className="btn btn-outline-primary btn-sm"
@@ -1855,7 +1855,56 @@ const PcbUpdateTable = () => {
                         ) : (
                           '-'
                         )}
-                      </td>
+                      </td> */}
+                      <td style={{ whiteSpace: 'nowrap' }}>
+  {storeInfo?.DOC_PATH && storeInfo.DOC_PATH.trim() !== '' && storeInfo.DOC_PATH !== '[]' ? (
+    <button
+      className="btn btn-outline-primary btn-sm"
+      title="View Document"
+      onClick={() => {
+        if (!storeInfo?.DOC_PATH) {
+          alert('No documents available for this process');
+          return;
+        }
+
+        let docs = [];
+        let names = [];
+
+        try {
+          const parsedDocs = JSON.parse(storeInfo.DOC_PATH || '[]');
+          const parsedNames = JSON.parse(storeInfo.DOC_NAME || '[]');
+          
+          // Ensure docs is an array
+          docs = Array.isArray(parsedDocs) ? parsedDocs : [];
+          names = Array.isArray(parsedNames) ? parsedNames : [];
+        } catch (e) {
+          console.error('Error parsing DOC_PATH/DOC_NAME:', e);
+          docs = [];
+          names = [];
+        }
+
+        // Check if we actually have valid document paths
+        const validDocs = docs ? docs.filter(doc => doc && doc.trim() !== '') : [];
+        
+        if (validDocs.length === 0) {
+          alert('No documents available for this process');
+          return;
+        }
+
+        const files = validDocs.map((docPath, idx) => ({
+          DOC_PATH: docPath,
+          DOC_NAME: names[idx] || `Document ${idx + 1}`,
+        }));
+
+        setModalDocs(files);
+        setModalTitle(row.PROCESS);
+        setShowDocModal(true);
+      }}
+    >
+      <i className="fas fa-file-alt"></i>
+    </button>
+  ) : "-"}
+</td>
 
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {storeInfo?.LOG ? (
@@ -1987,7 +2036,7 @@ const PcbUpdateTable = () => {
                             </td>
 
                             {/* DOC Column */}
-                            <td>
+                            {/* <td>
                               {hasDocs ? (
                                 <OverlayTrigger
                                   placement="top"
@@ -2024,7 +2073,59 @@ const PcbUpdateTable = () => {
                                   </button>
                                 </OverlayTrigger>
                               ) : '-'}
-                            </td>
+                            </td> */}
+                                <td>
+  {hasDocs && hasDocs.trim() !== '' && hasDocs !== '[]' ? (
+    <OverlayTrigger
+      placement="top"
+      overlay={
+        <Tooltip id="custom-tooltip" className="custom-tooltip">
+          View Amendment Documents
+        </Tooltip>
+      }
+    >
+      <button
+        className="btn btn-outline-primary btn-sm"
+        onClick={() => {
+          let docs = [];
+          let names = [];
+
+          try {
+            const parsedDocs = JSON.parse(storeInfo[docPathKey] || '[]');
+            const parsedNames = JSON.parse(storeInfo[docNameKey] || '[]');
+            
+            // Ensure docs is an array
+            docs = Array.isArray(parsedDocs) ? parsedDocs : [];
+            names = Array.isArray(parsedNames) ? parsedNames : [];
+          } catch (e) {
+            console.error('Error parsing amendment docs:', e);
+            docs = [];
+            names = [];
+          }
+
+          // Check if we actually have valid document paths
+          const validDocs = docs ? docs.filter(doc => doc && doc.trim() !== '') : [];
+          
+          if (validDocs.length === 0) {
+            alert('No documents available for this amendment');
+            return;
+          }
+
+          const files = validDocs.map((docPath, idx) => ({
+            DOC_PATH: docPath,
+            DOC_NAME: names[idx] || `Amend Document ${idx + 1}`,
+          }));
+
+          setAmendModalDocs(files);
+          setAmendDocTitle(`${row.PROCESS} - ${cat} Amendment`);
+          setShowAmendDocModal(true);
+        }}
+      >
+        <i className="fas fa-file-alt wiggle-icon"></i>
+      </button>
+    </OverlayTrigger>
+  ) : "-"}
+</td>
 
                             {/* LOGS Column */}
                             <td style={{ whiteSpace: 'nowrap' }}>

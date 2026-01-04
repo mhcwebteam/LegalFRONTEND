@@ -1090,7 +1090,7 @@ const renderCompletionMessage = () => {
       )}
 
       <Form.Group className="mb-3">
-        <Form.Label>Comments44444444</Form.Label>
+        <Form.Label>Comments</Form.Label>
         <Form.Control
           as="textarea"
           rows={2}
@@ -1398,10 +1398,11 @@ const renderCompletionMessage = () => {
               size="md" 
               onClick={handleEmailSubmit} 
               disabled={
-                !formData.loc || 
+                !formData.loc ||
+                !recordExists || 
                 isSubmitting || 
                 !immediateNextStep || 
-                viewedStepConceptualIndex !== immediateNextStepIndex ||
+                viewedStepConceptualIndex !== immediateNextStepIndex || 
                 (() => {
                   const viewedStep = steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length];
                   if (!viewedStep) return true;

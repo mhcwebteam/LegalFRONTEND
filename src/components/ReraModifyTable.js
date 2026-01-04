@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useMemo, useContext } from "react";
 import {
   Nav,
@@ -369,6 +367,8 @@ const ReraModifyTable = () => {
         );
     }
   }, [selectedPlant, steps]);
+
+  
   useEffect(() => {
     if (
       nextStepDetails &&
@@ -460,8 +460,6 @@ const ReraModifyTable = () => {
     }
     return currentIndex;
   }, [nextStepDetails]);
-
-
 
   useEffect(() => {
   if (immediateNextStepIndex === 1) {
@@ -696,12 +694,402 @@ const handleDemoteConfirm = (newLevel) => {
     }
   };
 
+//     const handleConfirmSubmit = async (emails) => {
+//   setIsSubmitting(true);
+//   setUploadError("");
+
+//   try {
+//     console.log("=== DEBUG: Starting Submission ===");
+//     console.log("Current state:");
+//     console.log("- immediateNextStepIndex:", immediateNextStepIndex);
+//     console.log("- formData.loc:", formData.loc);
+//     console.log("- immediateNextStep:", immediateNextStep);
+//     console.log("- formData.subLevelStatus:", formData.subLevelStatus);
+//     console.log("- levelToSubmit:", levelToSubmit);
+//     console.log("- activeSubLevelIndex:", activeSubLevelIndex);
+
+//     // --- VALIDATION ---
+//     if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
+//       await Swal.fire(
+//         "Validation Error",
+//         "Please provide both a 'From Date' and a 'To Date' for this step.",
+//         "error"
+//       );
+//       return;
+//     }
+
+//     if (immediateNextStepIndex !== 2 && !formData.applyDate) {
+//       await Swal.fire(
+//         "Validation Error",
+//         "Please provide an 'Apply Date' for this step.",
+//         "error"
+//       );
+//       return;
+//     }
+
+//     if (!formData.loc || !immediateNextStep) {
+//       await Swal.fire(
+//         "Validation Error",
+//         "Please select a Plant and ensure a process step is active.",
+//         "error"
+//       );
+//       return;
+//     }
+
+//     if (newDocs.length > 0) {
+//       const nonPDFFiles = newDocs.filter(
+//         (file) =>
+//           file.type !== "application/pdf" &&
+//           !file.name.toLowerCase().endsWith(".pdf")
+//       );
+
+//       if (nonPDFFiles.length > 0) {
+//         setUploadError(
+//           "Only PDF files are allowed. Please remove non-PDF files."
+//         );
+//         return;
+//       }
+//     }
+
+//     // --- : 'fetch User';
+//     let currentUserName = loggedInUser?.username || "";
+
+//     // --- PREPARE PAYLOAD ---
+//     const payload = new FormData();
+//     payload.append("loc", formData.loc);
+//     payload.append("process", immediateNextStep.PROCESS);
+//     payload.append("comments", formData.comments || "");
+//     payload.append("username", currentUserName);
+
+//     emails.forEach((email, i) => {
+//       payload.append(`emails[${i}]`, email);
+//     });
+
+//     if (immediateNextStepIndex === 0) {
+//       payload.append("prjName", formData.prjName || "");
+//       payload.append("address", formData.address || "");
+//     } else {
+//       payload.append("prjName", projectInfo.prjName || "");
+//       payload.append("address", projectInfo.address || "");
+//     }
+
+//     // Determine which date to use as the primary 'applyDate'
+//     const applyDateToSend =
+//       immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
+//     payload.append("applyDate", applyDateToSend);
+//     payload.append("fromDate", formData.fromDate);
+//     payload.append("toDate", formData.toDate);
+
+//     // Handle task status - CRITICAL FIX HERE
+//     if (immediateNextStepIndex === 1) {
+//       console.log("=== DEBUG: Handling task status ===");
+//       console.log("- formData.subLevelStatus:", formData.subLevelStatus);
+//       console.log("- levelToSubmit:", levelToSubmit);
+//       console.log("- SUB_LEVELS[activeSubLevelIndex]:", SUB_LEVELS[activeSubLevelIndex]);
+      
+//       // For "Yes", we should submit the CURRENT active level
+//       // For "Reject", we submit the selected rejection level (levelToSubmit)
+//       // For "No", we submit the current level
+//       let pendingTaskToSubmit = "";
+      
+//       if (formData.subLevelStatus === "Yes") {
+//         // When "Yes", submit the current active level (will progress to next)
+//         pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+//       } else if (formData.subLevelStatus === "Reject") {
+//         // When "Reject", submit the selected rejection level
+//         pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
+//       } else if (formData.subLevelStatus === "No") {
+//         // When "No", submit the current level (stay at same)
+//         pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+//       }
+      
+//       console.log("- pendingTaskToSubmit:", pendingTaskToSubmit);
+      
+//       // Make sure we have a valid pending task
+//       if (!pendingTaskToSubmit) {
+//         console.error("ERROR: No pending task determined!");
+//         pendingTaskToSubmit = SUB_LEVELS[0];
+//       }
+      
+//       payload.append("pending_task", pendingTaskToSubmit);
+      
+//       // For backend: "Reject" becomes "No"
+//       const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
+//       payload.append("task_status", backendStatus);
+      
+//       console.log("- Backend task_status:", backendStatus);
+//     }
+
+//     newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
+
+//     console.log("=== DEBUG: Final Payload ===");
+//     for (const [key, value] of payload.entries()) {
+//       console.log(`${key}:`, value);
+//     }
+//     console.log("=============================");
+
+//     // --- SUBMIT TO API ---
+//     const existingRecord = storeData.find(
+//       (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim()
+//     );
+//     const apiUrl = existingRecord
+//       ? `${API_BASE_URL}/rera-modify`
+//       : `${API_BASE_URL}/rera-submit`;
+
+//     console.log("=== DEBUG: Making API Call ===");
+//     console.log("- API URL:", apiUrl);
+//     console.log("- Is existing record?", !!existingRecord);
+
+//     const response = await axios.post(apiUrl, payload);
+//     console.log("=== DEBUG: API Response ===");
+//     console.log("- Status:", response.status);
+//     console.log("- Data:", response.data);
+
+//     await Swal.fire({
+//       icon: "success",
+//       title: existingRecord ? "Updated!" : "Submitted!",
+//       text: "Your data has been saved successfully.",
+//       timer: 1500,
+//       showConfirmButton: false,
+//     });
+
+//     // --- RESET STATE AFTER SUCCESSFUL SUBMISSION ---
+//     console.log("=== DEBUG: Resetting state ===");
+//     setFormData({
+//       loc: "",
+//       applyDate: "",
+//       fromDate: "",
+//       toDate: "",
+//       comments: "",
+//       prjName: "",
+//       address: "",
+//       subLevelStatus: "Yes", // Reset to default
+//     });
+//     setNewDocs([]);
+//     setSelectedPlant("");
+//     setStoreData([]);
+//     setImmediateNextStep(null);
+//     setImmediateNextStepIndex(-1);
+//     setNextStepDetails(null);
+//     setProjectInfo({ prjName: "", address: "" });
+//     setIsLevel4Completed(false);
+//     setLevelToSubmit(""); // Reset levelToSubmit
+    
+//   } catch (error) {
+//     console.error("=== DEBUG: Submission failed ===");
+//     console.error("Error:", error);
+//     console.error("Error response:", error.response?.data);
+//     console.error("Error message:", error.message);
+    
+//     let errorMessage = "Please check the console for details.";
+//     if (error.response?.data?.message) {
+//       errorMessage = error.response.data.message;
+//     } else if (error.message) {
+//       errorMessage = error.message;
+//     }
+    
+//     await Swal.fire(
+//       "Submission Failed",
+//       errorMessage,
+//       "error"
+//     );
+//   } finally {
+//     setIsSubmitting(false);
+//     console.log("=== DEBUG: Submission completed ===");
+//   }
+// };
+
+//-------2-1-2026 by rajakumari.m-------------------------------------------------------------------
+// const handleConfirmSubmit = async (emails) => {
+//   setIsSubmitting(true);
+//   setUploadError("");
+
+//   try {
+//     // Check if we're updating a completed process or submitting a new one
+//     const isUpdateMode = selectedProcessDetails !== null;
+
+//     // --- VALIDATION ---
+//     if (!isUpdateMode) {
+//       // Only validate for new submissions
+//       if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
+//         await Swal.fire(
+//           "Validation Error",
+//           "Please provide both a 'From Date' and a 'To Date' for this step.",
+//           "error"
+//         );
+//         return;
+//       }
+
+//       if (immediateNextStepIndex !== 2 && !formData.applyDate) {
+//         await Swal.fire(
+//           "Validation Error",
+//           "Please provide an 'Apply Date' for this step.",
+//           "error"
+//         );
+//         return;
+//       }
+//     }
+
+//     if (!formData.loc) {
+//       await Swal.fire(
+//         "Validation Error",
+//         "Please select a Plant.",
+//         "error"
+//       );
+//       return;
+//     }
+
+//     // --- : 'fetch User';
+//     let currentUserName = loggedInUser?.username || "";
+
+//     // --- PREPARE PAYLOAD ---
+//     const payload = new FormData();
+//     payload.append("loc", formData.loc);
+//     payload.append("username", currentUserName);
+
+//     emails.forEach((email, i) => {
+//       payload.append(`emails[${i}]`, email);
+//     });
+
+//     if (isUpdateMode) {
+//       // Update mode: updating existing process
+//       payload.append("process", selectedProcessDetails.PROCESS);
+//       payload.append("applyDate", formData.applyDate);
+//       payload.append("comments", formData.comments || "");
+//       payload.append("id", selectedProcessDetails.ID); // Pass the ID for update
+      
+//       // Add other fields if they exist
+//       if (selectedProcessDetails.FRM_DT) payload.append("fromDate", selectedProcessDetails.FRM_DT);
+//       if (selectedProcessDetails.TO_DT) payload.append("toDate", selectedProcessDetails.TO_DT);
+//       if (selectedProcessDetails.PROJECT_NAME) payload.append("prjName", selectedProcessDetails.PROJECT_NAME);
+//       if (selectedProcessDetails.ADDRESS) payload.append("address", selectedProcessDetails.ADDRESS);
+      
+//       // For step 2 specific fields
+//       const stepIndex = steps.findIndex(
+//         step => step.PROCESS?.toLowerCase().trim() === selectedProcessDetails.PROCESS?.toLowerCase().trim()
+//       );
+      
+//       if (stepIndex === 1 && selectedProcessDetails.LEVEL) {
+//         payload.append("pending_task", selectedProcessDetails.LEVEL);
+//         payload.append("task_status", selectedProcessDetails.LEVEL_STATUS || "Yes");
+//       }
+//     } else {
+//       // New submission mode
+//       payload.append("process", immediateNextStep.PROCESS);
+//       payload.append("comments", formData.comments || "");
+      
+//       // Determine which date to use as the primary 'applyDate'
+//       const applyDateToSend =
+//         immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
+//       payload.append("applyDate", applyDateToSend);
+//       payload.append("fromDate", formData.fromDate);
+//       payload.append("toDate", formData.toDate);
+      
+//       if (immediateNextStepIndex === 0) {
+//         payload.append("prjName", formData.prjName || "");
+//         payload.append("address", formData.address || "");
+//       } else {
+//         payload.append("prjName", projectInfo.prjName || "");
+//         payload.append("address", projectInfo.address || "");
+//       }
+
+//       // Handle task status for step 2
+//       if (immediateNextStepIndex === 1) {
+//         let pendingTaskToSubmit = "";
+        
+//         if (formData.subLevelStatus === "Yes") {
+//           pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+//         } else if (formData.subLevelStatus === "Reject") {
+//           pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
+//         } else if (formData.subLevelStatus === "No") {
+//           pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+//         }
+        
+//         if (!pendingTaskToSubmit) {
+//           pendingTaskToSubmit = SUB_LEVELS[0];
+//         }
+        
+//         payload.append("pending_task", pendingTaskToSubmit);
+//         const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
+//         payload.append("task_status", backendStatus);
+//       }
+
+//       newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
+//     }
+
+//     // --- SUBMIT TO API ---
+//     const apiUrl = isUpdateMode 
+//       ? `${API_BASE_URL}/rera-modify`
+//       : `${API_BASE_URL}/rera-submit`;
+
+//     const response = await axios.post(apiUrl, payload);
+
+//     await Swal.fire({
+//       icon: "success",
+//       title: isUpdateMode ? "Updated!" : "Submitted!",
+//       text: "Your data has been saved successfully.",
+//       timer: 1500,
+//       showConfirmButton: false,
+//     });
+
+//     // Refresh data
+//     if (selectedPlant) {
+//       const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
+//       setStoreData(res.data);
+      
+//       // If updating, refresh the selected process details
+//       if (isUpdateMode) {
+//         const updatedProcess = res.data.find(
+//           item => item.PROCESS?.trim() === selectedProcessDetails.PROCESS?.trim()
+//         );
+//         if (updatedProcess) {
+//           setSelectedProcessDetails(updatedProcess);
+//         }
+//       }
+//     }
+
+//     // Reset form for new submissions
+//     if (!isUpdateMode) {
+//       setFormData({
+//         loc: "",
+//         applyDate: "",
+//         fromDate: "",
+//         toDate: "",
+//         comments: "",
+//         prjName: "",
+//         address: "",
+//         subLevelStatus: "Yes",
+//       });
+//       setNewDocs([]);
+//       setLevelToSubmit("");
+//     }
+    
+//   } catch (error) {
+//     console.error("Submission failed:", error);
+    
+//     let errorMessage = "Please check the console for details.";
+//     if (error.response?.data?.message) {
+//       errorMessage = error.response.data.message;
+//     } else if (error.message) {
+//       errorMessage = error.message;
+//     }
+    
+//     await Swal.fire(
+//       "Submission Failed",
+//       errorMessage,
+//       "error"
+//     );
+//   } finally {
+//     setIsSubmitting(false);
+//   }
+// };
+
+
     const handleConfirmSubmit = async (emails) => {
   setIsSubmitting(true);
   setUploadError("");
 
   try {
-const isUpdateMode = selectedProcessDetails !== null;
 
     // --- VALIDATION ---
     if (immediateNextStepIndex === 2 && (!formData.fromDate || !formData.toDate)) {
@@ -713,8 +1101,6 @@ const isUpdateMode = selectedProcessDetails !== null;
       return;
     }
 
-
- if (!isUpdateMode) {
     if (immediateNextStepIndex !== 2 && !formData.applyDate) {
       await Swal.fire(
         "Validation Error",
@@ -728,15 +1114,6 @@ const isUpdateMode = selectedProcessDetails !== null;
       await Swal.fire(
         "Validation Error",
         "Please select a Plant and ensure a process step is active.",
-        "error"
-      );
-      return;
-    } }
-
-    if (!formData.loc) {
-      await Swal.fire(
-        "Validation Error",
-        "Please select a Plant.",
         "error"
       );
       return;
@@ -771,291 +1148,124 @@ const isUpdateMode = selectedProcessDetails !== null;
       payload.append(`emails[${i}]`, email);
     });
 
-   if (isUpdateMode) {
-      // Update mode: updating existing process
-      payload.append("process", selectedProcessDetails.PROCESS);
-      payload.append("applyDate", formData.applyDate);
-      payload.append("comments", formData.comments || "");
-      payload.append("id", selectedProcessDetails.ID); // Pass the ID for update
-      
-      // Add other fields if they exist
-      if (selectedProcessDetails.FRM_DT) payload.append("fromDate", selectedProcessDetails.FRM_DT);
-      if (selectedProcessDetails.TO_DT) payload.append("toDate", selectedProcessDetails.TO_DT);
-      if (selectedProcessDetails.PROJECT_NAME) payload.append("prjName", selectedProcessDetails.PROJECT_NAME);
-      if (selectedProcessDetails.ADDRESS) payload.append("address", selectedProcessDetails.ADDRESS);
-      
-      // For step 2 specific fields
-      const stepIndex = steps.findIndex(
-        step => step.PROCESS?.toLowerCase().trim() === selectedProcessDetails.PROCESS?.toLowerCase().trim()
-      );
-      
-      if (stepIndex === 1 && selectedProcessDetails.LEVEL) {
-        payload.append("pending_task", selectedProcessDetails.LEVEL);
-        payload.append("task_status", selectedProcessDetails.LEVEL_STATUS || "Yes");
-      }
+    if (immediateNextStepIndex === 0) {
+      payload.append("prjName", formData.prjName || "");
+      payload.append("address", formData.address || "");
     } else {
-      // New submission mode
-      payload.append("process", immediateNextStep.PROCESS);
-      payload.append("comments", formData.comments || "");
-      
-      // Determine which date to use as the primary 'applyDate'
-      const applyDateToSend =
-        immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
-      payload.append("applyDate", applyDateToSend);
-      payload.append("fromDate", formData.fromDate);
-      payload.append("toDate", formData.toDate);
-      
-      if (immediateNextStepIndex === 0) {
-        payload.append("prjName", formData.prjName || "");
-        payload.append("address", formData.address || "");
-      } else {
-        payload.append("prjName", projectInfo.prjName || "");
-        payload.append("address", projectInfo.address || "");
-      }
-
-      // Handle task status for step 2
-      if (immediateNextStepIndex === 1) {
-        let pendingTaskToSubmit = "";
-        
-        if (formData.subLevelStatus === "Yes") {
-          pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
-        } else if (formData.subLevelStatus === "Reject") {
-          pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
-        } else if (formData.subLevelStatus === "No") {
-          pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
-        }
-        
-        if (!pendingTaskToSubmit) {
-          pendingTaskToSubmit = SUB_LEVELS[0];
-        }
-        
-        payload.append("pending_task", pendingTaskToSubmit);
-        const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
-        payload.append("task_status", backendStatus);
-      }
-
-      newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
+      payload.append("prjName", projectInfo.prjName || "");
+      payload.append("address", projectInfo.address || "");
     }
 
+    // Determine which date to use as the primary 'applyDate'
+    const applyDateToSend =
+      immediateNextStepIndex === 2 ? formData.fromDate : formData.applyDate;
+    payload.append("applyDate", applyDateToSend);
+    payload.append("fromDate", formData.fromDate);
+    payload.append("toDate", formData.toDate);
+
+    // Handle task status - CRITICAL FIX HERE
+    if (immediateNextStepIndex === 1) {
+      console.log("=== DEBUG: Handling task status ===");
+      console.log("- formData.subLevelStatus:", formData.subLevelStatus);
+      console.log("- levelToSubmit:", levelToSubmit);
+      console.log("- SUB_LEVELS[activeSubLevelIndex]:", SUB_LEVELS[activeSubLevelIndex]);
+      
+      // For "Yes", we should submit the CURRENT active level
+      // For "Reject", we submit the selected rejection level (levelToSubmit)
+      // For "No", we submit the current level
+      let pendingTaskToSubmit = "";
+      
+      if (formData.subLevelStatus === "Yes") {
+        // When "Yes", submit the current active level (will progress to next)
+        pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+      } else if (formData.subLevelStatus === "Reject") {
+        // When "Reject", submit the selected rejection level
+        pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
+      } else if (formData.subLevelStatus === "No") {
+        // When "No", submit the current level (stay at same)
+        pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+      }
+      
+      console.log("- pendingTaskToSubmit:", pendingTaskToSubmit);
+      
+      // Make sure we have a valid pending task
+      if (!pendingTaskToSubmit) {
+        console.error("ERROR: No pending task determined!");
+        pendingTaskToSubmit = SUB_LEVELS[0];
+      }
+      
+      payload.append("pending_task", pendingTaskToSubmit);
+      
+      // For backend: "Reject" becomes "No"
+      const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
+      payload.append("task_status", backendStatus);
+      
+      console.log("- Backend task_status:", backendStatus);
+    }
+
+    newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
+
+    console.log("=== DEBUG: Final Payload ===");
+    for (const [key, value] of payload.entries()) {
+      console.log(`${key}:`, value);
+    }
+    console.log("=============================");
+
     // --- SUBMIT TO API ---
-    const apiUrl = isUpdateMode 
+    const existingRecord = storeData.find(
+      (item) => item.PROCESS?.trim() === immediateNextStep.PROCESS?.trim()
+    );
+    const apiUrl = existingRecord
       ? `${API_BASE_URL}/rera-modify`
       : `${API_BASE_URL}/rera-submit`;
 
+    console.log("=== DEBUG: Making API Call ===");
+    console.log("- API URL:", apiUrl);
+    console.log("- Is existing record?", !!existingRecord);
+
     const response = await axios.post(apiUrl, payload);
+    console.log("=== DEBUG: API Response ===");
+    console.log("- Status:", response.status);
+    console.log("- Data:", response.data);
 
     await Swal.fire({
       icon: "success",
-      title: isUpdateMode ? "Updated!" : "Submitted!",
+      title: existingRecord ? "Updated!" : "Submitted!",
       text: "Your data has been saved successfully.",
       timer: 1500,
       showConfirmButton: false,
     });
-
-    // Refresh data
-    if (selectedPlant) {
-      const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
-      setStoreData(res.data);
-      
-      // If updating, refresh the selected process details
-      if (isUpdateMode) {
-        const updatedProcess = res.data.find(
-          item => item.PROCESS?.trim() === selectedProcessDetails.PROCESS?.trim()
-        );
-        if (updatedProcess) {
-          setSelectedProcessDetails(updatedProcess);
-        }
-      }
-    }
-
-    // Reset form for new submissions
-    if (!isUpdateMode) {
-      setFormData({
-        loc: "",
-        applyDate: "",
-        fromDate: "",
-        toDate: "",
-        comments: "",
-        prjName: "",
-        address: "",
-        subLevelStatus: "Yes",
-      });
-      setNewDocs([]);
-      setLevelToSubmit("");
-    }
+    
+    // --- RESET STATE AFTER SUCCESSFUL SUBMISSION ---
+    setFormData({ 
+      loc: "", 
+      applyDate: "", 
+      fromDate: "", 
+      toDate: "", 
+      comments: "", 
+      prjName: "", 
+      address: "" 
+    });
+    setNewDocs([]);
+    setSelectedPlant("");
+    setStoreData([]);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null);
+    setProjectInfo({ prjName: "", address: "" });
+    setIsLevel4Completed(false);
     
   } catch (error) {
     console.error("Submission failed:", error);
-    
-    let errorMessage = "Please check the console for details.";
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    await Swal.fire(
-      "Submission Failed",
-      errorMessage,
-      "error"
-    );
+    await Swal.fire("Submission Failed", "Please check the console for details.", "error");
   } finally {
     setIsSubmitting(false);
   }
 };
-
-
+//----------------------------------------------------
    const isUpdatable = selectedProcessDetails?.UPDATED !== "YES";
 
   
-  // const renderDocumentHistory = () => {
-  //   if (
-  //     !nextStepDetails ||
-  //     typeof nextStepDetails !== "object" ||
-  //     !nextStepDetails.UPLOAD_DOC
-  //   ) {
-  //     return (
-  //       <p className="text-muted text-center mb-0">
-  //         No previous documents for this step.
-  //       </p>
-  //     );
-  //   }
-
-  //   let documents = [];
-  //   try {
-  //     const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-  //     documents = parsedDocs.map((doc) => ({
-  //       name: doc.file_name,
-  //       url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-  //     }));
-  //   } catch (error) {
-  //     console.error("Failed to parse UPLOAD_DOC JSON:", error);
-  //     return <p className="text-danger mb-0">Error displaying documents.</p>;
-  //   }
-
-
-
-
-  //   return documents.length > 0 ? (
-  //     <ListGroup variant="flush">
-  //       <h6 className="text-primary">Uploaded Documents</h6>
-  //       {documents.map((doc, idx) => (
-  //         <ListGroup.Item key={idx} className="d-flex align-items-center">
-  //           <a
-  //             href={doc.url}
-  //             target="_blank"
-  //             rel="noreferrer"
-  //             className="text-decoration-none d-flex align-items-center w-100"
-  //             style={{ minWidth: 0 }}
-  //           >
-  //             <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
-  //             <span
-  //               className="text-truncate"
-  //               style={{ maxWidth: "250px" }}
-  //               title={doc.name}
-  //             >
-  //               {doc.name}
-  //             </span>
-  //           </a>
-
-  //     {   isUpdatable &&   <Button
-  //             variant="outline-danger"
-  //             size="sm"
-  //             className="flex-shrink-0 ms-2"
-  //             style={{
-  //               padding: "2px 6px",
-  //               fontSize: "11px",
-  //               minWidth: "30px",
-  //               height: "24px",
-  //             }}
-  //             onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
-  //             title="Delete document"
-  //           >
-  //             <i className="fas fa-trash-alt"></i>
-  //           </Button>}
-  //         </ListGroup.Item>
-  //       ))}
-  //     </ListGroup>
-  //   ) : (
-  //     <p className="text-muted text-center mb-0">
-  //       No documents uploaded for this step.
-  //     </p>
-  //   );
-  // };
-
-// const renderDocumentHistory = () => {
-//     // if (
-//     //   !nextStepDetails ||
-//     //   typeof nextStepDetails !== "object" ||
-//     //   !nextStepDetails.UPLOAD_DOC
-//     // ) {
-//     //   return (
-//     //     <p className="text-muted text-center mb-0">
-//     //       No previous documents for this step.
-//     //     </p>
-//     //   );
-//     // }
-
-//     let documents = [];
-//     try {
-//       const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-//       documents = parsedDocs.map((doc) => ({
-//         name: doc.file_name,
-//         url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-//       }));
-//     } catch (error) {
-//       console.error("Failed to parse UPLOAD_DOC JSON:", error);
-//       return <p className="text-danger mb-0">Error displaying documents.</p>;
-//     }
-
-
-//     return documents.length > 0 ? (
-//       <ListGroup variant="flush">
-//         <h6 className="text-primary">Uploaded Documents</h6>
-//         {documents.map((doc, idx) => (
-//           <ListGroup.Item key={idx} className="d-flex align-items-center">
-//             <a
-//               href={doc.url}
-//               target="_blank"
-//               rel="noreferrer"
-//               className="text-decoration-none d-flex align-items-center w-100"
-//               style={{ minWidth: 0 }}
-//             >
-//               <FaFileAlt className="text-secondary me-2 flex-shrink-0" />
-//               <span
-//                 className="text-truncate"
-//                 style={{ maxWidth: "250px" }}
-//                 title={doc.name}
-//               >
-//                 {doc.name}
-//               </span>
-//             </a>
-
-//       {   isUpdatable &&   <Button
-//               variant="outline-danger"
-//               size="sm"
-//               className="flex-shrink-0 ms-2"
-//               style={{
-//                 padding: "2px 6px",
-//                 fontSize: "11px",
-//                 minWidth: "30px",
-//                 height: "24px",
-//               }}
-//               onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
-//               title="Delete document"
-//             >
-//               <i className="fas fa-trash-alt"></i>
-//             </Button>}
-//           </ListGroup.Item>
-//         ))}
-//       </ListGroup>
-//     ) : (
-//       <p className="text-muted text-center mb-0">
-//         No documents uploaded for this step.
-//       </p>
-//     );
-//   };
-
 const renderDocumentHistory = () => {
   // First, check if we're viewing a completed step
   const sourceData = selectedProcessDetails || nextStepDetails;
@@ -1130,7 +1340,11 @@ const renderDocumentHistory = () => {
   );
 };
 
-  const renderCompletedProcessFields = () => {
+
+
+  //-------------------2-1-2025 by rajakumari.m-----------------------------------------------------------------
+  // Function to render fields for completed processes (view mode)
+const renderCompletedProcessFields = () => {
   if (!selectedProcessDetails) return null;
 
   const process = selectedProcessDetails;
@@ -1180,7 +1394,7 @@ const renderDocumentHistory = () => {
           </>
         ) : (
           // For other steps: Show Apply Date
-         <Col md={6}>
+        <Col md={6}>
             <Form.Group>
               <Form.Label>Apply Date</Form.Label>
               <Form.Control
@@ -1266,14 +1480,17 @@ const renderDocumentHistory = () => {
         <Col md={12}>
           <Form.Group>
             <Form.Label>Comments</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={1}
-              name="comments"
-              value={formData.comments || ""}
-              onChange={handleChange}
-              isInvalid={!!errors.comments}
-            />
+           <Form.Control
+  as="textarea"
+  rows={1}
+  name="comments"
+  value={formData.comments || ""}
+  onChange={handleChange}
+  isInvalid={!!errors.comments}
+  style={{ backgroundColor: "#f0f0f0" }}
+  readOnly
+/>
+
             <Form.Control.Feedback type="invalid">
               {errors.comments}
             </Form.Control.Feedback>
@@ -1472,7 +1689,7 @@ const renderNextStepFields = () => {
         <Col md={6}>
           <Form.Group>
             <Form.Label>
-              Comments <span className="text-danger">*</span>
+              Comment<span className="text-danger">*</span>
             </Form.Label>
             <Form.Control
               as="textarea"
@@ -1481,6 +1698,7 @@ const renderNextStepFields = () => {
               value={formData.comments || ""}
               onChange={handleChange}
               isInvalid={!!errors.comments}
+           
             />
             <Form.Control.Feedback type="invalid">
               {errors.comments}
@@ -1491,7 +1709,7 @@ const renderNextStepFields = () => {
     </>
   );
 };
-
+// --------------------------------------------------------------
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -1587,47 +1805,49 @@ const renderNextStepFields = () => {
         </Col>
 
         {/* The rest of the JSX is correct and unchanged */}
-        <Col md={6} className="d-flex flex-column">
-          {allStepsCompleted && !selectedProcessDetails ? (
-            renderCompletionMessage()
-          ) : (
-            <Form className="p-3 border rounded bg-light">
-              {/* ADD THIS CODE HERE - Right after Form opening tag */}
-              {selectedProcessDetails ? (
-                <div className="mb-3">
-                  <h4 className="mb-2 text-info fw-bold">
-                    Viewing: {selectedProcessDetails.PROCESS} (Completed)
-                  </h4>
-                  <Button
-                    variant="outline-primary"
-                    size="sm"
-                    onClick={handleViewNextStep}
-                    disabled={!immediateNextStep}
-                  >
-                    View Next Step
-                  </Button>
-                </div>
-              ) : immediateNextStep ? (
-                <h4 className="mb-3 text-primary fw-bold">
-                  {immediateNextStep.PROCESS}
-                </h4>
-              ) : null}
-             
-  {selectedProcessDetails ? renderCompletedProcessFields() : renderNextStepFields()}
+       <Col md={6} className="d-flex flex-column">
+  {allStepsCompleted && !selectedProcessDetails ? (
+    renderCompletionMessage()
+  ) : (
+    <Form className="p-3 border rounded bg-light">
+      {/* Display appropriate heading */}
+      {selectedProcessDetails ? (
+        <div className="mb-3">
+          <h4 className="mb-2 text-info fw-bold">
+            Viewing: {selectedProcessDetails.PROCESS} (Completed)
+          </h4>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={handleViewNextStep}
+            disabled={!immediateNextStep}
+          >
+            View Next Step
+          </Button>
+        </div>
+      ) : immediateNextStep ? (
+        <h4 className="mb-3 text-primary fw-bold">
+          {immediateNextStep.PROCESS}
+        </h4>
+      ) : null}
 
-              <div className="d-grid mt-3">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleEmailSubmit}
-                  disabled={isLevel4Completed || isSubmitting || !formData.loc}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </Button>
-              </div>
-            </Form>
-          )}
-        </Col>
+      {/* Render form fields based on whether we're viewing historical data or next step */}
+      {selectedProcessDetails ? renderCompletedProcessFields() : renderNextStepFields()}
+
+      {/* Submit button section */}
+      <div className="d-grid mt-3">
+        <Button
+          variant="primary"
+          size="md"
+          onClick={handleEmailSubmit}
+          disabled={isLevel4Completed || isSubmitting || !formData.loc}
+        >
+          {isSubmitting ? "Submitting..." : selectedProcessDetails ? "Update" : "Submit"}
+        </Button>
+      </div>
+    </Form>
+  )}
+</Col>
 
         {/* 08-12-2025t */}
         <Col md={3}>

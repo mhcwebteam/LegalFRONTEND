@@ -1,4 +1,7 @@
 
+
+
+
 import React, { useEffect, useState, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -42,11 +45,11 @@ const GhmcModify = () => {
   const [viewedStepDetails, setViewedStepDetails] = useState(null);
   const [currentProcess, setCurrentProcess] = useState("");
 
-  const [loggedInUser, setLoggedInUser] = useState(null);  //-----------login userstate
+  const [loggedInUser, setLoggedInUser] = useState(null);
 
-  // ------updated on 26-12-2025 by rajakumari.m-----------------------------------------
+  // updated on 26-12-2025
   const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
-  //--------------------------------------------------------------------------------------
+
   const [formData, setFormData] = useState({
     loc: "",
     applyDate: "",
@@ -102,49 +105,28 @@ const GhmcModify = () => {
     return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
 
-  
-    // --- 2. Check User Login ---
-    useEffect(() => {
-      if (!token) {
-        navigate("/");
-        return;
+  // Check login
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const userString = localStorage.getItem("user");
+    if (userString) {
+      try {
+        const userObj = JSON.parse(userString);
+        setLoggedInUser(userObj);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
       }
-      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
-      if (userString) {
-        try {
-          const userObj = JSON.parse(userString);
-          setLoggedInUser(userObj);
-        } catch (error) {
-          console.error("Error parsing user data:", error);
-        }
-      }
-    }, [token, navigate]);
+    }
+  }, [token, navigate]);
+
   
   useEffect(() => {
-  setHeaderData(null);
-}, []);
+    setHeaderData(null);
+  }, [setHeaderData]);
 
-
-
-  //  useEffect(() => {
-  //     if (nextStepDetails) {
-  //       let details = nextStepDetails;
-
-  //       setFormData((prevFormData) => ({
-  //         ...prevFormData,
-  //         applyDate: details?.applyDate,
-  //       Comments: ""
-  //       }));
-  
-  //     } else {
-  //       setFormData((prevFormData) => ({
-  //         ...prevFormData,
-  //         applyDate: "",
-  //         comments: ""
-  //       }));
-  
-  //     }
-  //   }, [nextStepDetails]);
   // Validate file type - PDF only
   const validateFileType = (file) => {
     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
@@ -157,7 +139,6 @@ const GhmcModify = () => {
     return isValidExtension && isValidMimeType;
   };
 
-  // Validate documents
   const validateDocuments = () => {
     let isValid = true;
     const newErrors = {};
@@ -174,7 +155,6 @@ const GhmcModify = () => {
     return isValid;
   };
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
 
@@ -189,7 +169,6 @@ const GhmcModify = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Render completion message
   const renderCompletionMessage = () => {
     return (
       <div className="text-center p-5">
@@ -212,11 +191,10 @@ const GhmcModify = () => {
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
- // ADD THIS CHECK
-  if (selectedProcessDetails) {
-    toast.info('Viewing completed step. No updates can be made.');
-    return;
-  }
+    if (selectedProcessDetails) {
+      toast.info('Viewing completed step. No updates can be made.');
+      return;
+    }
     if (!validateForm()) {
       if (errors.feasibilityDocs) {
         toast.error('Please upload only PDF files');
@@ -232,52 +210,40 @@ const GhmcModify = () => {
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
-
-    // Reset submission status before new submission
     setSubmitted(false);
-
     await handleConfirmSubmit(emails);
   };
 
   // Reset form when plant changes
-// Reset form when plant changes
-useEffect(() => {
-  if (selectedPlant) {
-    console.log("Plant changed to:", selectedPlant);
-    
-    // Clear all previous data
-    setSubmitted(false);
-    setIsViewingSpecificStep(false);
-    setViewedStep(null);
-    setViewedStepDetails(null);
-    setCurrentProcess("");
-    setSelectedProcessDetails(null);
-    setNextStepDetails(null); // ✅ Clear step details
-    setImmediateNextStep(null);
-    setImmediateNextStepIndex(-1);
-    setActiveStep(null);
+  useEffect(() => {
+    if (selectedPlant) {
+      setSubmitted(false);
+      setIsViewingSpecificStep(false);
+      setViewedStep(null);
+      setViewedStepDetails(null);
+      setCurrentProcess("");
+      setSelectedProcessDetails(null); // FIX: clear history viewing state
 
-    // Clear form data except plant
-    setFormData(prev => ({
-      ...prev,
-      applyDate: "",
-      Comments: "",
-      noOfFlats: "",
-      KLD: "",
-      OldAmount: "",
-      TotalAmount: "",
-      Size: "",
-      Ghmc: "",
-    }));
+      setFormData(prev => ({
+        ...prev,
+        applyDate: "",
+        Comments: "",
+        noOfFlats: "",
+        KLD: "",
+        OldAmount: "",
+        TotalAmount: "",
+        Size: "",
+        Ghmc: "",
+      }));
+      setActiveStep(null);
 
-    // Clear documents
-    setFeasibilityDocs([]);
-    setAmountPaidDocs([]);
-    setLinkDocs([]);
-    setLandDocs([]);
-    setOthDocs([]);
-  }
-}, [selectedPlant]);
+      setFeasibilityDocs([]);
+      setAmountPaidDocs([]);
+      setLinkDocs([]);
+      setLandDocs([]);
+      setOthDocs([]);
+    }
+  }, [selectedPlant]);
 
   useEffect(() => {
     setIsFirstProcess(immediateNextStepIndex === 0);
@@ -293,36 +259,15 @@ useEffect(() => {
       .catch((err) => console.error("Error fetching locations:", err));
   }, []);
 
-  // Fetch processes
- useEffect(() => {
-    if (!selectedPlant) return;
-
-    console.log("Fetching GHMC processes for plant:", selectedPlant);
-
-    axios
-      .get(`${API_BASE_URL}/GHMC-process`, {
-        params: { plant: selectedPlant },
-      })
-      .then((res) => {
-        console.log("Response from GHMC-process:", res.data);
-        setSteps(res.data || []);
-        if (res.data && res.data.length > 0) setActiveStep(0);
-      })
-      .catch((err) => console.error("Error fetching processes:", err));
-  }, [selectedPlant]);
-
-  // Fetch processes for specific plant
+  // Fetch processes (single effect, removed duplicate)
   useEffect(() => {
     if (!selectedPlant) return;
 
-    console.log("Fetching GHMC processes for plant:", selectedPlant);
-
     axios
       .get(`${API_BASE_URL}/GHMC-process`, {
         params: { plant: selectedPlant },
       })
       .then((res) => {
-        console.log("Response from GHMC-process:", res.data);
         setSteps(res.data || []);
         if (res.data && res.data.length > 0) setActiveStep(0);
       })
@@ -358,77 +303,105 @@ useEffect(() => {
     }
   }, [steps, storeData, selectedPlant]);
 
-  // Fetch plant data
+  // Fetch plant data (GHMC/master)
+//  useEffect(() => {
+//   if (!selectedPlant) return;
+
+//   const fetchPlantData = async () => {
+//     try {
+//       const ghmcRes = await axios.get(
+//         `${API_BASE_URL}/GHMC-data?plant=${selectedPlant}`
+//       );
+//       const ghmcData = ghmcRes.data || [];
+
+//       // 1. Update the store with fresh completion history
+//       setStoreData(ghmcData);
+      
+//       // 2. Clear history-viewing states so form focuses on the NEW active step
+//       setSubmitted(false);
+//       setIsViewingSpecificStep(false);
+//       setSelectedProcessDetails(null);
+
+//       const plantRecord = ghmcData?.find(
+//         (item) => item.loc === selectedPlant
+//       );
+
+//       // Determine Organization Type
+//       setOrganizationType(plantRecord?.Organization || "GHMC");
+
+//       if (ghmcData.length > 0) {
+//         const firstStep = ghmcData[0];
+
+      
+
+//         setFormData((prev) => ({
+//           ...prev,
+//           loc: selectedPlant,
+//            organisation: firstStep.Organization || "",
+//           noOfTowers: firstStep.noOfTowers || "",
+//           location: firstStep.LOCATION || "",
+//           status: firstStep.STATUS || "",
+//           // CRITICAL: Always reset these for the new process step
+//           // Comments: "", 
+//           // applyDate: "", 
+//         }));
+//       } else {
+//         // Fallback to Master Data if no GHMC history exists yet
+//         const masterRes = await getMasterByLoc(selectedPlant);
+//         if (masterRes) {
+//           setHeaderData(masterRes);
+//           setFormData((prev) => ({
+//             ...prev,
+//             loc: selectedPlant,
+//               organisation: masterRes.Organization || "",
+//             project_name: masterRes.PROJECT_NAME || "",
+//             location: masterRes.LOCATION || "",
+//             status: masterRes.STATUS || "",
+//             noOfTowers: masterRes.NUMBER_OF_TOWERS || "",
+//             Comments: "",
+//             applyDate: masterRes.APPLICATION_DATE || "",
+//           }));
+//         }
+//       }
+//     } catch (err) {
+//       console.error("Error fetching GHMC/master data:", err);
+//     }
+//   };
+
+//   fetchPlantData();
+//   // Added setSubmitted and other state setters to dependency if they are stable, 
+//   // but usually, they are from useState so they don't need to be here.
+// }, [selectedPlant, setStoreData, setHeaderData]);
+
+
+
   useEffect(() => {
-    if (!selectedPlant) {
-      console.log("⚠️ No plant selected yet.");
-      return;
-    }
+    if (selectedPlant) {
+      axios.get(
+        `${API_BASE_URL}/GHMC-data?plant=${selectedPlant}`
+      )
+        .then((res) => {
+          setStoreData(res.data);
+      
+          if (res.data.length > 0) {
+                const plantRecord = res?.data?.find(
+        (item) => item.loc === selectedPlant
+      );
+      const firstStep = res?.data[0];
 
-    const fetchPlantData = async () => {
-      console.log(`🚀 Fetching GHMC data for plant: ${selectedPlant}`);
 
-      try {
-        const ghmcRes = await axios.get(
-          `${API_BASE_URL}/GHMC-data?plant=${selectedPlant}`
-        );
-        const ghmcData = ghmcRes.data || [];
-        console.log("📦 Full GHMC data:", ghmcData);
-
-        setStoreData(ghmcData);
-        const plantRecord = ghmcData?.find(
-          (item) => item.loc === selectedPlant
-        );
-
-        if (plantRecord && plantRecord.Organization) {
-          setOrganizationType(plantRecord.Organization);
-        } else {
-          setOrganizationType(plantRecord?.Organization || "GHMC");
-        }
-
-        if (ghmcData.length > 0) {
-          console.log("✅ GHMC records found. Using first step for project info.");
-
-          const firstStep = ghmcData[0];
-          console.log("🧾 First step data:", firstStep);
-
-          setFormData((prev) => ({
-            ...prev,
-            Comments:"",
-            loc: selectedPlant,
-           applyDate: firstStep.applyDate || "",
-            organisation: firstStep.Organization || "",
-            noOfTowers: firstStep.noOfTowers || "",
-            location: firstStep.LOCATION || "",
-            status: firstStep.STATUS || "",
-          }));
-        } else {
-          console.log("⚠️ No GHMC data found — falling back to master API...");
-
-          const masterRes = await getMasterByLoc(selectedPlant);
-          console.log("📚 Master data from getMasterByLoc:", masterRes);
-
-          if (masterRes) {
-            setHeaderData(masterRes);
+        setOrganizationType(plantRecord?.Organization || "GHMC");
             setFormData((prev) => ({
               ...prev,
               loc: selectedPlant,
-              applyDate:masterRes.applyDate || "",
-              organisation: masterRes.Organization || "",
-              project_name: masterRes.PROJECT_NAME || "",
-              location: masterRes.LOCATION || "",
-              status: masterRes.STATUS || "",
+            organisation: firstStep.Organization || "",
             }));
+            setSubmitted(false);
           }
-        }
-      } catch (err) {
-        console.error("❌ Error fetching GHMC/master data:", err);
-      }
-    };
-
-    fetchPlantData();
+        })
+        .catch((err) => console.error("Error fetching step data", err));
+    }
   }, [selectedPlant]);
-
   // Parse JSON arrays safely
   function parseJsonArraySafe(value) {
     if (!value) return [];
@@ -446,7 +419,6 @@ useEffect(() => {
     }
   }
 
-  // Combine document arrays
   const combineAndParseDocArrays = (data, namesKey, pathsKey) => {
     const names = parseJsonArraySafe(data[namesKey]);
     const paths = parseJsonArraySafe(data[pathsKey]);
@@ -460,29 +432,27 @@ useEffect(() => {
     return combined;
   };
 
-  // Fetch step details
-// Fetch step details - Add dependency on selectedPlant
-useEffect(() => {
-  // If no plant selected, clear step details
-  if (!selectedPlant) {
-    setNextStepDetails(null);
-    return;
-  }
+  // Fetch next step details (guarded by plant)
+  useEffect(() => {
+    if (!selectedPlant || immediateNextStepIndex === -1 || !steps.length) {
+      setNextStepDetails(null);
+      return;
+    }
 
-  if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+    const plantAtRequest = selectedPlant;
     const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
     if (!nextStepName) return;
 
     axios
       .get(
         `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
-          selectedPlant
+          plantAtRequest
         )}/${encodeURIComponent(nextStepName)}`
       )
       .then((res) => {
-        const data = res.data || {};
-        console.log("Raw GHMC-step-details response:", data);
+        if (plantAtRequest !== selectedPlant) return; // FIX: ignore stale response
 
+        const data = res.data || {};
         const parsed = {
           ...data,
           tower_docs: combineAndParseDocArrays(
@@ -495,57 +465,109 @@ useEffect(() => {
             data, "amount_doc_name", "amount_doc_path"
           ),
         };
-        console.log("Parsed nextStepDetails for PreviousGhmcDocs:", parsed);
         setNextStepDetails(parsed);
       })
       .catch((err) => {
+        if (plantAtRequest !== selectedPlant) return;
         console.error("Error fetching GHMC-step-details:", err);
         setNextStepDetails(null);
       });
-  } else {
-    setNextStepDetails(null);
-  }
-}, [selectedPlant, immediateNextStepIndex, steps]); // ✅ Added selectedPlant dependency
+  }, [selectedPlant, immediateNextStepIndex, steps]);
 
-  // Update form data from step details
- // Update form data from step details
-useEffect(() => {
-  if (nextStepDetails) {
-    console.log("🧩 Next Step Details Fetched:", nextStepDetails);
+  // Update form data from nextStepDetails (guarded by plant)
+  useEffect(() => {
+    if (!selectedPlant) return;
 
-    // Only update form data if we're not in submission mode
-    // and if the current step is the immediate next step
-    if (!submitted || (immediateNextStep && nextStepDetails.PROCESS === immediateNextStep.PROCESS)) {
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: nextStepDetails.applyDate || "",
-        // Comments: nextStepDetails.Comments || "", // ← FIX HERE TOO
-        Comments: "",
-      }));
+    if (nextStepDetails) {
+      if (
+        !submitted ||
+        (immediateNextStep &&
+          nextStepDetails.PROCESS === immediateNextStep.PROCESS)
+      ) {
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: nextStepDetails.applyDate || "",
+          Comments: "",
+        }));
+
+  
+      }
+    } else {
+      if (!submitted) {
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+          Comments: "",
+        }));
+      }
     }
-  } else {
-    // Don't clear form data when no nextStepDetails if we just submitted
-    if (!submitted) {
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "",
-        Comments: "",
-      }));
-    }
-  }
-}, [nextStepDetails, submitted, immediateNextStep]);
+  }, [selectedPlant, nextStepDetails, submitted, immediateNextStep]);
 
-
- const handleChange = async (e) => {
+const handleChange = async (e) => {
   const { name, value } = e.target;
 
-  if (name === "noOfFlats") {
+  if (name === "loc") {
+    // 1. CLEAR EVERYTHING IMMEDIATELY (Prevents Flicker)
+    setSelectedPlant(value);
+    setStoreData([]);           // Clear completion history of previous plant
+    setSteps([]);               // Clear sidebar steps of previous plant
+    setHeaderData(null);        // Clear header info
+    setNextStepDetails(null);   // Clear auto-filled step data
+    setViewedStepDetails(null); // Clear viewing details
+    setSelectedProcessDetails(null);
+    setSubmitted(false);
+    setIsViewingSpecificStep(false);
+
+    // Reset Form Fields immediately
+    setFormData({
+      loc: value,
+      applyDate: "",
+      Comments: "",
+      organisation: "",
+      project_name: "",
+      location: "",
+      status: "",
+      noOfTowers: "",
+      TotalProjectArea: "",
+      ProjectBuildArea: "",
+      ProjectName: "",
+      noOfFlats: "",
+      KLD: "",
+      OldAmount: "",
+      TotalAmount: "",
+      Size: "",
+      Ghmc: "",
+    });
+
+    // If user selected the empty option, stop here
+    if (!value) return;
+
+    // 2. FETCH NEW DATA
+    try {
+      const res = await getMasterByLoc(value);
+      if (res) {
+        setHeaderData(res);
+        // Ensure Organization is never null for your SQL constraint
+        const org = res.Organization || "GHMC";
+        setOrganizationType(org);
+        
+        setFormData((prev) => ({
+          ...prev,
+          organisation: org,
+          applyDate: res.APPLICATION_DATE || "",
+          noOfTowers: res.NUMBER_OF_TOWERS || "",
+          TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
+          ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
+          ProjectName: res.PROJECT_NAME || "",
+          location: res.LOCATION || "",
+          status: res.STATUS || "",
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching master data:", err);
+    }
+  } else if (name === "noOfFlats") {
     const nocs = Math.ceil(Number(value) / 2);
-    setLinkDocs([]);
-    setLandDocs([]);
-    setOthDocs([]);
-    setFeasibilityDocs([]);
-    setAmountPaidDocs([]);
     setFormData((prev) => ({
       ...prev,
       noOfFlats: value,
@@ -554,115 +576,37 @@ useEffect(() => {
   } else if (name === "OldAmount") {
     const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
     const total = amountPaid + Number(value);
-    console.log(total, "total", amountPaid, value);
     setFormData((prev) => ({
       ...prev,
       OldAmount: value,
       TotalAmount: value ? total : "",
     }));
-  } else if (name === "loc") {
-    // ✅ Clear ALL previous data immediately when plant changes
-    setFormData((prev) => ({ 
-      ...prev, 
-      loc: value, 
-      applyDate: "",
-      Comments: "",
-      noOfFlats: "",
-      KLD: "",
-      OldAmount: "",
-      TotalAmount: "",
-      Size: "",
-      Ghmc: "",
-    }));
-    
-    setSelectedPlant(value);
-    setSubmitted(false);
-    setIsViewingSpecificStep(false);
-    setSelectedProcessDetails(null);
-    setNextStepDetails(null); // ✅ Clear previous step details immediately
-    setViewedStep(null);
-    setViewedStepDetails(null);
-    setCurrentProcess("");
-    setImmediateNextStep(null);
-    setImmediateNextStepIndex(-1);
-    setActiveStep(null);
-
-    // Clear documents
-    setFeasibilityDocs([]);
-    setAmountPaidDocs([]);
-    setLinkDocs([]);
-    setLandDocs([]);
-    setOthDocs([]);
-
-    try {
-      const res = await getMasterByLoc(value);
-      if (res) {
-        setHeaderData(res);
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: res.APPLICATION_DATE || "",
-          noOfTowers: res.NUMBER_OF_TOWERS || "",
-          TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
-          ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
-          ProjectName: res.PROJECT_NAME || "",
-        }));
-      } else {
-        setHeaderData(null);
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: "",
-          noOfTowers: "",
-          TotalProjectArea: "",
-          ProjectBuildArea: "",
-          ProjectName: "",
-        }));
-      }
-    } catch (err) {
-      console.error("Error fetching master by loc:", err);
-      setHeaderData(null);
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "",
-        noOfTowers: "",
-        TotalProjectArea: "",
-        ProjectBuildArea: "",
-        ProjectName: "",
-      }));
-    }
   } else {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }
 };
 
-//-----updated on 26-12-2025 by rajakumari .----------------------------------
-const handleViewNextStep = () => {
-  setSelectedProcessDetails(null);
-  setIsViewingSpecificStep(false);
-  setViewedStep(null);
-  setViewedStepDetails(null);
-  setSubmitted(false);
-};
-//----------------------------------------------------------------------
+  // updated on 26-12-2025
+  const handleViewNextStep = () => {
+    setSelectedProcessDetails(null);
+    setIsViewingSpecificStep(false);
+    setViewedStep(null);
+    setViewedStepDetails(null);
+    setSubmitted(false);
+  };
 
-
-
-  // Handle form submission
 const handleConfirmSubmit = async (emails) => {
   setIsSubmitting(true);
 
-  //  --- : 'fetch User';
-  let currentUserName = loggedInUser.username;
-
+  const currentUserName = loggedInUser?.username;
   const payload = new FormData();
 
-  payload.append("Organization", formData.organisation || "");
+   payload.append("Organization", formData.organisation || "");
   payload.append("project_name", formData.project_name || "");
   payload.append("location", formData.location || "");
   payload.append("status", formData.status || "");
 
+  // Process Specific Info
   payload.append("loc", formData.loc);
   payload.append("applyDate", formData.applyDate);
   payload.append("process", immediateNextStep?.PROCESS || "");
@@ -673,7 +617,7 @@ const handleConfirmSubmit = async (emails) => {
   payload.append("noOfFlats", formData.noOfFlats || "");
   payload.append("totalProjectArea", formData.TotalProjectArea || "");
   payload.append("projectBuildArea", formData.ProjectBuildArea || "");
-  payload.append("noOfTowers", formData.noOfTowers || null);
+  payload.append("noOfTowers", formData.noOfTowers || "");
   payload.append("TotalAmount", formData.TotalAmount || "");
   payload.append("username", currentUserName || "");
 
@@ -681,44 +625,51 @@ const handleConfirmSubmit = async (emails) => {
     payload.append(`emails[${i}]`, email);
   });
 
-  // ✅ Append uploaded documents
   feasibilityDocs.forEach((file) => {
     payload.append("feas_doc_name[]", file);
   });
 
-  console.log("🧾 Preparing payload for submission...");
-  const payloadDebug = {};
-  payload.forEach((value, key) => {
-    if (value instanceof File) payloadDebug[key] = value.name;
-    else payloadDebug[key] = value;
-  });
-  console.log("📦 Data being sent to API:", payloadDebug);
-
   try {
-    // ✅ 1️⃣ Determine if record already exists for this step + plant
     const existingRecord = storeData?.find(
       (item) =>
         item.PROCESS?.trim().toLowerCase() ===
-        immediateNextStep?.PROCESS?.trim().toLowerCase() &&
+          immediateNextStep?.PROCESS?.trim().toLowerCase() &&
         item.loc?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
     );
 
     let apiUrl = `${API_BASE_URL}/GHMC-submit`;
-    let apiType = "submit";
-
     if (existingRecord) {
       apiUrl = `${API_BASE_URL}/GHMC-modify`;
-      apiType = "modify";
     }
 
-    console.log(`🚀 Using ${apiType.toUpperCase()} API:`, apiUrl);
-
-    // ✅ 2️⃣ Send the form data
     const res = await axios.post(apiUrl, payload, {
       headers: { "Content-Type": "multipart/form-data" },
     });
 
-    // ✅ 3️⃣ Reset form completely
+    // --- TOTAL RESET LOGIC ---
+    
+    // 1. Reset Global Selection States
+    setSelectedPlant("");   // CRITICAL: This clears the selection and stops flickering
+    setStoreData([]);       // Clears process history
+    setSteps([]);           // Clears sidebar steps
+    setHeaderData(null);    // Clears top info bar
+    
+    // 2. Reset Document Arrays
+    setFeasibilityDocs([]);
+    setAmountPaidDocs([]);
+    setLinkDocs([]);
+    setLandDocs([]);
+    setOthDocs([]);
+    
+    // 3. Reset UI flags & Details
+    setSubmitted(false);
+    setIsViewingSpecificStep(false);
+    setNextStepDetails(null);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setSelectedProcessDetails(null);
+
+    // 4. Reset Form Object to initial empty state
     setFormData({
       loc: "",
       applyDate: "",
@@ -740,43 +691,32 @@ const handleConfirmSubmit = async (emails) => {
       Ghmc: "",
     });
 
-    // ✅ 4️⃣ Clear all state
-    setSelectedPlant("");
-    setStoreData([]);
-    setHeaderData(null);
-    setActiveStep(null);
-    setImmediateNextStep(null);
-    setImmediateNextStepIndex(-1);
-    setNextStepDetails(null); // ✅ Clear step details
-    setViewedStep(null);
-    setViewedStepDetails(null);
-    setIsViewingSpecificStep(false);
-    setSelectedProcessDetails(null);
-
-    // Clear documents
-    setLinkDocs([]);
-    setLandDocs([]);
-    setOthDocs([]);
-    setFeasibilityDocs([]);
-    setAmountPaidDocs([]);
-
-    setSubmitted(true);
-
-    setRespModifyData && setRespModifyData(res?.data?.data);
-    
-    // Use toast instead of dialog for better UX
-    toast.success(`Form ${apiType}ed successfully!`);
+    // 5. Success Message
+    setDialogConfig({
+      title: "Success",
+      message: "Form submitted successfully. All data has been reset.",
+      confirmText: "OK",
+      open: true,
+    });
+   
+    // 6. Update context if necessary
+    if (setRespModifyData) {
+        setRespModifyData(res?.data?.data);
+    }
 
   } catch (err) {
-    console.error("❌ Submission failed:", err);
-    toast.error("Submission failed. Please try again.");
+    console.error("Submission failed:", err);
+    setDialogConfig({
+      title: "Error",
+      message: "Submission failed. Please check your connection and try again.",
+      confirmText: "OK",
+      open: true,
+    });
   } finally {
     setIsSubmitting(false);
     setConfirmOpen(false);
   }
 };
-
-  // Check if process is completed
   const isProcessCompleted = (processName) => {
     return storeData?.some(
       (item) => item.PROCESS === processName && item.UPDATED === "YES"
@@ -786,35 +726,38 @@ const handleConfirmSubmit = async (emails) => {
   // Handle step click for viewing
   const handleStepClick = async (step, plant) => {
     if (!plant) return;
+    const plantAtClick = plant; // FIX: capture plant at click time
+
     setViewedStep(step);
     setCurrentProcess(step.PROCESS);
     setIsViewingSpecificStep(true);
 
     try {
-       const isHistoryStep = storeData.some(
+      const isHistoryStep = storeData.some(
         (item) => item.PROCESS === step.PROCESS && item.UPDATED === "YES"
       );
-      
+
       const storedCompletedStep = storeData.find(
         (item) => item.PROCESS === step.PROCESS && item.UPDATED === "YES"
       );
 
       let dataToParse;
-     if (storedCompletedStep) {
-      console.log("📜 Viewing completed process from storeData:", step.PROCESS);
-      dataToParse = storedCompletedStep;
-      setSubmitted(true);
-      setSelectedProcessDetails(storedCompletedStep); // ADD THIS LINE
+      if (storedCompletedStep) {
+        dataToParse = storedCompletedStep;
+        setSubmitted(true);
+        setSelectedProcessDetails(storedCompletedStep);
       } else {
-        console.log("🌐 Fetching live step details for:", step.PROCESS);
         const res = await axios.get(
           `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
-            plant
+            plantAtClick
           )}/${encodeURIComponent(step.PROCESS)}`
         );
+
+        if (plantAtClick !== selectedPlant) return; // FIX: ignore stale response
+
         dataToParse = res.data || {};
         setSubmitted(false);
-         setSelectedProcessDetails(null); // ADD THIS LINE
+        setSelectedProcessDetails(null);
       }
 
       const parsed = {
@@ -833,29 +776,26 @@ const handleConfirmSubmit = async (emails) => {
       setFormData((prev) => ({
         ...prev,
         applyDate: parsed.applyDate || "",
-      //  Comments: parsed.Comments || "",
-      Comments: isHistoryStep ? (parsed.Comments || "") : "", 
+        Comments: isHistoryStep ? (parsed.Comments || "") : "",
       }));
 
       setViewedStepDetails(parsed);
-
     } catch (err) {
-      console.error("❌ Error fetching step details:", err);
+      if (plantAtClick !== selectedPlant) return;
+      console.error("Error fetching step details:", err);
       setViewedStepDetails(null);
       setSubmitted(false);
-       setSelectedProcessDetails(null); // ADD THIS LINE
+      setSelectedProcessDetails(null);
       setFormData((prev) => ({
         ...prev,
         applyDate: "",
-        Comments: "", 
+        Comments: "",
       }));
     }
   };
 
+  const NumberOfTowers = storeData?.[0]?.noOfTowers;
 
-
-     const NumberOfTowers = storeData?.[0]?.noOfTowers;
- 
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -864,7 +804,7 @@ const handleConfirmSubmit = async (emails) => {
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-light flex-fill">
             <span className="fw-bold m-3">
-              {organizationType ? `${organizationType} Process Steps` : 'Process Steps'}
+              {organizationType ? `${organizationType} Process Steps` : "Process Steps"}
             </span>
             <Nav variant="pills" className="flex-column m-3">
               {steps.map((step, idx) => {
@@ -873,7 +813,9 @@ const handleConfirmSubmit = async (emails) => {
                 let statusIcon = "⏸️";
 
                 const isCompleted = storeData.some(
-                  (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
+                  (item) =>
+                    item.PROCESS?.toLowerCase().trim() ===
+                      step.PROCESS?.toLowerCase().trim() &&
                     item.UPDATED === "YES"
                 );
 
@@ -889,44 +831,28 @@ const handleConfirmSubmit = async (emails) => {
 
                 return (
                   <Nav.Item key={idx} className="mb-2">
-                    {/* <Nav.Link
+                    <Nav.Link
                       eventKey={idx}
                       disabled={!clickable}
-                      onClick={() => {
-                        if (!clickable) return;
-                        setActiveStep(idx);
-                      }}
                       className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
                       style={{ cursor: clickable ? "pointer" : "not-allowed" }}
                     >
                       {statusIcon}
-                      <span>{step.PROCESS}</span>
-                    </Nav.Link> */}
-
-                    {/* updated on 26-12-2025 by rajakumari.m--------------------------------------------- */}
-                    <Nav.Link
-  eventKey={idx}
-  disabled={!clickable}
-  className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
-  style={{ cursor: clickable ? "pointer" : "not-allowed" }}
->
-  {statusIcon}
-  <span
-    onClick={(e) => {
-      if (isCompleted) {
-        e.stopPropagation();
-        handleStepClick(step, selectedPlant);
-      }
-    }}
-    style={{
-      cursor: isCompleted ? "pointer" : "default",
-      textDecoration: isCompleted ? "underline" : "none"
-    }}
-  >
-    {step.PROCESS}
-  </span>
-</Nav.Link>
-                    {/* ---------------------------------------------------------------------------------- */}
+                      <span
+                        onClick={(e) => {
+                          if (isCompleted) {
+                            e.stopPropagation();
+                            handleStepClick(step, selectedPlant);
+                          }
+                        }}
+                        style={{
+                          cursor: isCompleted ? "pointer" : "default",
+                          textDecoration: isCompleted ? "underline" : "none",
+                        }}
+                      >
+                        {step.PROCESS}
+                      </span>
+                    </Nav.Link>
                   </Nav.Item>
                 );
               })}
@@ -941,31 +867,45 @@ const handleConfirmSubmit = async (emails) => {
           style={{ height: "400px", overflowY: "auto" }}
         >
           {areAllStepsCompleted() && !isViewingSpecificStep ? (
-            <div className="p-3 border rounded bg-light d-flex align-items-center justify-content-center" style={{ minHeight: "400px" }}>
+            <div
+              className="p-3 border rounded bg-light d-flex align-items-center justify-content-center"
+              style={{ minHeight: "400px" }}
+            >
               {renderCompletionMessage()}
             </div>
           ) : (
-            <Form className="p-3 border rounded bg-light">
-  {selectedProcessDetails ? (
-    <div className="mb-3">
-      <h4 className="mb-2 text-info fw-bold">
-        Viewing: {selectedProcessDetails.PROCESS} (Completed)
-      </h4>
-      <Button
-        variant="outline-primary"
-        size="sm"
-        onClick={handleViewNextStep}
-        disabled={!immediateNextStep}
-      >
-        View Next Step
-      </Button>
-    </div>
-  ) : (
-    <h4 className="mb-3 text-warning fw-bold">
-      {currentProcess || immediateNextStep?.PROCESS}
-      {NumberOfTowers && <> | Towers Count : <span className="text-dark">{NumberOfTowers}</span></>}
-    </h4>
-  )}
+            <Form
+              key={`${formData.loc || "none"}-${
+                immediateNextStep?.PROCESS || "none"
+              }`} // FIX: force remount when plant/process changes [web:15]
+              className="p-3 border rounded bg-light"
+            >
+              {selectedProcessDetails ? (
+                <div className="mb-3">
+                  <h4 className="mb-2 text-info fw-bold">
+                    Viewing: {selectedProcessDetails.PROCESS} (Completed)
+                  </h4>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={handleViewNextStep}
+                    disabled={!immediateNextStep}
+                  >
+                    View Next Step
+                  </Button>
+                </div>
+              ) : (
+                <h4 className="mb-3 text-warning fw-bold">
+                  {currentProcess || immediateNextStep?.PROCESS}
+                  {NumberOfTowers && (
+                    <>
+                      {" "}
+                      | Towers Count :{" "}
+                      <span className="text-dark">{NumberOfTowers}</span>
+                    </>
+                  )}
+                </h4>
+              )}
 
               <Row className="mb-2">
                 <Col md={6}>
@@ -1000,9 +940,11 @@ const handleConfirmSubmit = async (emails) => {
                       value={formData.applyDate || ""}
                       onChange={handleChange}
                       isInvalid={!!errors.applyDate}
-                      // disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)}
-
-                        disabled={!formData.loc || (nextStepDetails && nextStepDetails.applyDate) || !!selectedProcessDetails} // UPDATE THIS
+                      disabled={
+                        !formData.loc ||
+                        (nextStepDetails && nextStepDetails.applyDate) ||
+                        !!selectedProcessDetails
+                      }
                     />
                     <Form.Control.Feedback type="invalid">
                       {errors.applyDate}
@@ -1012,14 +954,13 @@ const handleConfirmSubmit = async (emails) => {
               </Row>
 
               <Row className="mb-2">
-
-                   <Col md={6}>
+                <Col md={6}>
                   <Form.Label>Upload Document</Form.Label>
                   <button
                     type="button"
                     className="btn btn-outline-secondary form-control"
                     onClick={() => setShowFeasibilityModal(true)}
-                     disabled={!!selectedProcessDetails}
+                    disabled={!!selectedProcessDetails}
                   >
                     <FaUpload className="me-2" /> Upload Document
                     <span className="ms-2 text-muted">
@@ -1032,7 +973,6 @@ const handleConfirmSubmit = async (emails) => {
                       {errors.feasibilityDocs}
                     </p>
                   )}
-                
                 </Col>
 
                 <Col md={6}>
@@ -1044,29 +984,41 @@ const handleConfirmSubmit = async (emails) => {
                       name="Comments"
                       value={formData.Comments || ""}
                       onChange={handleChange}
-                      disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS) || !!selectedProcessDetails} // UPDATE THIS
+                      disabled={
+                        !formData.loc ||
+                        isProcessCompleted(viewedStep?.PROCESS) ||
+                        !!selectedProcessDetails
+                      }
                     />
                     {errors.Comments && (
-                      <p className="error-text text-danger">{errors.Comments}</p>
+                      <p className="error-text text-danger">
+                        {errors.Comments}
+                      </p>
                     )}
                   </Form.Group>
                 </Col>
               </Row>
 
               <Row className="mb-3">
-             
-
-                {isFirstProcess &&
-
+                {isFirstProcess && (
                   <Col md={6}>
                     <Form.Group>
                       <Form.Label> Number of Towers </Form.Label>
-                      <Form.Control as="textarea" rows={1} name="noOfTowers" value={formData.noOfTowers || ""} onChange={handleChange} 
-                       disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS) || !!selectedProcessDetails}  />
+                      <Form.Control
+                        as="textarea"
+                        rows={1}
+                        name="noOfTowers"
+                        value={formData.noOfTowers || ""}
+                        onChange={handleChange}
+                        disabled={
+                          !formData.loc ||
+                          isProcessCompleted(viewedStep?.PROCESS) ||
+                          !!selectedProcessDetails
+                        }
+                      />
                     </Form.Group>
                   </Col>
-
-                }
+                )}
               </Row>
 
               <div className="d-grid">
@@ -1081,27 +1033,19 @@ const handleConfirmSubmit = async (emails) => {
                   </Button>
                 )}
 
-            
-                  <Button 
-                    variant={submitted ? "success" : "primary"}
-                    size="md"
-                    onClick={handleEmailSubmit}
-                    className="w-100 fw-semibold"
-                    disabled={!formData.loc || isSubmitting || submitted}
-                  >
-                    {isSubmitting
-                      ? "Submitting..."
-                      : submitted
-                        ? "Submitted"
-                        : "Submit"}
-                  </Button>
-            
-                {/* {viewedStep?.PROCESS !== immediateNextStep?.PROCESS &&
-                  isProcessCompleted(viewedStep?.PROCESS) && (
-                    <Button variant="success" size="md" className="w-100 fw-semibold mt-2" disabled>
-                      Updated (View Only)
-                    </Button>
-                  )} */}
+                <Button
+                  variant={submitted ? "success" : "primary"}
+                  size="md"
+                  onClick={handleEmailSubmit}
+                  className="w-100 fw-semibold"
+                  disabled={!formData.loc || isSubmitting || submitted}
+                >
+                  {isSubmitting
+                    ? "Submitting..."
+                    : submitted
+                    ? "Submitted"
+                    : "Submit"}
+                </Button>
               </div>
             </Form>
           )}
@@ -1110,7 +1054,10 @@ const handleConfirmSubmit = async (emails) => {
         {/* Right Section: Previous Docs */}
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">
-            <PreviousGhmcDocs docsData={isViewingSpecificStep ? viewedStepDetails : nextStepDetails} type= "modify" />
+            <PreviousGhmcDocs
+              docsData={isViewingSpecificStep ? viewedStepDetails : nextStepDetails}
+              type="modify"
+            />
           </div>
         </Col>
       </Row>
@@ -1172,8 +1119,3 @@ const handleConfirmSubmit = async (emails) => {
 };
 
 export default GhmcModify;
-
-
-
-
-

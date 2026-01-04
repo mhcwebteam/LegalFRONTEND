@@ -1,1657 +1,1166 @@
-import React, { useState, useEffect, useContext } from "react";
-import { Container, Modal, Button, Form } from "react-bootstrap";
+import React, { useEffect, useState, useContext } from "react";
+import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import PlantSelector from "../components/PlantSelector";
-import PcbTabs from "../components/PcbTabs";
-import { API_BASE_URL, API_DOC_URL } from "../config/Config";
-import "../pages/Update.css";
-import AmendModal from "../components/AmendModal";
-import CardWithHeader from "../components/CardWithHeader";
-import { useRef } from "react";
-import Swal from "sweetalert2";
-import { Context } from "../context/ContextData"; 
-import { getMasterByLoc } from "../api/Api";
+import { API_BASE_URL } from "../config/Config";
+import { FaCheckCircle, FaUpload } from "react-icons/fa";
+import { Context } from "../context/ContextData";
+import ReusableDialog from "./ReusableDialog";
 import ProjectInfoHeader from "./ProjectInfoHeader";
-import { Mail, Send } from "lucide-react";
-import {
-  Box,
-  Checkbox,
-  Chip,
-  FormControlLabel,
-  Typography,
-} from "@mui/material";
-
-import EmailSelectionModal from "../components/EmailSelectionModal"; // Adjust path as needed
+import WaterDocUploadModal from "./WaterDocUploadModal";
+import PreviousGhmcDocs from "./PreviousGhmcDocs";
+import { getMasterByLoc } from "../api/Api";
+import EmailSelectionModal from "./EmailModal";
 import { toast } from "react-toastify";
 
-const PcbModifyTable = () => {
+const GhmcModify = () => {
+  const token = localStorage.getItem("token");
   const navigate = useNavigate();
-  const [key, setKey] = useState("Pollution Control Board");
-  const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState("");
-  const [pcbProcesses, setPcbProcesses] = useState([]);
-  // const [storeData, setStoreData] = useState([]);
-  const [amendmentRecords, setAmendmentRecords] = useState([]);
-  const [amendCategories, setAmendCategories] = useState([]);
-  const [status, setStatus] = useState("");
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailRecipients, setEmailRecipients] = useState([]);
-  const [latestAmend, setLatestAmend] = useState(0);
-
-  const [selectedEmails, setSelectedEmails] = useState([]);
-  const [customEmail, setCustomEmail] = useState("");
-  const [emailSubject, setEmailSubject] = useState("");
-  const [emailMessage, setEmailMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-const [errors, setErrors] = useState({
-  applyDate: "",
-  comments: "",
-  recievedDate: ""
-});
-
   const {
-    totalMasterData = [],
-    setHeaderData,
-    headerData,
     storeData,
     setStoreData,
+    totalMasterData,
+    setHeaderData,
+    headerData,
+    setRespModifyData,
   } = useContext(Context);
-  // console.log("emailRecipientsemailRecipients",selectedEmails)
-  const fileInputRef = useRef(null);
 
-  const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState({
-    plant: "",
-    process: "",
+  const [steps, setSteps] = useState([]);
+  const [activeStep, setActiveStep] = useState(0);
+  const [selectedPlant, setSelectedPlant] = useState("");
+  const [nextStepDetails, setNextStepDetails] = useState(null);
+  const [immediateNextStep, setImmediateNextStep] = useState(null);
+  const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState([]);
+  const [selectedEmails, setSelectedEmails] = useState([]);
+  const [organizationType, setOrganizationType] = useState("");
+
+  const [isViewingSpecificStep, setIsViewingSpecificStep] = useState(false);
+  const [viewedStep, setViewedStep] = useState(null);
+  const [viewedStepDetails, setViewedStepDetails] = useState(null);
+  const [currentProcess, setCurrentProcess] = useState("");
+
+  const [loggedInUser, setLoggedInUser] = useState(null);  //-----------login userstate
+
+  // ------updated on 26-12-2025 by rajakumari.m-----------------------------------------
+  const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
+  //--------------------------------------------------------------------------------------
+  const [formData, setFormData] = useState({
+    loc: "",
     applyDate: "",
-    receivedDate: "",
-    selectedFiles: [],
-    existingDocs: [],
-    existingNames: [],
-    comments: "",
-    returnsSubmitted: "", // Initialize this new field
-    logs: "", // Added logs to modalData state
-  });
-
-
-  console.log(storeData,"fffffffffffffffffffffffff");
-
- 
-  const [showAmendModal, setShowAmendModal] = useState(false);
-  const [amendData, setAmendData] = useState({
-    plant: "",
+    Comments: "",
     process: "",
-    applyDate: "",
-    receivedDate: "",
-    category: "",
-    selectedFiles: [],
-    existingDocs: [],
-    existingNames: [],
-    comments: "",
-    oldComments: "",
-    amendreturnsSubmitted: "",
-
+    organisation: "",
+    project_name: "",
+    location: "",
+    status: "",
+    noOfTowers: "",
+    TotalProjectArea: "",
+    ProjectBuildArea: "",
+    ProjectName: "",
+    noOfFlats: "",
+    KLD: "",
+    OldAmount: "",
+    TotalAmount: "",
+    Size: "",
+    Ghmc: "",
   });
 
-     useEffect(() => {
-        setHeaderData(null);
-      }, []);
+  const [feasibilityDocs, setFeasibilityDocs] = useState([]);
+  const [AmountPaidDocs, setAmountPaidDocs] = useState([]);
+  const [linkDocs, setLinkDocs] = useState([]);
+  const [landDocs, setLandDocs] = useState([]);
+  const [othDocs, setOthDocs] = useState([]);
 
-  // ---------------------- EMAIL (Amend) HANDLERS ----------------------
-const [emailAmendRecipients, setEmailAmendRecipients] = useState([]);
-const [selectedAmendEmails, setSelectedAmendEmails] = useState([]);
-const [showAmendEmailModal, setShowAmendEmailModal] = useState(false);
+  const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
+  const [amountPaidDocModal, setAmountPaidDocModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
-
-//         useEffect(() => {
-//   setHeaderData(null); // Reset header data when component loads
-// }, [setHeaderData]);
-
-
-
-useEffect(() => {
-  axios
-    .get(`${API_BASE_URL}/pcb-emails`)
-    .then((res) => {
-      setEmailAmendRecipients(res.data || []);
-    })
-    .catch((err) => console.error("❌ Error fetching amendment emails:", err));
-}, []);
-
-  // Handle Email Submit - Opens Email Modal
-
-  const validateForm = () => {
-  let newErrors = {};
-
-  if (!modalData.applyDate) {
-    newErrors.applyDate = "Please select Apply Date";
-  }
-
-  if (!modalData.comments || !modalData.comments.trim()) {
-    newErrors.comments = "Please enter Comments";
-  }
-
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
-  const handleEmailSubmit = async () => {
-
-   if (!validateForm()) return;
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
-      setEmailRecipients(response.data);
-     console.log(modalData.process,"modalData.processmodalData.processmodalData.process");
-
-      // Pre-fill email subject and message
-      setEmailSubject(`Process Update: ${modalData.process}`);
-      setEmailMessage(
-        `Dear Team,\n\nPlease find the update for the process: ${modalData.process}\n\nPlant: ${modalData.plant}\nApply Date: ${modalData.applyDate}\n\nComments: ${modalData.comments}\n\nBest Regards`
-      );
-
-      setShowEmailModal(true);
-    } catch (error) {
-      console.error("❌ Failed to fetch email recipients:", error);
-
-      setShowEmailModal(true);
-    }
-  };
-
-const receivedDateProcesses = [
-  "Received TOR",
-  "EC (Environmetal Clearance)",
-  "Application for CFE",
-  "Received CFE",
-]
-
-  // Handle Email Checkbox Toggle
-
-  // Load initial data
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/pcb-processes`)
-      .then((res) => setPcbProcesses(res.data));
-    axios.get(`${API_BASE_URL}/plants`).then((res) => setPlants(res.data));
-  }, []);
-
-  // Fetch store data on plant change
-  useEffect(() => {
-    if (selectedPlant) {
-      axios
-        .get(`${API_BASE_URL}/pcb-store/${selectedPlant}`)
-        .then((res) => {
-    
-          setStoreData(res.data);
-
-          console.log(res.data,"pcb----------------store");
-        })
-        .catch((err) => console.error(err));
-    } else {
-      setStoreData([]);
-    }
-  }, [selectedPlant]);
-
-  useEffect(() => {
-    if (selectedPlant && key) {
-      axios
-        .get(`${API_BASE_URL}/amendments/${selectedPlant}/${key}`)
-        .then((res) => {
-          const records = res.data.data || [];
-          console.log("✅ Amendment API records:", records);
-          setAmendmentRecords(records);
-
-          // Status for process column
-          const processRecord = records.find((r) => r.PROCESS === key);
-          setStatus(processRecord?.STATUS || "");
-
-          // Only categories with STATUS = 'created'
-          const createdRecords = records.filter((r) => r.STATUS === "created");
-          const categories = [
-            ...new Set(createdRecords.map((r) => r.CATEGORY)),
-          ];
-          setAmendCategories(categories);
-          console.log("✅ Amendment API categories:", categories);
-
-          // 👉 Find latest amendment number
-          const latest =
-            Math.max(
-              ...categories.map((c) => parseInt(c.replace("AMEND", "")) || 0)
-            ) || 0;
-          setLatestAmend(latest); // store in state
-        })
-        .catch((err) => {
-          console.error("❌ Failed to check amendment status:", err);
-          setAmendmentRecords([]);
-          setAmendCategories([]);
-          setStatus("");
-        });
-    }
-  }, [selectedPlant, key]);
-
-  // Timeline: find last updated step
-  const updatedStatusMap = storeData.reduce((acc, item) => {
-    if (item.UPDATED === "YES") {
-      acc[item.PROCESS] = true;
-    }
-    return acc;
-  }, {});
-
-  let lastUpdatedIndex = -1;
-  pcbProcesses.forEach((row, index) => {
-    if (updatedStatusMap[row.PROCESS]) {
-      lastUpdatedIndex = index;
-    }
+  const [isFirstProcess, setIsFirstProcess] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [loc, setLoc] = useState([]);
+  const [dialogConfig, setDialogConfig] = useState({
+    title: "",
+    message: "",
+    confirmText: "OK",
+    open: false,
   });
 
-  //amend ---------
+  // Check if all steps completed
+  const areAllStepsCompleted = () => {
+    if (!steps.length || !storeData.length) return false;
 
-  // amend ---------
-  let lastAmendedIndexMap = {};
+    const completedSteps = storeData
+      .filter((item) => item.UPDATED === "YES")
+      .map((item) => item.PROCESS);
 
-  amendCategories.forEach((category) => {
-    let lastIndex = -1;
-    pcbProcesses.forEach((row, index) => {
-      const storeInfo = storeData.find((item) => item.PROCESS === row.PROCESS);
-      let amendStatus = "";
-
-      if (category === "AMEND1") {
-        amendStatus = storeInfo?.AMEND1_STATUS || "";
-      } else if (category === "AMEND2") {
-        amendStatus = storeInfo?.AMEND2_STATUS || "";
-      } else if (category === "AMEND3") {
-        amendStatus = storeInfo?.AMEND3_STATUS || "";
-      } else if (category === "AMEND4") {
-        amendStatus = storeInfo?.AMEND4_STATUS || "";
-      } else if (category === "AMEND5") {
-        amendStatus = storeInfo?.AMEND5_STATUS || "";
-      }
-
-      if (amendStatus === "YES") {
-        lastIndex = index;
-      }
-    });
-    lastAmendedIndexMap[category] = lastIndex;
-  });
-
-  // 🔒 Disable earlier amendments when higher amendments exist
-  Object.keys(lastAmendedIndexMap).forEach((category) => {
-    const amendNum = parseInt(category.replace("AMEND", ""), 10);
-
-    const higherAmendExists = Object.keys(lastAmendedIndexMap).some((cat) => {
-      const num = parseInt(cat.replace("AMEND", ""), 10);
-      return num > amendNum && lastAmendedIndexMap[cat] !== -1;
-    });
-
-    if (higherAmendExists) {
-      // Mark this amendment as disabled
-      lastAmendedIndexMap[category] = "DISABLED";
-    }
-  });
-
-  // 💥 Add here
-  // const disableECColumn = amendCategories.includes("AMEND2");
-  const disableECColumn = lastAmendedIndexMap["AMEND2"] === "DISABLED";
-  // 🔥 Determine which mode timeline should use
-  let currentTimelineMode = "action";
-  if (status === "created") {
-    if (amendCategories.includes("AMEND2")) {
-      currentTimelineMode = "AMEND2";
-    } else if (amendCategories.includes("AMEND1")) {
-      currentTimelineMode = "AMEND1";
-    } else if (amendCategories.includes("AMEND3")) {
-      currentTimelineMode = "AMEND3";
-    } else if (amendCategories.includes("AMEND4")) {
-      currentTimelineMode = "AMEND4";
-    } else if (amendCategories.includes("AMEND5")) {
-      currentTimelineMode = "AMEND5";
-    }
-  }
-
-  // 🔥 Get last completed index for the timeline
-  let lastIndexForTimeline = -1;
-  if (currentTimelineMode === "action") {
-    lastIndexForTimeline = lastUpdatedIndex;
-  } else {
-    lastIndexForTimeline = lastAmendedIndexMap[currentTimelineMode] ?? -1;
-  }
-
-  // Handlers for Edit
-  const handleEditClick = (row) => {
-    const storeInfo =
-      storeData.find((item) => item.PROCESS === row.PROCESS) || {};
-
-    const existingDocs = storeInfo.DOC_PATH
-      ? storeInfo.DOC_PATH.split(",")
-      : [];
-    const existingNames = storeInfo.DOC_NAME
-      ? storeInfo.DOC_NAME.split(",")
-      : [];
-
-    setModalData({
-      plant: selectedPlant,
-      process: row.PROCESS,
-      applyDate: storeInfo.APPLY_DT || "",
-      receivedDate:storeInfo.RECEIVED_DT || "",
-      selectedFiles: [],
-      existingDocs,
-      existingNames,
-      comments: "",
-      returnsSubmitted: storeInfo.RETURNS_SUBMITTED,
-      logs: storeInfo.LOG || "",
-    });
-
-    setShowModal(true);
+    return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
 
-
-  // Handlers for Amend
-  const handleAmendClick = async (row, category) => {
-    try {
-      const storeInfo =
-        storeData.find((item) => item.PROCESS === row.PROCESS) || {};
-
-      
-
-      const endpoint = `${API_BASE_URL}/amendment-data/${selectedPlant}/${encodeURIComponent(
-        row.PROCESS
-      )}`;
-      const res = await axios.get(endpoint);
-
-      // --- START: Console log API response data ---
-      console.log("✅ API Response Data for Amendment11:", res.data);
-
-      const data = res.data;
-
-      const prefix = `${category}`;
-
-      const existingDocs = data[`${prefix}_DOC_PATH`]
-        ? JSON.parse(data[`${prefix}_DOC_PATH`])
-        : [];
-      const existingNames = data[`${prefix}_DOC_NAME`]
-        ? JSON.parse(data[`${prefix}_DOC_NAME`])
-        : [];
-      const amendDate = data[`${prefix}_DATE`] || "";
-     
-      const oldComments = data[`${prefix}_COMMENTS`] || "";
-      const amendreturnsubmit = data[`${prefix}_RETURNS_SUBMITTED`] || "";
-
-
-      console.log(storeData,"sssssssssssssssssssssss", row.PROCESS);
-
-      setAmendData({
-        plant: selectedPlant,
-        process: row.PROCESS,
-        applyDate: storeData[0].APPLY_DT || "",
-        receivedDate: storeData.RECEIVED_DT || "",
-        amendDate,
-        category,
-        selectedFiles: [],
-        existingDocs,
-        existingNames,
-        comments: "",
-        oldComments,
-        amendDecision: "Yes",
-        amendreturnsSubmitted: amendreturnsubmit,
-    
-      });
-
-      setShowAmendModal(true);
-    } catch (error) {
-      console.error(
-        "❌ handleAmendClick - Failed to fetch amendment data:",
-        error
-      );
-      alert("Failed to load amendment data. Please try again.");
-    }
-  };
-  // Remove Selected Email
-  // const handleRemoveEmail = (email) => {
-  //   setSelectedEmails((prev) => prev.filter((e) => e !== email));
-  // };
-  // Submit Edit Modal
-  const handleSendEmail = async () => {
-    if (selectedEmails.length === 0) {
-      Swal.fire({
-        icon: "warning",
-        text: "Please select at least one email recipient.",
-      });
-      return;
-    }
-
-  setLoading(true);          
-    const formData = new FormData();
-    formData.append("loc", modalData.plant);
-    formData.append("process", modalData.process);
-    formData.append("applyDate", modalData.applyDate);
-       formData.append("receivedDate", modalData.receivedDate || "");
-          formData.append("comments", modalData.comments);
-
-    
-
-    selectedEmails.forEach((email, i) => {
-      formData.append(`emails[${i}]`, email);
-    });
-    // Only append returnsSubmitted if the process matches
-    if (
-      modalData.process ===
-      "Comply EC conditions and submit half yearly returns and compliance Reports"
-    ) {
-      formData.append("returnsSubmitted", modalData.returnsSubmitted);
-    }
-    modalData.selectedFiles.forEach((file) => {
-      formData.append("document[]", file);
-      formData.append("doc_name[]", file.name);
-    });
-
-    // --- START: Console log FormData content ---
-    console.log("--- FormData Contents ---");
-    for (const pair of formData.entries()) {
-      console.log(`${pair[0]}: ${pair[1]}`);
-    }
-    console.log("-------------------------");
-    // --- END: Console log FormData content ---
-
-    const existingRecord = storeData.find(
-      (item) =>
-        item.PROCESS?.trim().toLowerCase() ===
-        modalData.process.trim().toLowerCase()
-    );
-
-    const apiUrl = existingRecord
-      ? `${API_BASE_URL}/pcb-store-update`
-      : `${API_BASE_URL}/pollution-submit`;
-
-    try {
-      await axios.post(apiUrl, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      // alert(existingRecord ? 'Updated successfully' : 'Inserted successfully');
-      setShowModal(false);
-      setShowEmailModal(false);
-       setLoading(false);    
-      setSelectedEmails([]);
-      const response = await axios.get(
-        `${API_BASE_URL}/pcb-store/${selectedPlant}`
-      );
-      setStoreData(response.data);
-
-      console.log("formData:", formData.loc);
-      const master = await getMasterByLoc(modalData.plant);
-
-      if (master) {
-        setHeaderData(master);
-      }
-
-      await Swal.fire({
-        icon: "success",
-        title: existingRecord
-          ? "Updated Successfully"
-          : "Inserted Successfully",
-        showConfirmButton: false,
-        timer: 2000,
-      });
-    } catch (error) {
-      console.error("❌ Submission failed:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Submission Failed",
-        text: "Something went wrong. Please try again.",
-      });
-    }
-  };
-
-  const handleDeleteEditFile = async (docPath, idx) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you really want to delete this file?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it",
-      cancelButtonText: "Cancel",
-    });
-
-    if (!result.isConfirmed) return;
-
-
-    try {
-      await axios.post(`${API_BASE_URL}/delete-edit-file`, {
-        docPath,
-        plant: modalData.plant,
-        process: modalData.process,
-      });
-
-      // Remove file from state
-      setModalData((prev) => {
-        const updatedDocs = [...prev.existingDocs];
-        const updatedNames = [...prev.existingNames];
-        updatedDocs.splice(idx, 1);
-        updatedNames.splice(idx, 1);
-        return {
-          ...prev,
-          existingDocs: updatedDocs,
-          existingNames: updatedNames,
-        };
-      });
-
-      await Swal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "File deleted successfully.",
-      });
-    } catch (err) {
-      console.error("❌ Failed to delete file:", err);
-      await Swal.fire({
-        icon: "error",
-        title: "Failed",
-        text: "Failed to delete the file. Please try again later.",
-      });
-    }
-  };
-
-
-  // Add this helper function at the top of your component, after imports
-const formatDate = (dateString) => {
-  if (!dateString) return '-';
   
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString; // Return original if invalid date
-    
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-  } catch (e) {
-    return dateString; // Return original if parsing fails
-  }
-};
-
-  // Submit Amend Modal
-  // const handleAmendSubmit = async () => {
-  //   const {
-  //     plant,
-  //     process,
-  //     applyDate,
-  //     amendDate,
-  //     selectedFiles,
-  //     comments,
-  //     category,
-  //     amendreturnsSubmitted,
-  //   } = amendData;
-
-  //   // ✅ Check if amendment already exists
-  //   // ✅ Use locally available storeData to check existence
-  //   const isExistingRecord = storeData.some(
-  //     (item) =>
-  //       item.PROCESS?.toLowerCase().trim() === process?.toLowerCase().trim()
-  //   );
-
-  //   console.log("📦 Record exists in storeData:", isExistingRecord);
-
-  //   // ✅ Choose appropriate endpoint
-  //   const endpoint = isExistingRecord
-  //     ? `${API_BASE_URL}/amendment-updt`
-  //     : `${API_BASE_URL}/amendment-submit`;
-
-  //   console.log(`📡 Triggering API: ${endpoint}`);
-  //   const formData = new FormData();
-  //   formData.append("loc", plant);
-  //   formData.append("process", process);
-  //   formData.append("applyDate", applyDate);
-  //   formData.append("amendDate", amendDate);
-  //   formData.append("comments", comments);
-  //   formData.append("category", category);
-  //   formData.append("amendreturnsSubmitted", amendreturnsSubmitted);
-
-  //   selectedFiles.forEach((file) => {
-  //     formData.append("document[]", file);
-  //     formData.append("doc_name[]", file.name);
-  //   });
-  //   // 👇 Log FormData key-value pairs
-  //   for (let pair of formData.entries()) {
-  //     console.log(`${pair[0]}:`, pair[1]);
-  //   }
-  //   try {
-  //     await axios.post(endpoint, formData, {
-  //       headers: { "Content-Type": "multipart/form-data" },
-  //     });
-  //     await Swal.fire({
-  //       icon: "success",
-  //       title: "Success",
-  //       text: `Amendment (${category}) submitted successfully`,
-  //     });
-  //     setShowAmendModal(false);
-
-  //     const response = await axios.get(`${API_BASE_URL}/pcb-store/${plant}`);
-  //     setStoreData(response.data);
-  //   } catch (error) {
-  //     console.error("❌ Amendment submission failed:", error);
-  //     await Swal.fire({
-  //       icon: "error",
-  //       title: "Submission Failed",
-  //       text: "Please try again later or contact support.",
-  //     });
-  //   }
-  // };
-
-
-  const handleAmendSubmit = async () => {
-
-    alert(12)
-  const {
-    plant,
-    process,
-    applyDate,
-    receivedDate,
-    amendDate,
-    selectedFiles,
-    comments,
-    category,
-    amendreturnsSubmitted,
-    selectedEmails,
-  } = amendData;
-
-  const isExistingRecord = storeData.some(
-    (item) =>
-      item.PROCESS?.toLowerCase().trim() === process?.toLowerCase().trim()
-  );
-
-  const endpoint = isExistingRecord
-    ? `${API_BASE_URL}/amendment-updt`
-    : `${API_BASE_URL}/amendment-submit`;
-
-  const formData = new FormData();
-  formData.append("loc", plant);
-  formData.append("process", process);
-  formData.append("applyDate", applyDate);
-  formData.append("receivedDate", receivedDate);
-  formData.append("amendDate", amendDate);
-  formData.append("comments", comments);
-  formData.append("category", category);
-  formData.append("amendreturnsSubmitted", amendreturnsSubmitted);
-  // formData.append("receivedDate",null);
-  selectedFiles.forEach((file) => {
-    formData.append("document[]", file);
-    formData.append("doc_name[]", file.name);
-  });
-
-  // ✅ Log for clarity
-  console.log("📤 Submitting Amendment Data:", amendData);
-  console.log("📤 Selected Emailsssss:", selectedEmails);
-
-  try {
-    // ✅ Step 1: Submit Amendment
-    await axios.post(endpoint, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    await Swal.fire({
-      icon: "success",
-      title: "Amendment Submitted",
-      text: `Amendment (${category}) submitted successfully.`,
-    });
-
-    // ✅ Step 2: Send Email Notification
-    // if (selectedEmails && selectedEmails.length > 0) {
-    //   await handleSendAmendEmail({
-    //     plant,
-    //     process,
-    //     applyDate,
-    //     amendDate,
-    //     comments,
-    //     category,
-    //     selectedEmails,
-    //   });
-    // } else {
-    //   console.warn("⚠️ No email recipients selected. Skipping email step.");
-    // }
-
-    // ✅ Step 3: Refresh PCB store data
-    const response = await axios.get(`${API_BASE_URL}/pcb-store/${plant}`);
-    setStoreData(response.data);
-
-    setShowAmendModal(false);
-  } catch (error) {
-    console.error("❌ Amendment submission failed:", error);
-    await Swal.fire({
-      icon: "error",
-      title: "Submission Failed",
-      text: "Please try again later or contact support.",
-    });
-  }
-};
-
-
+    // --- 2. Check User Login ---
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+        return;
+      }
+      const userString = localStorage.getItem("user"); // Changed to 'user' to be safe
+      if (userString) {
+        try {
+          const userObj = JSON.parse(userString);
+          setLoggedInUser(userObj);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    }, [token, navigate]);
+  
   useEffect(() => {
   setHeaderData(null);
 }, []);
 
+  //  useEffect(() => {
+  //     if (nextStepDetails) {
+  //       let details = nextStepDetails;
 
-const handleSendAmendEmail = async (amendDataFromModal, selectedEmails) => {
- let freshStoreData = [];
+  //       setFormData((prevFormData) => ({
+  //         ...prevFormData,
+  //         applyDate: details?.applyDate,
+  //       Comments: ""
+  //       }));
   
-  if (amendDataFromModal.plant) {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/pcb-store/${amendDataFromModal.plant}`);
-      freshStoreData = response.data;
-      setStoreData(freshStoreData); // Update state too
-      console.log("Fresh store data fetched:", freshStoreData);
-    } catch (err) {
-      console.error("Error fetching fresh data:", err);
-      // Fall back to existing storeData
-      freshStoreData = storeData;
-    }
-  }
- 
-  const payload = new FormData();
-
-  // Add all normal fields
-  payload.append("plant", amendDataFromModal.plant);
-  payload.append("process", amendDataFromModal.process);
-  payload.append("applyDate", amendDataFromModal.applyDate);
-
-  payload.append("receivedDate", amendDataFromModal.receivedDate);
-  payload.append("amendDate", amendDataFromModal.amendDate);
-  payload.append("comments", amendDataFromModal.comments);
-  payload.append("category", amendDataFromModal.category);
+  //     } else {
+  //       setFormData((prevFormData) => ({
+  //         ...prevFormData,
+  //         applyDate: "",
+  //         comments: ""
+  //       }));
   
-  // Emails → convert to JSON
-  payload.append(
-    "emails",
-    JSON.stringify(selectedEmails.selectedAmendEmails || [])
-  );
+  //     }
+  //   }, [nextStepDetails]);
+  // Validate file type - PDF only
+  const validateFileType = (file) => {
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    const validExtensions = ['.pdf'];
+    const validMimeTypes = ['application/pdf'];
 
-  payload.append(
-    "existingDocs",
-    JSON.stringify(amendDataFromModal.existingDocs || [])
-  );
-  payload.append(
-    "existingNames",
-    JSON.stringify(amendDataFromModal.existingNames || [])
-  );
+    const isValidExtension = validExtensions.includes(fileExtension);
+    const isValidMimeType = !file.type || validMimeTypes.includes(file.type);
 
-  payload.append("oldComments", amendDataFromModal.oldComments || "");
-  payload.append("amendDecision", amendDataFromModal.amendDecision || "");
-  payload.append(
-    "amendreturnsSubmitted",
-    amendDataFromModal.amendreturnsSubmitted || ""
-  );
-
-  // Add NEW FILES
-  if (amendDataFromModal.selectedFiles?.length > 0) {
-    amendDataFromModal.selectedFiles.forEach((file) => {
-      payload.append("selectedFiles[]", file);
-    });
-  }
-
-  console.log("📤 Sending payload (FormData) to backend →");
-
-  for (let [key, value] of payload.entries()) {
-    console.log("🔍", key, value);
-  }
-
-
-  try {
-
-console.log("Checking modal process:", amendDataFromModal.process, "amendDataFromModal",amendDataFromModal);
-
-  const isExistingRecord = freshStoreData.some(
-    (item) =>
-      item.PROCESS?.trim().toLowerCase() === amendDataFromModal.process?.trim().toLowerCase()
-  );
-  
-console.log("isExistingRecord:", isExistingRecord);
-
-    const endpoint = isExistingRecord
-      ? `${API_BASE_URL}/amendment-updt`
-      : `${API_BASE_URL}/amendment-submit`;
-
-    // Send the request with correct headers
-    const response = await axios.post(endpoint, payload, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-     console.log("✅ Backend response:", response.data);
- setShowAmendModal(false);
- 
-    await Swal.fire({
-      icon: "success",
-      title: "Email Sent!",
-      text: `Amendment (${amendDataFromModal.category}) email sent to ${selectedEmails?.selectedAmendEmails} recipient(s).`,
-    });
-
-
-
-  } catch (error) {
-    console.error("❌ Email sending failed:", error);
-    await Swal.fire({
-      icon: "error",
-      title: "Email Sending Failed",
-      text: "Amendment submitted successfully, but email notification failed.",
-    });
-  }
-};
-
-
-  const handleDeleteFile = async (docPath) => {
-    await axios.post(`${API_BASE_URL}/delete-amendment-file`, {
-      docPath,
-      plant: amendData.plant,
-      process: amendData.process,
-      category: amendData.category,
-    });
+    return isValidExtension && isValidMimeType;
   };
 
+  // Validate documents
+  const validateDocuments = () => {
+    let isValid = true;
+    const newErrors = {};
 
-  
-
-  const handleSendAmendmentEmail = async (emails, amendData) => {
-    try {
-      const payload = {
-        recipients: emails,
-        process: amendData.process,
-        plant: amendData.plant,
-        applyDate: amendData.applyDate,
-        comments: amendData.comments,
-      };
-
-      const response = await axios.post(
-        `${API_BASE_URL}/sendAmendmentMail`,
-        payload
-      );
-
-      if (response.data.success) {
-        Swal.fire("Success", "Amendment email sent successfully!", "success");
-      } else {
-        Swal.fire("Error", "Failed to send amendment email.", "error");
+    if (feasibilityDocs.length > 0) {
+      const invalidFiles = feasibilityDocs.filter(file => !validateFileType(file));
+      if (invalidFiles.length > 0) {
+        newErrors.feasibilityDocs = "Only PDF files are allowed";
+        isValid = false;
       }
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Something went wrong while sending email.", "error");
     }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
-  const handleChange = async (e) => {
-    const { name, value } = e.target;
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {};
 
-    // Prevent API call if no value selected
-    if (!value || value.trim() === "") {
-      setSelectedPlant("");
-      setHeaderData(null);
-      setModalData((prev) => ({
-        ...prev,
-        applyDate: "",
-      }));
+    if (!formData.applyDate) newErrors.applyDate = "Date is required";
+    if (!formData.Comments) newErrors.Comments = "Please enter comments";
+
+    if (!validateDocuments()) {
+      return false;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Render completion message
+  const renderCompletionMessage = () => {
+    return (
+      <div className="text-center p-5">
+        <FaCheckCircle size={80} className="text-success mb-4" />
+        <h2 className="text-success mb-3 fw-bold">Congratulations! 🎉</h2>
+        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+        <Alert variant="success" className="mx-auto" style={{ maxWidth: '600px' }}>
+          <Alert.Heading>Project Completion Status</Alert.Heading>
+          <p className="mb-2">
+            All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed.
+          </p>
+          <hr />
+          <p className="mb-0">
+            The project is now ready for the next phase or final approval.
+          </p>
+        </Alert>
+      </div>
+    );
+  };
+
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+ // ADD THIS CHECK
+  if (selectedProcessDetails) {
+    toast.info('Viewing completed step. No updates can be made.');
+    return;
+  }
+    if (!validateForm()) {
+      if (errors.feasibilityDocs) {
+        toast.error('Please upload only PDF files');
+      } else {
+        toast.error('Please fill all required fields');
+      }
       return;
     }
 
-    try {
-      setSelectedPlant(value);
+    setShowEmailModal(true);
+  };
 
-      // Fetch master data by location
-      const res = await getMasterByLoc(value);
+  const handleEmailSelectionSubmit = async (emails) => {
+    setSelectedEmails(emails);
+    setShowEmailModal(false);
 
-      // Check if response exists and has data
-      if (res && Object.keys(res).length > 0) {
-        setHeaderData(res);
-        setModalData((prev) => ({
-          ...prev,
-          applyDate: res.APPLICATION_DATE || "",
-        }));
+    // Reset submission status before new submission
+    setSubmitted(false);
+
+    await handleConfirmSubmit(emails);
+  };
+
+  // Reset form when plant changes
+// Reset form when plant changes
+useEffect(() => {
+  if (selectedPlant) {
+    console.log("Plant changed to:", selectedPlant);
+    
+    // Clear all previous data
+    setSubmitted(false);
+    setIsViewingSpecificStep(false);
+    setViewedStep(null);
+    setViewedStepDetails(null);
+    setCurrentProcess("");
+    setSelectedProcessDetails(null);
+    setNextStepDetails(null); // ✅ Clear step details
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setActiveStep(null);
+
+    // Clear form data except plant
+    setFormData(prev => ({
+      ...prev,
+      applyDate: "",
+      Comments: "",
+      noOfFlats: "",
+      KLD: "",
+      OldAmount: "",
+      TotalAmount: "",
+      Size: "",
+      Ghmc: "",
+    }));
+
+    // Clear documents
+    setFeasibilityDocs([]);
+    setAmountPaidDocs([]);
+    setLinkDocs([]);
+    setLandDocs([]);
+    setOthDocs([]);
+  }
+}, [selectedPlant]);
+
+  useEffect(() => {
+    setIsFirstProcess(immediateNextStepIndex === 0);
+  }, [immediateNextStepIndex]);
+
+  // Fetch plants
+  useEffect(() => {
+    axios
+      .get(`${API_BASE_URL}/GHMC-plants`)
+      .then((res) => {
+        setLoc(res.data);
+      })
+      .catch((err) => console.error("Error fetching locations:", err));
+  }, []);
+
+  // Fetch processes
+ useEffect(() => {
+    if (!selectedPlant) return;
+
+    console.log("Fetching GHMC processes for plant:", selectedPlant);
+
+    axios
+      .get(`${API_BASE_URL}/GHMC-process`, {
+        params: { plant: selectedPlant },
+      })
+      .then((res) => {
+        console.log("Response from GHMC-process:", res.data);
+        setSteps(res.data || []);
+        if (res.data && res.data.length > 0) setActiveStep(0);
+      })
+      .catch((err) => console.error("Error fetching processes:", err));
+  }, [selectedPlant]);
+
+  // Fetch processes for specific plant
+  useEffect(() => {
+    if (!selectedPlant) return;
+
+    console.log("Fetching GHMC processes for plant:", selectedPlant);
+
+    axios
+      .get(`${API_BASE_URL}/GHMC-process`, {
+        params: { plant: selectedPlant },
+      })
+      .then((res) => {
+        console.log("Response from GHMC-process:", res.data);
+        setSteps(res.data || []);
+        if (res.data && res.data.length > 0) setActiveStep(0);
+      })
+      .catch((err) => console.error("Error fetching processes:", err));
+  }, [selectedPlant]);
+
+  // Compute next step
+  useEffect(() => {
+    if (steps.length > 0 && Array.isArray(storeData)) {
+      const completed = storeData
+        .filter((i) => i.UPDATED === "YES")
+        .map((i) => i.PROCESS);
+      const next = steps.find((s) => !completed.includes(s.PROCESS));
+      if (next) {
+        setImmediateNextStep(next);
+        setImmediateNextStepIndex(steps.indexOf(next));
+        if (selectedPlant && next) {
+          handleStepClick(next, selectedPlant);
+        }
       } else {
-        // Handle case when no data is returned
-        console.warn("⚠️ No master data found for location:", value);
-        setHeaderData(null);
-        setModalData((prev) => ({
-          ...prev,
-          applyDate: "",
-        }));
-
-        // Optional: Show user-friendly message
-        await Swal.fire({
-          icon: "warning",
-          title: "No Data Found",
-          text: "No master data available for the selected plant.",
-          timer: 2000,
-          showConfirmButton: false,
-        });
+        setImmediateNextStep(null);
+        setImmediateNextStepIndex(-1);
+        setViewedStep(null);
+        setViewedStepDetails(null);
+        setIsViewingSpecificStep(false);
       }
-    } catch (error) {
-      console.error("❌ Error fetching master data:", error);
+    } else {
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setViewedStep(null);
+      setViewedStepDetails(null);
+      setIsViewingSpecificStep(false);
+    }
+  }, [steps, storeData, selectedPlant]);
 
-      // Set default values on error
-      setHeaderData(null);
-      setModalData((prev) => ({
+  // Fetch plant data
+  useEffect(() => {
+    if (!selectedPlant) {
+      console.log("⚠️ No plant selected yet.");
+      return;
+    }
+
+    const fetchPlantData = async () => {
+      console.log(`🚀 Fetching GHMC data for plant: ${selectedPlant}`);
+
+      try {
+        const ghmcRes = await axios.get(
+          `${API_BASE_URL}/GHMC-data?plant=${selectedPlant}`
+        );
+        const ghmcData = ghmcRes.data || [];
+        console.log("📦 Full GHMC data:", ghmcData);
+
+        setStoreData(ghmcData);
+        const plantRecord = ghmcData?.find(
+          (item) => item.loc === selectedPlant
+        );
+
+        if (plantRecord && plantRecord.Organization) {
+          setOrganizationType(plantRecord.Organization);
+        } else {
+          setOrganizationType(plantRecord?.Organization || "GHMC");
+        }
+
+        if (ghmcData.length > 0) {
+          console.log("✅ GHMC records found. Using first step for project info.");
+
+          const firstStep = ghmcData[0];
+          console.log("🧾 First step data:", firstStep);
+
+          setFormData((prev) => ({
+            ...prev,
+            Comments:"",
+            loc: selectedPlant,
+           applyDate: firstStep.applyDate || "",
+            organisation: firstStep.Organization || "",
+            noOfTowers: firstStep.noOfTowers || "",
+            location: firstStep.LOCATION || "",
+            status: firstStep.STATUS || "",
+          }));
+        } else {
+          console.log("⚠️ No GHMC data found — falling back to master API...");
+
+          const masterRes = await getMasterByLoc(selectedPlant);
+          console.log("📚 Master data from getMasterByLoc:", masterRes);
+
+          if (masterRes) {
+            setHeaderData(masterRes);
+            setFormData((prev) => ({
+              ...prev,
+              loc: selectedPlant,
+              applyDate:masterRes.applyDate || "",
+              organisation: masterRes.Organization || "",
+              project_name: masterRes.PROJECT_NAME || "",
+              location: masterRes.LOCATION || "",
+              status: masterRes.STATUS || "",
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("❌ Error fetching GHMC/master data:", err);
+      }
+    };
+
+    fetchPlantData();
+  }, [selectedPlant]);
+
+  // Parse JSON arrays safely
+  function parseJsonArraySafe(value) {
+    if (!value) return [];
+    try {
+      if (Array.isArray(value)) return value;
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      if (typeof value === "string")
+        return value
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      return [];
+    }
+  }
+
+  // Combine document arrays
+  const combineAndParseDocArrays = (data, namesKey, pathsKey) => {
+    const names = parseJsonArraySafe(data[namesKey]);
+    const paths = parseJsonArraySafe(data[pathsKey]);
+    const combined = [];
+    const minLength = Math.min(names.length, paths.length);
+    for (let i = 0; i < minLength; i++) {
+      if (names[i] && paths[i]) {
+        combined.push({ name: names[i], path: paths[i] });
+      }
+    }
+    return combined;
+  };
+
+  // Fetch step details
+// Fetch step details - Add dependency on selectedPlant
+useEffect(() => {
+  // If no plant selected, clear step details
+  if (!selectedPlant) {
+    setNextStepDetails(null);
+    return;
+  }
+
+  if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+    const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+    if (!nextStepName) return;
+
+    axios
+      .get(
+        `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
+          selectedPlant
+        )}/${encodeURIComponent(nextStepName)}`
+      )
+      .then((res) => {
+        const data = res.data || {};
+        console.log("Raw GHMC-step-details response:", data);
+
+        const parsed = {
+          ...data,
+          tower_docs: combineAndParseDocArrays(
+            data, "tower_doc_name", "tower_doc_path"
+          ),
+          feas_docs: combineAndParseDocArrays(
+            data, "feas_doc_name", "feas_doc_path"
+          ),
+          amount_docs: combineAndParseDocArrays(
+            data, "amount_doc_name", "amount_doc_path"
+          ),
+        };
+        console.log("Parsed nextStepDetails for PreviousGhmcDocs:", parsed);
+        setNextStepDetails(parsed);
+      })
+      .catch((err) => {
+        console.error("Error fetching GHMC-step-details:", err);
+        setNextStepDetails(null);
+      });
+  } else {
+    setNextStepDetails(null);
+  }
+}, [selectedPlant, immediateNextStepIndex, steps]); // ✅ Added selectedPlant dependency
+
+  // Update form data from step details
+ // Update form data from step details
+useEffect(() => {
+  if (nextStepDetails) {
+    console.log("🧩 Next Step Details Fetched:", nextStepDetails);
+
+    // Only update form data if we're not in submission mode
+    // and if the current step is the immediate next step
+    if (!submitted || (immediateNextStep && nextStepDetails.PROCESS === immediateNextStep.PROCESS)) {
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: nextStepDetails.applyDate || "",
+        // Comments: nextStepDetails.Comments || "", // ← FIX HERE TOO
+        Comments: "",
+      }));
+    }
+  } else {
+    // Don't clear form data when no nextStepDetails if we just submitted
+    if (!submitted) {
+      setFormData((prev) => ({
         ...prev,
         applyDate: "",
+        Comments: "",
+      }));
+    }
+  }
+}, [nextStepDetails, submitted, immediateNextStep]);
+
+ const handleChange = async (e) => {
+  const { name, value } = e.target;
+
+  if (name === "noOfFlats") {
+    const nocs = Math.ceil(Number(value) / 2);
+    setLinkDocs([]);
+    setLandDocs([]);
+    setOthDocs([]);
+    setFeasibilityDocs([]);
+    setAmountPaidDocs([]);
+    setFormData((prev) => ({
+      ...prev,
+      noOfFlats: value,
+      KLD: value ? nocs : "",
+    }));
+  } else if (name === "OldAmount") {
+    const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
+    const total = amountPaid + Number(value);
+    console.log(total, "total", amountPaid, value);
+    setFormData((prev) => ({
+      ...prev,
+      OldAmount: value,
+      TotalAmount: value ? total : "",
+    }));
+  } else if (name === "loc") {
+    // ✅ Clear ALL previous data immediately when plant changes
+    setFormData((prev) => ({ 
+      ...prev, 
+      loc: value, 
+      applyDate: "",
+      Comments: "",
+      noOfFlats: "",
+      KLD: "",
+      OldAmount: "",
+      TotalAmount: "",
+      Size: "",
+      Ghmc: "",
+    }));
+    
+    setSelectedPlant(value);
+    setSubmitted(false);
+    setIsViewingSpecificStep(false);
+    setSelectedProcessDetails(null);
+    setNextStepDetails(null); // ✅ Clear previous step details immediately
+    setViewedStep(null);
+    setViewedStepDetails(null);
+    setCurrentProcess("");
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setActiveStep(null);
+
+    // Clear documents
+    setFeasibilityDocs([]);
+    setAmountPaidDocs([]);
+    setLinkDocs([]);
+    setLandDocs([]);
+    setOthDocs([]);
+
+    try {
+      const res = await getMasterByLoc(value);
+      if (res) {
+        setHeaderData(res);
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: res.APPLICATION_DATE || "",
+          noOfTowers: res.NUMBER_OF_TOWERS || "",
+          TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
+          ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
+          ProjectName: res.PROJECT_NAME || "",
+        }));
+      } else {
+        setHeaderData(null);
+        setFormData((prev) => ({
+          ...prev,
+          applyDate: "",
+          noOfTowers: "",
+          TotalProjectArea: "",
+          ProjectBuildArea: "",
+          ProjectName: "",
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching master by loc:", err);
+      setHeaderData(null);
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "",
+        noOfTowers: "",
+        TotalProjectArea: "",
+        ProjectBuildArea: "",
+        ProjectName: "",
+      }));
+    }
+  } else {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+};
+
+//-----updated on 26-12-2025 by rajakumari .----------------------------------
+const handleViewNextStep = () => {
+  setSelectedProcessDetails(null);
+  setIsViewingSpecificStep(false);
+  setViewedStep(null);
+  setViewedStepDetails(null);
+  setSubmitted(false);
+};
+//----------------------------------------------------------------------
+
+  // Handle form submission
+const handleConfirmSubmit = async (emails) => {
+  setIsSubmitting(true);
+
+  //  --- : 'fetch User';
+  let currentUserName = loggedInUser.username;
+
+  const payload = new FormData();
+
+  payload.append("Organization", formData.organisation || "");
+  payload.append("project_name", formData.project_name || "");
+  payload.append("location", formData.location || "");
+  payload.append("status", formData.status || "");
+
+  payload.append("loc", formData.loc);
+  payload.append("applyDate", formData.applyDate);
+  payload.append("process", immediateNextStep?.PROCESS || "");
+  payload.append("Comments", formData.Comments || "");
+  payload.append("GHMC", formData.Ghmc || "");
+  payload.append("OldAmount", formData.OldAmount || "");
+  payload.append("Size_Of_Connection", formData.Size || "");
+  payload.append("noOfFlats", formData.noOfFlats || "");
+  payload.append("totalProjectArea", formData.TotalProjectArea || "");
+  payload.append("projectBuildArea", formData.ProjectBuildArea || "");
+  payload.append("noOfTowers", formData.noOfTowers || null);
+  payload.append("TotalAmount", formData.TotalAmount || "");
+  payload.append("username", currentUserName || "");
+
+  emails.forEach((email, i) => {
+    payload.append(`emails[${i}]`, email);
+  });
+
+  // ✅ Append uploaded documents
+  feasibilityDocs.forEach((file) => {
+    payload.append("feas_doc_name[]", file);
+  });
+
+  console.log("🧾 Preparing payload for submission...");
+  const payloadDebug = {};
+  payload.forEach((value, key) => {
+    if (value instanceof File) payloadDebug[key] = value.name;
+    else payloadDebug[key] = value;
+  });
+  console.log("📦 Data being sent to API:", payloadDebug);
+
+  try {
+    // ✅ 1️⃣ Determine if record already exists for this step + plant
+    const existingRecord = storeData?.find(
+      (item) =>
+        item.PROCESS?.trim().toLowerCase() ===
+        immediateNextStep?.PROCESS?.trim().toLowerCase() &&
+        item.loc?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
+    );
+
+    let apiUrl = `${API_BASE_URL}/GHMC-submit`;
+    let apiType = "submit";
+
+    if (existingRecord) {
+      apiUrl = `${API_BASE_URL}/GHMC-modify`;
+      apiType = "modify";
+    }
+
+    console.log(`🚀 Using ${apiType.toUpperCase()} API:`, apiUrl);
+
+    // ✅ 2️⃣ Send the form data
+    const res = await axios.post(apiUrl, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    // ✅ 3️⃣ Reset form completely
+    setFormData({
+      loc: "",
+      applyDate: "",
+      Comments: "",
+      process: "",
+      organisation: "",
+      project_name: "",
+      location: "",
+      status: "",
+      noOfTowers: "",
+      TotalProjectArea: "",
+      ProjectBuildArea: "",
+      ProjectName: "",
+      noOfFlats: "",
+      KLD: "",
+      OldAmount: "",
+      TotalAmount: "",
+      Size: "",
+      Ghmc: "",
+    });
+
+    // ✅ 4️⃣ Clear all state
+    setSelectedPlant("");
+    setStoreData([]);
+    setHeaderData(null);
+    setActiveStep(null);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null); // ✅ Clear step details
+    setViewedStep(null);
+    setViewedStepDetails(null);
+    setIsViewingSpecificStep(false);
+    setSelectedProcessDetails(null);
+
+    // Clear documents
+    setLinkDocs([]);
+    setLandDocs([]);
+    setOthDocs([]);
+    setFeasibilityDocs([]);
+    setAmountPaidDocs([]);
+
+    setSubmitted(true);
+
+    setRespModifyData && setRespModifyData(res?.data?.data);
+    
+    // Use toast instead of dialog for better UX
+    toast.success(`Form ${apiType}ed successfully!`);
+
+  } catch (err) {
+    console.error("❌ Submission failed:", err);
+    toast.error("Submission failed. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+    setConfirmOpen(false);
+  }
+};
+
+  // Check if process is completed
+  const isProcessCompleted = (processName) => {
+    return storeData?.some(
+      (item) => item.PROCESS === processName && item.UPDATED === "YES"
+    );
+  };
+
+  // Handle step click for viewing
+  const handleStepClick = async (step, plant) => {
+    if (!plant) return;
+    setViewedStep(step);
+    setCurrentProcess(step.PROCESS);
+    setIsViewingSpecificStep(true);
+
+    try {
+       const isHistoryStep = storeData.some(
+        (item) => item.PROCESS === step.PROCESS && item.UPDATED === "YES"
+      );
+      
+      const storedCompletedStep = storeData.find(
+        (item) => item.PROCESS === step.PROCESS && item.UPDATED === "YES"
+      );
+
+      let dataToParse;
+     if (storedCompletedStep) {
+      console.log("📜 Viewing completed process from storeData:", step.PROCESS);
+      dataToParse = storedCompletedStep;
+      setSubmitted(true);
+      setSelectedProcessDetails(storedCompletedStep); // ADD THIS LINE
+      } else {
+        console.log("🌐 Fetching live step details for:", step.PROCESS);
+        const res = await axios.get(
+          `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
+            plant
+          )}/${encodeURIComponent(step.PROCESS)}`
+        );
+        dataToParse = res.data || {};
+        setSubmitted(false);
+         setSelectedProcessDetails(null); // ADD THIS LINE
+      }
+
+      const parsed = {
+        ...dataToParse,
+        tower_docs: combineAndParseDocArrays(
+          dataToParse, "tower_doc_name", "tower_doc_path"
+        ),
+        feas_docs: combineAndParseDocArrays(
+          dataToParse, "feas_doc_name", "feas_doc_path"
+        ),
+        amount_docs: combineAndParseDocArrays(
+          dataToParse, "amount_doc_name", "amount_doc_path"
+        ),
+      };
+
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: parsed.applyDate || "",
+      //  Comments: parsed.Comments || "",
+      Comments: isHistoryStep ? (parsed.Comments || "") : "", 
       }));
 
-      // Show error to user
-      await Swal.fire({
-        icon: "error",
-        title: "Error Loading Data",
-        text:
-          error.response?.status === 404
-            ? "Plant data not found. Please select a valid plant."
-            : "Failed to load plant data. Please try again.",
-        timer: 3000,
-        showConfirmButton: false,
-      });
+      setViewedStepDetails(parsed);
+
+    } catch (err) {
+      console.error("❌ Error fetching step details:", err);
+      setViewedStepDetails(null);
+      setSubmitted(false);
+       setSelectedProcessDetails(null); // ADD THIS LINE
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "",
+        Comments: "", 
+      }));
     }
   };
 
-  // Custom button styles
-  const buttonStyles = {
-    updated: {
-      backgroundColor: "#28a745",
-      borderColor: "#28a745",
-      color: "white",
-      fontSize: "12px",
-      padding: "4px 8px",
-      borderRadius: "4px",
-      border: "none",
-      cursor: "not-allowed",
-    },
-    edit: {
-      backgroundColor: "#007bff",
-      borderColor: "#007bff",
-      color: "white",
-      fontSize: "12px",
-      padding: "4px 8px",
-      borderRadius: "4px",
-      border: "none",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-    },
-    pending: {
-      backgroundColor: "#6c757d",
-      borderColor: "#6c757d",
-      color: "white",
-      fontSize: "12px",
-      padding: "4px 8px",
-      borderRadius: "4px",
-      border: "none",
-      cursor: "not-allowed",
-    },
-    amended: {
-      backgroundColor: "#17a2b8",
-      borderColor: "#17a2b8",
-      color: "white",
-      fontSize: "12px",
-      padding: "4px 8px",
-      borderRadius: "4px",
-      border: "none",
-      cursor: "not-allowed",
-    },
-    amend: {
-      backgroundColor: "#ffc107",
-      borderColor: "#ffc107",
-      color: "#212529",
-      fontSize: "12px",
-      padding: "4px 8px",
-      borderRadius: "4px",
-      border: "none",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-    },
-  };
+     const NumberOfTowers = storeData?.[0]?.noOfTowers;
+ 
   return (
     <>
-      <PlantSelector
-        plants={plants}
-        selectedPlant={selectedPlant}
-        // onChange={(e) => setSelectedPlant(e.target.value)}
-        onChange={handleChange}
-        customMarginTop="-10px"
-      />
+      <ProjectInfoHeader data={headerData} />
+      <Row className="align-items-stretch">
+        {/* Left Sidebar */}
+        <Col md={3} className="d-flex">
+          <div className="border rounded p-3 bg-light flex-fill">
+            <span className="fw-bold m-3">
+              {organizationType ? `${organizationType} Process Steps` : 'Process Steps'}
+            </span>
+            <Nav variant="pills" className="flex-column m-3">
+              {steps.map((step, idx) => {
+                let variant = "secondary";
+                let clickable = false;
+                let statusIcon = "⏸️";
 
-      <div className="mt-1">
-        <ProjectInfoHeader data={headerData} />
-      </div>
+                const isCompleted = storeData.some(
+                  (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
+                    item.UPDATED === "YES"
+                );
 
-      {selectedPlant ? (
-        <div
-          className="custom-tbl"
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: "8px",
-            overflow: "hidden",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            marginTop: "5px",
-            height: "calc(100vh - 380px)",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ flex: 1, overflowY: "auto", overflowX: "auto" }}>
-            <table
-              className="table table-hover table-sm compact-table"
-              style={{ margin: 0 }}
-            >
-              <thead
-                className="custom-thead"
-                style={{ backgroundColor: "#a8c5d1" }}
-              >
-                <tr>
-                  <th
-                    style={{
-                      width: "30px",
-                      borderBottom: "2px solid #dee2e6",
-                      backgroundColor: "#a8c5d1",
-                    }}
-                  ></th>
-                  <th
-                    style={{
-                      borderBottom: "2px solid #dee2e6",
-                      fontWeight: "600",
-                      backgroundColor: "#a8c5d1",
-                    }}
-                  >
-                    S.No
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "2px solid #dee2e6",
-                      fontWeight: "600",
-                      backgroundColor: "#a8c5d1",
-                    }}
-                  >
-                    Process
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "2px solid #dee2e6",
-                      fontWeight: "600",
-                      backgroundColor: "#a8c5d1",
-                    }}
-                  >
-                    Apply Date
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "2px solid #dee2e6",
-                      fontWeight: "600",
-                      backgroundColor: "#a8c5d1",
-                    }}
-                  >
-                    Action
-                  </th>
-                  {amendCategories.map((cat) => (
-                    <th
-                      key={cat}
-                      style={{
-                        borderBottom: "2px solid #dee2e6",
-                        fontWeight: "600",
-                        backgroundColor: "#a8c5d1",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {cat}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {pcbProcesses.map((row, index) => {
-                  const storeInfo = storeData.find(
-                    (item) => item.PROCESS === row.PROCESS
-                  );
-               console.log("storeinmgo",storeInfo);
-                  const isUpdated = !!storeInfo;
-                  const isNextStep = index === lastUpdatedIndex + 1;
-
-                  let buttonContent;
-                  if (status === "created") {
-                    buttonContent =
-                      storeInfo?.UPDATED === "YES" ? (
-                        <button className="btn btn-success btn-sm" disabled>
-                          Updated
-                        </button>
-                      ) : (
-                        <button className="btn btn-secondary btn-sm" disabled>
-                          Pending
-                        </button>
-                      );
-                  } else {
-                    buttonContent =
-                      storeInfo?.UPDATED === "YES" ? (
-                        <button className="btn btn-success btn-sm" disabled>
-                          Updated
-                        </button>
-                      ) : isNextStep ? (
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handleEditClick(row)}
-                        >
-                          Edit
-                        </button>
-                      ) : (
-                        <button className="btn btn-secondary btn-sm" disabled>
-                          Pending
-                        </button>
-                      );
-                  }
-
-                  //---------amend----------
-
-                  return (
-                    <tr
-                      key={row.PROCESS}
-                      className={!isUpdated ? "table-secondary" : ""}
-                    >
-                      <td className="timeline-cell">
-                        {(() => {
-                          // Determine timeline color for this row
-                          let timelineColor = "grey";
-                          let isCompletedInMode = false;
-
-                          if (currentTimelineMode === "action") {
-                            isCompletedInMode = storeInfo?.UPDATED === "YES";
-                          } else if (currentTimelineMode === "AMEND1") {
-                            isCompletedInMode =
-                              storeInfo?.AMEND1_STATUS === "YES";
-                          } else if (currentTimelineMode === "AMEND2") {
-                            isCompletedInMode =
-                              storeInfo?.AMEND2_STATUS === "YES";
-                          } else if (currentTimelineMode === "AMEND3") {
-                            isCompletedInMode =
-                              storeInfo?.AMEND3_STATUS === "YES";
-                          } else if (currentTimelineMode === "AMEND4") {
-                            isCompletedInMode =
-                              storeInfo?.AMEND4_STATUS === "YES";
-                          } else if (currentTimelineMode === "AMEND5") {
-                            isCompletedInMode =
-                              storeInfo?.AMEND5_STATUS === "YES";
-                          }
-
-                          if (isCompletedInMode) {
-                            timelineColor = "green";
-                          } else if (index === lastIndexForTimeline + 1) {
-                            timelineColor = "red";
-                          }
-
-                          return (
-                            <>
-                              <span className={`dot ${timelineColor}`}></span>
-                              {index !== pcbProcesses.length - 1 && (
-                                <div className={`line ${timelineColor}`}></div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </td>
-                      <td>{row.SNO}</td>
-                      <td>
-                        <em>{row.PROCESS}</em>
-                      </td>
-                      <td style={{ whiteSpace: "nowrap" }}>
-                        {formatDate(storeInfo?.APPLY_DT || "-")}
-                      </td>
-                      <td>{buttonContent}</td>
-                      {amendCategories.map((category) => {
-                        // disable older amendment columns if a newer one exists
-                        const amendNum =
-                          parseInt(category.replace("AMEND", "")) || 0;
-                        const isDisabledAmend = amendNum < latestAmend; // ✅ older amendments will be greyed out
-
-                        let amendStatus = "";
-                        if (category === "AMEND1")
-                          amendStatus = storeInfo?.AMEND1_STATUS || "";
-                        else if (category === "AMEND2")
-                          amendStatus = storeInfo?.AMEND2_STATUS || "";
-                        else if (category === "AMEND3")
-                          amendStatus = storeInfo?.AMEND3_STATUS || "";
-                        else if (category === "AMEND4")
-                          amendStatus = storeInfo?.AMEND4_STATUS || "";
-                        else if (category === "AMEND5")
-                          amendStatus = storeInfo?.AMEND5_STATUS || "";
-
-                        const lastIndex = lastAmendedIndexMap[category] ?? -1;
-
-                        let button;
-                        if (category === "AMEND1" && disableECColumn) {
-                          button =
-                            amendStatus === "YES" ? (
-                              <button
-                                className="btn btn-success btn-sm"
-                                disabled
-                              >
-                                Amended
-                              </button>
-                            ) : (
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                disabled
-                              >
-                                Pending
-                              </button>
-                            );
-                        } else {
-                          if (amendStatus === "YES") {
-                            button = (
-                              <button
-                                className="btn btn-success btn-sm"
-                                disabled
-                              >
-                                Amended
-                              </button>
-                            );
-                          } else if (
-                            index === lastIndex + 1 &&
-                            !isDisabledAmend
-                          ) {
-                            button = (
-                              <button
-                                className="btn btn-primary btn-sm"
-                                onClick={() => handleAmendClick(row, category)}
-                              >
-                                Amend
-                              </button>
-                            );
-                          } else {
-                            button = (
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                disabled
-                              >
-                                Pending
-                              </button>
-                            );
-                          }
-                        }
-
-                        return (
-                          <td
-                            key={category}
-                            className={isDisabledAmend ? "disabled-cell" : ""}
-                          >
-                            {button}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        <div className="alert alert-info mt-4">
-          Please select a plant to view data.
-        </div>
-      )}
-
-<Modal
-  show={showModal}
-  onHide={() => setShowModal(false)}
-  centered
-///-----------------------------------------20/11/2025---------------------------------
-  dialogClassName="modal-dialog-scrollable"
-  ///-----------------------------------------20/11/2025---------------------------------
->
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Process Data</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Plant</Form.Label>
-              <Form.Control type="text" value={modalData.plant} readOnly />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Process</Form.Label>
-              <Form.Control type="text" value={modalData.process} readOnly />
-            </Form.Group>
-            <Form.Group className="mb-3">
-  <Form.Label> Apply Date 
-      <span style={{ color: "red" }}>*</span>
-  </Form.Label>
-  
-              <Form.Control
-                type="date"
-                value={modalData.applyDate}
-                  max={new Date().toISOString().split("T")[0]} 
-                onChange={(e) =>
-                  setModalData((prev) => ({
-                    ...prev,
-                    applyDate: e.target.value,
-                  }))
+                if (isCompleted) {
+                  variant = "success";
+                  clickable = true;
+                  statusIcon = "✅";
+                } else if (idx === immediateNextStepIndex) {
+                  variant = "warning";
+                  clickable = true;
+                  statusIcon = "⚠️";
                 }
-                 
-              />
-                        {errors.applyDate && (
-    <div className="text-danger" style={{ fontSize: "14px" }}>{errors.applyDate}</div>
-  )}  
-            </Form.Group>
 
+                return (
+                  <Nav.Item key={idx} className="mb-2">
+                    {/* <Nav.Link
+                      eventKey={idx}
+                      disabled={!clickable}
+                      onClick={() => {
+                        if (!clickable) return;
+                        setActiveStep(idx);
+                      }}
+                      className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+                      style={{ cursor: clickable ? "pointer" : "not-allowed" }}
+                    >
+                      {statusIcon}
+                      <span>{step.PROCESS}</span>
+                    </Nav.Link> */}
 
-
-  {receivedDateProcesses.includes(modalData.process) && (
-  <Form.Group className="mb-3">
-    <Form.Label>
-      Received Date <span style={{ color: "red" }}>*</span>
-    </Form.Label>
-
-    <Form.Control
-      type="date"
-      value={modalData.receivedDate || ""}
-      max={new Date().toISOString().split("T")[0]}
-      onChange={(e) =>
-        setModalData((prev) => ({
-          ...prev,
-          receivedDate: e.target.value,
-        }))
-      }
-    />
-
-  
-  </Form.Group>
-)}
-
-
-            {/* Conditional Radio Button for "Returns Submit" */}
-            {modalData.process ===
-              "Comply EC conditions and submit half yearly returns and compliance Reports" && (
-              <Form.Group className="mb-3">
-                <Form.Label>Returns Submit</Form.Label>
-                <div>
-                  <Form.Check
-                    inline
-                    type="radio"
-                    label="Yes"
-                    name="returnsSubmit"
-                    id="returnsSubmitYes"
-                    value="Yes"
-                    checked={modalData.returnsSubmitted === "Yes"} // Assuming a new state field `returnsSubmitted` in modalData
-                    onChange={(e) =>
-                      setModalData((prev) => ({
-                        ...prev,
-                        returnsSubmitted: e.target.value,
-                      }))
-                    }
-                  />
-                  <Form.Check
-                    inline
-                    type="radio"
-                    label="No"
-                    name="returnsSubmit"
-                    id="returnsSubmitNo"
-                    value="No"
-                    checked={modalData.returnsSubmitted === "No"} // Assuming a new state field `returnsSubmitted` in modalData
-                    onChange={(e) =>
-                      setModalData((prev) => ({
-                        ...prev,
-                        returnsSubmitted: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </Form.Group>
-            )}
-
-            {/* Display Logs */}
-            {/* Display Logs - Structured Format (Updated for JSON) */}
-            {modalData.logs && (
-              <Form.Group className="mb-3">
-                <Form.Label>Logs</Form.Label>
-                <div
-                  style={{
-                    backgroundColor: "#e9ecef",
-                    padding: "10px",
-                    borderRadius: "5px",
-                    maxHeight: "200px", // Adjust as needed
-                    overflowY: "auto", // Make it scrollable if content overflows
-                    border: "1px solid #ced4da",
-                  }}
-                >
-                  {(() => {
-                    try {
-                      // Attempt to parse the JSON string
-                      const logEntries = JSON.parse(modalData.logs);
-                      if (
-                        !Array.isArray(logEntries) ||
-                        logEntries.length === 0
-                      ) {
-                        return (
-                          <p>No detailed logs available or invalid format.</p>
-                        );
-                      }
-                      return logEntries.map((entry, index) => (
-                        <div key={index} className="mb-2">
-                          <strong style={{ whiteSpace: "nowrap" }}>
-                            Date:
-                          </strong>{" "}
-                          {entry.date}
-                          <br />
-                          <strong style={{ whiteSpace: "nowrap" }}>
-                            Comment:
-                          </strong>{" "}
-                          {entry.comment}
-                          {index < logEntries.length - 1 && (
-                            <hr
-                              style={{
-                                margin: "10px 0",
-                                borderColor: "#cdd4da",
-                              }}
-                            />
-                          )}
-                        </div>
-                      ));
-                    } catch (error) {
-                      console.error("Failed to parse log data:", error);
-                      return <p>Error loading logs: Invalid JSON format.</p>;
-                    }
-                  })()}
-                </div>
-              </Form.Group>
-            )}
-
-            <div className="mb-3">
-              <strong>Previously Uploaded Files:</strong>
-{/* ////--------------------20/11/2025---------------------- */}
-  {Array.isArray(modalData.existingDocs) &&
- modalData.existingDocs.length > 0 &&
- modalData.existingDocs.some(doc => doc && doc !== "null" && doc !== "[]") ? (
-  <ul className="mb-2 list-unstyled">
-    {modalData.existingDocs
-      .filter(doc => doc && doc !== "null" && doc !== "[]")
-      .map((docPath, idx) => {
-        const cleanedPath = docPath.replace(/[\[\]"'%]/g, "").trim();
-        const rawName = modalData.existingNames[idx] || `Document ${idx + 1}`;
-        const cleanedName = rawName.replace(/[\[\]"'%]/g, "").split("/").pop().trim();
-
-        return (
-          <li
-            key={idx}
-            className="d-flex justify-content-between align-items-center mb-1 border p-2 rounded"
-          >
-            <a
-              href={`${API_DOC_URL}/storage/${cleanedPath}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {cleanedName}
-            </a>
-
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => handleDeleteEditFile(docPath, idx)}
-            >
-              Delete
-            </Button>
-          </li>
-        );
-      })}
-  </ul>
-) : (
-  <p className="text-muted">No documents uploaded.</p>
-)}
-
-{/* ////--------------------20/11/2025---------------------- */}
-
-
-            </div>
-{/*  20/11/2025--------------/// */}
-         <Form.Group className="mb-3">
-  <Form.Label>Upload Document (PDF Only)</Form.Label>
-  <Form.Control
-    type="file"
-    multiple
-    accept="application/pdf"
-    ref={fileInputRef}
-    onChange={(e) => {
-      const files = Array.from(e.target.files);
-
-      const invalidFiles = files.filter(
-        (file) => file.type !== "application/pdf"
-      );
-
-      if (invalidFiles.length > 0) {
-        toast.error("Only PDF files are allowed!");
-        
-        // Clear input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = null;
-        }
-        return; // Stop here
-      }
-
-      // Add valid PDF files
-      setModalData((prev) => ({
-        ...prev,
-        selectedFiles: [...prev.selectedFiles, ...files],
-      }));
-
-      // Clear the input after selection
-      if (fileInputRef.current) {
-        fileInputRef.current.value = null;
+                    {/* updated on 26-12-2025 by rajakumari.m--------------------------------------------- */}
+                    <Nav.Link
+  eventKey={idx}
+  disabled={!clickable}
+  className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+  style={{ cursor: clickable ? "pointer" : "not-allowed" }}
+>
+  {statusIcon}
+  <span
+    onClick={(e) => {
+      if (isCompleted) {
+        e.stopPropagation();
+        handleStepClick(step, selectedPlant);
       }
     }}
-  />
-</Form.Group>
-{/*  20/11/2025--------------/// */}
+    style={{
+      cursor: isCompleted ? "pointer" : "default",
+      textDecoration: isCompleted ? "underline" : "none"
+    }}
+  >
+    {step.PROCESS}
+  </span>
+</Nav.Link>
+                    {/* ---------------------------------------------------------------------------------- */}
+                  </Nav.Item>
+                );
+              })}
+            </Nav>
+          </div>
+        </Col>
 
-            {modalData.selectedFiles.length > 0 && (
-              <div className="mb-2">
-                <strong>Files to Upload:</strong>
-                <ul className="list-unstyled">
-                  {modalData.selectedFiles.map((file, index) => (
-                    <li
-                      key={index}
-                      className="d-flex justify-content-between align-items-center mb-1 border p-2 rounded"
+        {/* Center Form */}
+        <Col
+          md={6}
+          className="d-flex flex-column"
+          style={{ height: "400px", overflowY: "auto" }}
+        >
+          {areAllStepsCompleted() && !isViewingSpecificStep ? (
+            <div className="p-3 border rounded bg-light d-flex align-items-center justify-content-center" style={{ minHeight: "400px" }}>
+              {renderCompletionMessage()}
+            </div>
+          ) : (
+            <Form className="p-3 border rounded bg-light">
+  {selectedProcessDetails ? (
+    <div className="mb-3">
+      <h4 className="mb-2 text-info fw-bold">
+        Viewing: {selectedProcessDetails.PROCESS} (Completed)
+      </h4>
+      <Button
+        variant="outline-primary"
+        size="sm"
+        onClick={handleViewNextStep}
+        disabled={!immediateNextStep}
+      >
+        View Next Step
+      </Button>
+    </div>
+  ) : (
+    <h4 className="mb-3 text-warning fw-bold">
+      {currentProcess || immediateNextStep?.PROCESS}
+      {NumberOfTowers && <> | Towers Count : <span className="text-dark">{NumberOfTowers}</span></>}
+    </h4>
+  )}
+
+              <Row className="mb-2">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Plant</Form.Label>
+                    <Form.Select
+                      name="loc"
+                      value={formData.loc || ""}
+                      onChange={handleChange}
+                      isInvalid={!!errors.loc}
                     >
-                      {file.name}
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => {
-                          setModalData((prev) => {
-                            const updatedFiles = prev.selectedFiles.filter(
-                              (_, i) => i !== index
-                            );
+                      <option value="">Select Plant</option>
+                      {loc.map((ele, index) => (
+                        <option key={index} value={ele.loc}>
+                          {ele.loc}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.loc}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
 
-                            // Clear file input if all files are removed
-                            if (
-                              updatedFiles.length === 0 &&
-                              fileInputRef.current
-                            ) {
-                              fileInputRef.current.value = null;
-                            }
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Apply Date</Form.Label>
+                    <Form.Control
+                      type="date"
+                      name="applyDate"
+                      max={new Date().toISOString().split("T")[0]}
+                      value={formData.applyDate || ""}
+                      onChange={handleChange}
+                      isInvalid={!!errors.applyDate}
+                      // disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS)}
 
-                            return {
-                              ...prev,
-                              selectedFiles: updatedFiles,
-                            };
-                          });
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                        disabled={!formData.loc || (nextStepDetails && nextStepDetails.applyDate) || !!selectedProcessDetails} // UPDATE THIS
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.applyDate}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            {/* <Form.Group className="mb-3">
-                  <Form.Label>Logs</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={5}
-                    value={modalData.logs}
-                    readOnly
-                    style={{ backgroundColor: "#e9ecef" }} // Optional: style to indicate read-only
-                  />
-                </Form.Group> */}
+              <Row className="mb-2">
 
-            <Form.Group className="mb-3">
-              <Form.Label>Comments
-                      <span style={{ color: "red" }}>*</span>
-              </Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={modalData.comments}
-                onChange={(e) =>
-                  setModalData((prev) => ({
-                    ...prev,
-                    comments: e.target.value,
-                  }))
+                   <Col md={6}>
+                  <Form.Label>Upload Document</Form.Label>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary form-control"
+                    onClick={() => setShowFeasibilityModal(true)}
+                     disabled={!!selectedProcessDetails}
+                  >
+                    <FaUpload className="me-2" /> Upload Document
+                    <span className="ms-2 text-muted">
+                      {feasibilityDocs.length > 0 &&
+                        `(${feasibilityDocs.length} selected)`}
+                    </span>
+                  </button>
+                  {errors.feasibilityDocs && (
+                    <p className="error-text text-danger mt-1 mb-0">
+                      {errors.feasibilityDocs}
+                    </p>
+                  )}
+                
+                </Col>
+
+                <Col md={6}>
+                  <Form.Group controlId="formComments">
+                    <Form.Label>Comments</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      name="Comments"
+                      value={formData.Comments || ""}
+                      onChange={handleChange}
+                      disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS) || !!selectedProcessDetails} // UPDATE THIS
+                    />
+                    {errors.Comments && (
+                      <p className="error-text text-danger">{errors.Comments}</p>
+                    )}
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row className="mb-3">
+             
+
+                {isFirstProcess &&
+
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label> Number of Towers </Form.Label>
+                      <Form.Control as="textarea" rows={1} name="noOfTowers" value={formData.noOfTowers || ""} onChange={handleChange} 
+                       disabled={!formData.loc || isProcessCompleted(viewedStep?.PROCESS) || !!selectedProcessDetails}  />
+                    </Form.Group>
+                  </Col>
+
                 }
-              />
-          {errors.comments && (
-    <div className="text-danger" style={{ fontSize: "14px" }}>{errors.comments}</div>
-  )}      
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)} disabled ={loading}>
-            Cancel
-          </Button>
-  
+              </Row>
 
-          <Button variant="primary" onClick={handleEmailSubmit} disabled={loading}>
-            {loading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2"></span>
-                Processing...
-              </>
-            ) : (
-              "Send Email"
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+              <div className="d-grid">
+                {areAllStepsCompleted() && isViewingSpecificStep && (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => setIsViewingSpecificStep(false)}
+                    className="w-100 fw-semibold mb-2"
+                  >
+                    ← Back to Completion Message
+                  </Button>
+                )}
 
-      {/* Email Selection Modal */}
+            
+                  <Button 
+                    variant={submitted ? "success" : "primary"}
+                    size="md"
+                    onClick={handleEmailSubmit}
+                    className="w-100 fw-semibold"
+                    disabled={!formData.loc || isSubmitting || submitted}
+                  >
+                    {isSubmitting
+                      ? "Submitting..."
+                      : submitted
+                        ? "Submitted"
+                        : "Submit"}
+                  </Button>
+            
+                {/* {viewedStep?.PROCESS !== immediateNextStep?.PROCESS &&
+                  isProcessCompleted(viewedStep?.PROCESS) && (
+                    <Button variant="success" size="md" className="w-100 fw-semibold mt-2" disabled>
+                      Updated (View Only)
+                    </Button>
+                  )} */}
+              </div>
+            </Form>
+          )}
+        </Col>
+
+        {/* Right Section: Previous Docs */}
+        <Col md={3} className="d-flex">
+          <div className="border rounded p-3 bg-white flex-fill w-50">
+            <PreviousGhmcDocs docsData={isViewingSpecificStep ? viewedStepDetails : nextStepDetails} type= "modify" />
+          </div>
+        </Col>
+      </Row>
+
+      <ReusableDialog
+        open={dialogConfig.open}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        onClose={() => setDialogConfig({ ...dialogConfig, open: false })}
+        onConfirm={() => setDialogConfig({ ...dialogConfig, open: false })}
+        confirmText={dialogConfig.confirmText}
+      />
 
       <EmailSelectionModal
         show={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        emailRecipients={emailRecipients}
-        selectedEmails={selectedEmails}
-        setSelectedEmails={setSelectedEmails}
-        onSendEmail={handleSendEmail} // Pass the existing handler
-        modalData={modalData} // Pass modalData to the new component
+        onHide={() => setShowEmailModal(false)}
+        onSubmit={handleEmailSelectionSubmit}
+        processName={immediateNextStep?.PROCESS}
+        plantName={formData.loc}
+        applyDate={formData.applyDate}
+        comments={formData.Comments}
       />
 
-      <AmendModal
-        show={showAmendModal}
-        onClose={() => setShowAmendModal(false)}
-        amendData={amendData}
-        setAmendData={setAmendData}
-        onSubmit={handleAmendSubmit}
-        onDeleteFile={handleDeleteFile}
-  emailAmendRecipients={emailAmendRecipients}
-  onSendAmendEmail={handleSendAmendEmail}
+      <WaterDocUploadModal
+        show={showFeasibilityModal}
+        onClose={() => setShowFeasibilityModal(false)}
+        linkDocs={feasibilityDocs}
+        setLinkDocs={setFeasibilityDocs}
+        title="Upload Feasibility Certificate"
+        showLandDocs={false}
+        showOthDocs={false}
+        validateFileType={validateFileType}
+      />
+
+      <WaterDocUploadModal
+        show={amountPaidDocModal}
+        onClose={() => setAmountPaidDocModal(false)}
+        linkDocs={AmountPaidDocs}
+        setLinkDocs={setAmountPaidDocs}
+        title="Upload Paid Document Certificate"
+        showLandDocs={false}
+        showOthDocs={false}
+        validateFileType={validateFileType}
+      />
+
+      <WaterDocUploadModal
+        show={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        linkDocs={linkDocs}
+        setLinkDocs={setLinkDocs}
+        landDocs={landDocs}
+        setLandDocs={setLandDocs}
+        othDocs={othDocs}
+        setOthDocs={setOthDocs}
+        validateFileType={validateFileType}
       />
     </>
   );
 };
 
-export default PcbModifyTable;
+export default GhmcModify;

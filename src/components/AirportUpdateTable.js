@@ -116,8 +116,6 @@ const [recordExists, setRecordExists] = useState(false);
         item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
         item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
       );
-
-
       setRecordExists(exists);
       console.log("Record exists check:", exists, "for process:", immediateNextStep?.PROCESS, "plant:", selectedPlant);
     } else {
@@ -151,16 +149,6 @@ const [recordExists, setRecordExists] = useState(false);
       return;
     }
 
-   
-    if (!recordExists) {
-      Swal.fire({
-        icon: "warning",
-        title: "Process Not Initialized",
-        text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
-        confirmButtonText: "OK"
-      });
-      return;
-    }
     // FIX: Check if immediateNextStep exists
     if (!immediateNextStep) {
       Swal.fire({
@@ -266,19 +254,9 @@ const [recordExists, setRecordExists] = useState(false);
         .then((res) => {
           setStepData(res.data);
           setStoreData(res.data);
-
-                   const currentProcessExists = res.data.some(item => 
-            item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
-            item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
-          );
-       
-        setRecordExists(currentProcessExists);
+          console.log("stepdata:", res.data);
         })
         .catch((err) => console.error("Error fetching step data:", err));
-    }
-
-    else{
-       setRecordExists(false);
     }
   }, [selectedPlant]);
 
@@ -327,7 +305,7 @@ const [recordExists, setRecordExists] = useState(false);
   useEffect(() => {
     if (nextStepDetails && nextStepDetails.length > 0) {
       const details = nextStepDetails[0];
-    
+      console.log("detailssssssssssssssss", details)
       setFormData((prevFormData) => ({
         ...prevFormData,
         applyDate: details.APPLY_DT,
@@ -394,7 +372,6 @@ const [recordExists, setRecordExists] = useState(false);
               ? Math.ceil(Number(res.TOTAL_PRJ_AREA) / 5)
               : '' || null,
           }));
-              setRecordExists(false);
         } else {
           console.warn('⚠️ No master data found for location:', value);
           setHeaderData(null);
@@ -693,8 +670,7 @@ const [recordExists, setRecordExists] = useState(false);
                   id="status-yes"
                   value="YES"
                   checked={formData.STATUS === "YES"}
-                  readOnly
-                
+                  onChange={handleChange}
                   disabled={!!selectedProcessDetails}
                 />
                 <Form.Check
@@ -705,7 +681,7 @@ const [recordExists, setRecordExists] = useState(false);
                   id="status-no"
                   value="NO"
                   checked={formData.STATUS === "NO"}
-        readOnly
+                  onChange={handleChange}
                   disabled={!!selectedProcessDetails}
                 />
               </Col>
@@ -1056,7 +1032,7 @@ const [recordExists, setRecordExists] = useState(false);
                   variant="primary" 
                   size="md" 
                   onClick={handleEmailSubmit}
-                  disabled={isSubmitting || !formData.plant || !immediateNextStep || !formData.applyDate}
+                  disabled={isSubmitting || !formData.plant || !immediateNextStep || !formData.applyDate || !recordExists}
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}
                 </Button>

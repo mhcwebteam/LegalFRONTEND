@@ -777,29 +777,31 @@ const PcbModifyTable = () => {
         : `${API_BASE_URL}/amendment-submit`;
 
 
-      const response = await axios.post(endpoint, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+ const response = await axios.post(endpoint, payload, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 
-      console.log("✅ Backend response:", response.data);
-      setShowAmendModal(false);
+  console.log("✅ Backend response:", response.data);
+  setShowAmendModal(false);
+  setShowAmendEmailModal(false); // Add this if you have a separate email modal
 
-      await Swal.fire({
-        icon: "success",
-        title: "Email Sent!",
-        text: `Amendment (${amendDataFromModal.category}) email sent to ${selectedEmails?.selectedAmendEmails} recipient(s).`,
-      });
+  // Show success popup similar to the regular submission
+  await Swal.fire({
+    icon: "success",
+    title: "Successfully",
+    text: "Amendment submitted successfully!",
+    showConfirmButton: false,
+    timer: 2000,
+  });
 
-
-
-    } catch (error) {
-      console.error("❌ Email sending failed:", error);
-      await Swal.fire({
-        icon: "error",
-        title: "Email Sending Failed",
-        text: "Amendment submitted successfully, but email notification failed.",
-      });
-    }
+} catch (error) {
+  console.error("❌ Email sending failed:", error);
+  await Swal.fire({
+    icon: "error",
+    title: "Submission Failed",
+    text: "Something went wrong. Please try again.",
+  });
+}
   };
 
 
