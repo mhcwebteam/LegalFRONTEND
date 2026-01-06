@@ -1337,12 +1337,23 @@ const fetchPlantData = async (plant) => {
                         type="button"
                         className="btn btn-outline-secondary form-control"
                         onClick={() => setShowFeasibilityModal(true)}
+                        // added on 4-1-2026 by rajakumari.m-----------------------------------------------------
+                          disabled={!!amendmentStatus || !formData?.plant || selectedProcessDetails}
+        style={{
+          backgroundColor: selectedProcessDetails ? '#e9ecef' : '',
+          color: selectedProcessDetails ? '#6c757d' : '',
+          cursor: selectedProcessDetails ? 'not-allowed' : ''
+        }}
+        //----------------------------------------------------------------------------------------------------
+      
                       >
                         <FaUpload className="me-2" /> Upload Document
                         <span className="ms-2 text-muted">
                           {linkDocs.length > 0 &&
                             `(${linkDocs.length} selected)`}
                         </span>
+                        
+
                       </button>
                       {/* Document validation error message */}
                       {errors.linkDocs && (

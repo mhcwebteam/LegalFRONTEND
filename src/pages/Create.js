@@ -51,14 +51,7 @@ const Create = () => {
       gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
       hoverGradient: 'linear-gradient(135deg, #e879f9 0%, #ef4444 100%)'
     },
-    {
-      id: 'hmda', // Make sure this ID matches your DB response
-      icon: TabIcons.hmda,
-      label: TabLabels.hmda,
-      route: '/create/Ghmc',
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      hoverGradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)'
-    },
+
     {
       id: 'fire',
       icon: TabIcons.fire,
@@ -66,6 +59,15 @@ const Create = () => {
       route: '/create/fire',
       gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
       hoverGradient: 'linear-gradient(135deg, #f43f5e 0%, #f59e0b 100%)'
+    },
+
+        {
+      id: 'hmda', // Make sure this ID matches your DB response
+      icon: TabIcons.hmda,
+      label: TabLabels.hmda,
+      route: '/create/Ghmc',
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      hoverGradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)'
     },
     {
       id: 'water',
@@ -272,8 +274,8 @@ const Create = () => {
     'All Processes',
     'Pollution Control Board',
     'Airport Authority',
-    'HMDA/GHMC',
     'Fire',
+      'HMDA/GHMC',
     'Water',
     'RERA'
   ];

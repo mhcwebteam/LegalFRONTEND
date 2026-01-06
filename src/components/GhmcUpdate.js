@@ -1,6 +1,4 @@
 
-
-
 import React, { useEffect, useState, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -110,7 +108,6 @@ const [recordExists, setRecordExists] = useState(false);
     return viewedStep?.PROCESS === immediateNextStep?.PROCESS;
   };
 
-
     const checkRecordExists = () => {
     if (selectedPlant && immediateNextStep) {
       const exists = storeData.some(item => 
@@ -126,12 +123,9 @@ const [recordExists, setRecordExists] = useState(false);
     }
   };
 
-
     useEffect(() => {
       checkRecordExists();
     }, [storeData, selectedPlant, immediateNextStep]);
-
-
 
   const handleEmailSubmit = () => {
     // Only allow submit if we're viewing the immediate next step
@@ -253,97 +247,33 @@ const [recordExists, setRecordExists] = useState(false);
     }
   }, [steps, storeData, selectedPlant]);
 
+ 
+
   useEffect(() => {
-    if (!selectedPlant) {
-      console.log("⚠️ No plant selected yet.");
-      return;
-    }
+  let isMounted = true; 
 
-    const fetchPlantData = async () => {
-      console.log(`🚀 Fetching GHMC data for plant: ${selectedPlant}`);
+  if (selectedPlant) {
+    // Clear history-viewing states so form focuses on the NEW active step
+    setNextStepDetails(null);
+    setViewedStepDetails(null);
 
-      try {
-        const ghmcRes = await axios.get(
-          `${API_BASE_URL}/GHMC-data?plant=${selectedPlant}`
-        );
-        const ghmcData = ghmcRes.data || [];
-        console.log("📦 Full GHMC data:", ghmcData);
+    axios.get(`${API_BASE_URL}/GHMC-data?plant=${selectedPlant}`)
+      .then((res) => {
+        if (!isMounted) return; 
+        const data = res.data || [];
+    
+        setStoreData(data);
 
-        setStoreData(ghmcData);
-
-
-                     const currentProcessExists = ghmcData.data.some(item => 
-            item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
-            item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
-          );
-       
-        setRecordExists(currentProcessExists);
-
-        
-        const plantRecord = ghmcData?.find(
-          (item) => item.loc === selectedPlant
-        );
-
-        if (plantRecord && plantRecord.Organization) {
-          setOrganizationType(plantRecord.Organization);
-        } else {
-          setOrganizationType(plantRecord?.Organization || "GHMC");
-             setRecordExists(false);
+        if (data.length > 0) {
+          const firstStep = data[0];
+          setOrganizationType(firstStep.Organization || "GHMC");
         }
+      })
+      .catch((err) => console.error("Error fetching process history:", err));
+  }
 
-        if (ghmcData.length > 0) {
-          console.log("✅ GHMC records found. Using first step for project info.");
-
-          const firstStep = ghmcData[0];
-          console.log("🧾 First step data:", firstStep);
-
-          setFormData((prev) => ({
-            ...prev,
-            loc: selectedPlant,
-            organisation: firstStep.Organization || "",
-            noOfTowers: firstStep.noOfTowers || "",
-            location: firstStep.LOCATION || "",
-            status: firstStep.STATUS || "",
-          }));
-
-          console.log("🎯 Updated formData with first step:", {
-            organisation: firstStep.Organization,
-            noOfTowers: firstStep.noOfTowers,
-            location: firstStep.LOCATION,
-            status: firstStep.STATUS,
-          });
-        } else {
-          console.log("⚠️ No GHMC data found — falling back to master API...");
-
-          const masterRes = await getMasterByLoc(selectedPlant);
-          console.log("📚 Master data from getMasterByLoc:", masterRes);
-
-          if (masterRes) {
-            setHeaderData(masterRes);
-            setFormData((prev) => ({
-              ...prev,
-              loc: selectedPlant,
-              organisation: masterRes.Organization || "",
-              project_name: masterRes.PROJECT_NAME || "",
-              location: masterRes.LOCATION || "",
-              status: masterRes.STATUS || "",
-            }));
-
-            console.log("🎯 Updated formData with masterRes:", {
-              organisation: masterRes.Organization,
-              project_name: masterRes.PROJECT_NAME,
-              location: masterRes.LOCATION,
-              status: masterRes.STATUS,
-            });
-          }
-        }
-      } catch (err) {
-        console.error("❌ Error fetching GHMC/master data:", err);
-      }
-    };
-
-    fetchPlantData();
-  }, [selectedPlant]);
+  return () => { isMounted = false; };
+}, [selectedPlant]);
 
   function parseJsonArraySafe(value) {
     if (!value) return [];
@@ -412,135 +342,214 @@ const [recordExists, setRecordExists] = useState(false);
     }
   }, [selectedPlant, immediateNextStepIndex, steps]);
 
-  useEffect(() => {
-    if (nextStepDetails) {
-      console.log("🧩 Next Step Details Fetched:", nextStepDetails);
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: nextStepDetails.applyDate || "",
-        status: nextStepDetails.STATUS || "",
-        reason: nextStepDetails.REASON || "",
-        comments: nextStepDetails.Comments || nextStepDetails.COMMENTS || "",
-        noOfFlats:
-          nextStepDetails.NUMBER_OF_FLATS || nextStepDetails.noOfFlats || "",
-        KLD: nextStepDetails.feas_doc_name || "",
-        amountPaid: nextStepDetails.AMOUNT_PAID || "",
-        Ghmc: nextStepDetails.GHMC || "",
-        OldAmount:
-          nextStepDetails.OLD_AMOUNT || nextStepDetails.OldAmount || "",
-        Size: nextStepDetails.SIZE_OF_CONNECTION || nextStepDetails.Size || "",
-        TotalAmount: nextStepDetails.TOTAL_AMOUNT || "",
-        TotalProjectArea: nextStepDetails.TOTAL_PROJECT_AREA || "",
-        noOfTowers: nextStepDetails.noOfTowers || "",
-        ProjectBuildArea: nextStepDetails.PROJECT_BUILD_AREA || "",
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "",
-        comments: "",
-        process: "",
-        reason: "",
-        status: "",
-        noOfFlats: "",
-        KLD: "",
-        amountPaid: "",
-        Ghmc: "",
-        OldAmount: "",
-        Size: "",
-        TotalAmount: "",
-        TotalProjectArea: "",
-        noOfTowers: "",
-        ProjectBuildArea: "",
-      }));
+  // useEffect(() => {
+  //   if (nextStepDetails) {
+  //     console.log("🧩 Next Step Details Fetched:", nextStepDetails);
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       applyDate: nextStepDetails.applyDate || "",
+  //       status: nextStepDetails.STATUS || "",
+  //       reason: nextStepDetails.REASON || "",
+  //       comments: nextStepDetails.Comments || nextStepDetails.COMMENTS || "",
+  //       noOfFlats:
+  //         nextStepDetails.NUMBER_OF_FLATS || nextStepDetails.noOfFlats || "",
+  //       KLD: nextStepDetails.feas_doc_name || "",
+  //       amountPaid: nextStepDetails.AMOUNT_PAID || "",
+  //       Ghmc: nextStepDetails.GHMC || "",
+  //       OldAmount:
+  //         nextStepDetails.OLD_AMOUNT || nextStepDetails.OldAmount || "",
+  //       Size: nextStepDetails.SIZE_OF_CONNECTION || nextStepDetails.Size || "",
+  //       TotalAmount: nextStepDetails.TOTAL_AMOUNT || "",
+  //       TotalProjectArea: nextStepDetails.TOTAL_PROJECT_AREA || "",
+  //       noOfTowers: nextStepDetails.noOfTowers || "",
+  //       ProjectBuildArea: nextStepDetails.PROJECT_BUILD_AREA || "",
+  //     }));
+  //   } else {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       applyDate: "",
+  //       comments: "",
+  //       process: "",
+  //       reason: "",
+  //       status: "",
+  //       noOfFlats: "",
+  //       KLD: "",
+  //       amountPaid: "",
+  //       Ghmc: "",
+  //       OldAmount: "",
+  //       Size: "",
+  //       TotalAmount: "",
+  //       TotalProjectArea: "",
+  //       noOfTowers: "",
+  //       ProjectBuildArea: "",
+  //     }));
 
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-    }
-  }, [nextStepDetails]);
+  //     setFeasibilityDocs([]);
+  //     setAmountPaidDocs([]);
+  //     setLinkDocs([]);
+  //     setLandDocs([]);
+  //     setOthDocs([]);
+  //   }
+  // }, [nextStepDetails]);
 
-  const handleChange = async (e) => {
-    const { name, value } = e.target;
+  // const handleChange = async (e) => {
+  //   const { name, value } = e.target;
 
-    if (name === "noOfFlats") {
-      const nocs = Math.ceil(Number(value) / 2);
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setFormData((prev) => ({
-        ...prev,
-        noOfFlats: value,
-        KLD: value ? nocs : "",
-      }));
+  //   if (name === "noOfFlats") {
+  //     const nocs = Math.ceil(Number(value) / 2);
+  //     setLinkDocs([]);
+  //     setLandDocs([]);
+  //     setOthDocs([]);
+  //     setFeasibilityDocs([]);
+  //     setAmountPaidDocs([]);
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       noOfFlats: value,
+  //       KLD: value ? nocs : "",
+  //     }));
      
-    } else if (name === "OldAmount") {
-      const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
-      const total = amountPaid + Number(value);
-      console.log(total, "total", amountPaid, value);
-      setFormData((prev) => ({
-        ...prev,
-        OldAmount: value,
-        TotalAmount: value ? total : "",
-      }));
-    } else if (name === "loc") {
-      setFormData((prev) => ({ ...prev, loc: value }));
-      setSelectedPlant(value);
-      setSubmitted(false);
-      setIsViewingSpecificStep(false); // 👈 Reset when plant changes
-      setViewedStepDetails(null);
-      setViewedStep(null);
-      setCurrentProcess("");
-      setShowEmailModal(false);
-       setRecordExists(false);
+  //   } else if (name === "OldAmount") {
+  //     const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
+  //     const total = amountPaid + Number(value);
+  //     console.log(total, "total", amountPaid, value);
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       OldAmount: value,
+  //       TotalAmount: value ? total : "",
+  //     }));
+  //   } else if (name === "loc") {
+  //     setFormData((prev) => ({ ...prev, loc: value }));
+  //     setSelectedPlant(value);
+  //     setSubmitted(false);
+  //     setIsViewingSpecificStep(false); // 👈 Reset when plant changes
+  //     setViewedStepDetails(null);
+  //     setViewedStep(null);
+  //     setCurrentProcess("");
+  //     setShowEmailModal(false);
+  //      setRecordExists(false);
 
+  //     try {
+  //       const res = await getMasterByLoc(value);
+  //       if (res) {
+  //         setHeaderData(res);
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           applyDate: res.APPLICATION_DATE || "",
+  //           noOfTowers: res.NUMBER_OF_TOWERS || "",
+  //           TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
+  //           ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
+  //           ProjectName: res.PROJECT_NAME || "",
+  //         }));
+  //       } else {
+  //         setHeaderData(null);
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           applyDate: "",
+  //           noOfTowers: "",
+  //           TotalProjectArea: "",
+  //           ProjectBuildArea: "",
+  //           ProjectName: "",
+  //         }));
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching master by loc:", err);
+  //       setHeaderData(null);
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         applyDate: "",
+  //         noOfTowers: "",
+  //         TotalProjectArea: "",
+  //         ProjectBuildArea: "",
+  //         ProjectName: "",
+  //       }));
+  //     }
+  //   } else {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       [name]: value,
+  //     }));
+  //   }
+  // };
+
+   const handleChange = async (e) => {
+    const { name, value } = e.target;
+  
+    if (name === "loc") {
+      // 1. IMMEDIATELY CLEAR ALL STATE to prevent old data flicker
+      setSelectedPlant(value);
+      setStoreData([]);
+      setSteps([]);
+      setHeaderData(null);
+      setNextStepDetails(null);
+      setViewedStepDetails(null);
+      setSelectedProcessDetails(null);
+      setSubmitted(false);
+      setIsViewingSpecificStep(false);
+          setNextStepDetails(null);
+         setImmediateNextStepIndex(-1);
+      // Clear All Documents
+      setFeasibilityDocs([]);
+  
+      // 2. DEFINE A CLEAN EMPTY STATE
+      const emptyFormData = {
+        loc: value,
+        applyDate: "",
+        Comments: "",
+        organisation: "",
+        project_name: "",
+        location: "",
+        status: "",
+        noOfTowers: "",
+        TotalProjectArea: "",
+        ProjectBuildArea: "",
+        ProjectName: "",
+        noOfFlats: "", 
+        KLD: "",      
+        OldAmount: "", 
+        TotalAmount: "", 
+        Size: "",
+        Ghmc: "",
+      };
+  
+      setFormData(emptyFormData);
+  
+      if (!value) return;
+  
+      // 3. FETCH NEW MASTER DATA
       try {
         const res = await getMasterByLoc(value);
         if (res) {
           setHeaderData(res);
-          setFormData((prev) => ({
-            ...prev,
-            applyDate: res.APPLICATION_DATE || "",
+          const org = res.Organization || "GHMC";
+          setOrganizationType(org);
+  
+          setFormData(prev => ({
+            ...emptyFormData,
+            organisation: org,
             noOfTowers: res.NUMBER_OF_TOWERS || "",
             TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
             ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
             ProjectName: res.PROJECT_NAME || "",
-          }));
-        } else {
-          setHeaderData(null);
-          setFormData((prev) => ({
-            ...prev,
-            applyDate: "",
-            noOfTowers: "",
-            TotalProjectArea: "",
-            ProjectBuildArea: "",
-            ProjectName: "",
+            location: res.LOCATION || "",
+            status: res.STATUS || "",
+            noOfFlats: res.NUMBER_OF_FLATS || "",
           }));
         }
       } catch (err) {
-        console.error("Error fetching master by loc:", err);
-        setHeaderData(null);
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: "",
-          noOfTowers: "",
-          TotalProjectArea: "",
-          ProjectBuildArea: "",
-          ProjectName: "",
-        }));
+        console.error("Error fetching master data:", err);
       }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+    } 
+    // ... rest of your calculations for noOfFlats / OldAmount
+    else if (name === "noOfFlats") {
+      const nocs = value ? Math.ceil(Number(value) / 2) : "";
+      setFormData((prev) => ({ ...prev, noOfFlats: value, KLD: nocs }));
+    }
+    else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
+  
   const handleConfirmSubmit = async (emails) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -612,13 +621,15 @@ const [recordExists, setRecordExists] = useState(false);
       setSubmitted(true);
 
       setRespModifyData?.(res?.data?.data);
+      
+    await Swal.fire({
+            icon: "success",
+            title:"Submitted!",
+            text: "Your data has been saved successfully.",
+            timer: 1500,
+            showConfirmButton: false,
+          });
 
-      setDialogConfig({
-        title: "Success",
-        message: "Form submitted successfully!",
-        confirmText: "OK",
-        open: true,
-      });
     } catch (err) {
       console.error("❌ Submission failed:", err);
       setDialogConfig({
@@ -725,7 +736,6 @@ const [recordExists, setRecordExists] = useState(false);
       }));
     }
   };
-
 
 const NumberOfTowers = storeData?.[0]?.noOfTowers;
 
@@ -903,7 +913,7 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
                     size="md"
                     onClick={handleEmailSubmit}
                     className="w-100 fw-semibold"
-                    disabled={!formData.loc || isSubmitting || submitted}
+                    disabled={!formData.loc || isSubmitting || submitted || !recordExists}
                   >
                     {isSubmitting
                       ? "Submitting..."

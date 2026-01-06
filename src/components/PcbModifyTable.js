@@ -776,7 +776,7 @@ const PcbModifyTable = () => {
         ? `${API_BASE_URL}/amendment-updt`
         : `${API_BASE_URL}/amendment-submit`;
 
-
+        // added on 4-1-2025 by rajakumari.m----------------------------------------------------
  const response = await axios.post(endpoint, payload, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -802,6 +802,26 @@ const PcbModifyTable = () => {
     text: "Something went wrong. Please try again.",
   });
 }
+
+  //---------------------------------------------------------------------------------------------------
+
+      // const response = await axios.post(endpoint, payload, {
+      //   headers: { "Content-Type": "multipart/form-data" },
+      // });
+
+      // console.log("✅ Backend response:", response.data);
+      // setShowAmendModal(false);
+
+      // await Swal.fire({
+      //   icon: "success",
+      //   title: "Email Sent!",
+      //   text: `Amendment (${amendDataFromModal.category}) email sent to ${selectedEmails?.selectedAmendEmails} recipient(s).`,
+      // });
+
+
+
+    
+    
   };
 
 
@@ -1403,7 +1423,7 @@ const PcbModifyTable = () => {
                           <strong style={{ whiteSpace: "nowrap" }}>
                             Date:
                           </strong>{" "}
-                          {entry.date}
+                          {formatDate(entry.date)}
                           <br />
                           <strong style={{ whiteSpace: "nowrap" }}>
                             Comment:

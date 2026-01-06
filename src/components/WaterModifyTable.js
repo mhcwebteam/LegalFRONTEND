@@ -144,43 +144,97 @@ const WaterModifyTable = () => {
   };
 
   // Open email modal
-  const handleEmailSubmit = () => {
-    const newErrors = {};
-    if (!formData.loc) newErrors.loc = "Plant selection is required";
-    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+  // const handleEmailSubmit = () => {
+  //   const newErrors = {};
+  //   if (!formData.loc) newErrors.loc = "Plant selection is required";
+  //   if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
 
-    if (formData.status === "YES" && !formData.comments) {
-      newErrors.comments = "Comments are required";
-    }
+  //   if (formData.status === "YES" && !formData.comments) {
+  //     newErrors.comments = "Comments are required";
+  //   }
 
-    // Reason is required when status is "NO"
-    if (formData.status === "NO" && !formData.reason) {
-      newErrors.reason = "Reason is required";
-    }
+  //   // Reason is required when status is "NO"
+  //   if (formData.status === "NO" && !formData.reason) {
+  //     newErrors.reason = "Reason is required";
+  //   }
 
-    if (!validateDocuments()) {
-      // Errors already set in validateDocuments function
-      return false;
-    }
+  //   if (!validateDocuments()) {
+  //     // Errors already set in validateDocuments function
+  //     return false;
+  //   }
 
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+  //   if (Object.keys(newErrors).length > 0) {
+  //     setErrors(newErrors);
+  //     return;
+  //   }
 
-    setErrors({});
-    setShowEmailModal(true);
-  };
+  //   setErrors({});
+  //   setShowEmailModal(true);
+  // };
+  // added on 4-1-2026 by rajakumari.m----------------------------------------------------
+  // Open email modal
+const handleEmailSubmit = () => {
+  const newErrors = {};
+  if (!formData.loc) newErrors.loc = "Plant selection is required";
+  if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+
+  if (formData.status === "YES" && !formData.comments) {
+    newErrors.comments = "Comments are required";
+  }
+
+  // Reason is required when status is "NO"
+  if (formData.status === "NO" && !formData.reason) {
+    newErrors.reason = "Reason is required";
+  }
+
+  if (!validateDocuments()) {
+    // Show error if documents are invalid
+    Swal.fire({
+      icon: "error",
+      title: "Validation Error",
+      text: "Only PDF files are allowed for documents.",
+      confirmButtonText: "OK",
+    });
+    return;
+  }
+
+  if (Object.keys(newErrors).length > 0) {
+    // Show validation errors
+    const errorMessages = Object.values(newErrors).join("<br>");
+    Swal.fire({
+      icon: "error",
+      title: "Validation Error",
+      html: errorMessages,
+      confirmButtonText: "OK",
+    });
+    return;
+  }
+
+  setErrors({});
+  setShowEmailModal(true);
+};
+// ------------------------------------------------------------------------------------------------------------
 
   // Handle email selection and form submission
-  const handleEmailSelectionSubmit = async (emails) => {
-    setSelectedEmails(emails);
-    setShowEmailModal(false);
+  // const handleEmailSelectionSubmit = async (emails) => {
+  //   setSelectedEmails(emails);
+  //   setShowEmailModal(false);
 
-    // Proceed with form submission
-    await handleConfirmSubmit(emails);
-  };
+  //   // Proceed with form submission
+  //   await handleConfirmSubmit(emails);
+  // };
+
+  // ----------added on 4-1-2026 by rajakumari.m--------------------------------------------------------------
+  // Handle email selection and form submission
+const handleEmailSelectionSubmit = async (emails) => {
+  setSelectedEmails(emails);
+  setShowEmailModal(false);
+
+  // Proceed with form submission
+  await handleConfirmSubmit(emails);
+};
+// ---------------------------------------------------------------------------------------------------------
 
   useEffect(() => {
     if (immediateNextStepIndex === 0) {
@@ -1164,13 +1218,27 @@ const WaterModifyTable = () => {
           item.LOC?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
       );
 
-      const apiUrl = existingRecord
-        ? `${API_BASE_URL}/water-modify`
-        : `${API_BASE_URL}/water-submit`;
+      // const apiUrl = existingRecord
+      //   ? `${API_BASE_URL}/water-modify`
+      //   : `${API_BASE_URL}/water-submit`;
 
-      const res = await axios.post(apiUrl, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+//       const res = await axios.post(apiUrl, payload, {
+//         headers: { "Content-Type": "multipart/form-data" },
+//       });
+//    // added on 4-1-2025 by rajakumari.m----------------------------------------------------
+//  const response = await axios.post(endpoint, payload, {
+//     headers: { "Content-Type": "multipart/form-data" },
+//   });
+// added on 4-1-2026 by rajakumari.m----------------------------------------------------------------------------------
+ const apiUrl = existingRecord
+      ? `${API_BASE_URL}/water-modify`
+      : `${API_BASE_URL}/water-submit`;
+
+    // FIXED: Use apiUrl instead of endpoint
+    const res = await axios.post(apiUrl, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    //---------------------------------------------------
 
      // --- START OF RESET LOGIC ---
 
@@ -1224,27 +1292,39 @@ const WaterModifyTable = () => {
 
       // --- END OF RESET LOGIC ---
 
-      setDialogConfig({
-        title: 'Success',
-        message: 'Form submitted successfully!',
-        confirmText: 'OK',
-        open: true
-      });
+      // setDialogConfig({
+      //   title: 'Success',
+      //   message: 'Form submitted successfully!',
+      //   confirmText: 'OK',
+      //   open: true
+      // });
+      //added on 4-1-2026 by rajakumari.m----------------------------------------------
+       // Show success popup (auto-closes after 1.5 seconds)
+    await Swal.fire({
+      icon: "success",
+      title: existingRecord ? "Updated!" : "Submitted!",
+      text: "Your data has been saved successfully.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
 
-    } catch (err) {
-      console.error("Submission failed:", err);
-      setDialogConfig({
-        title: 'Error',
-        message: 'Submission failed. Please try again.',
-        confirmText: 'OK',
-        showCancel: false,
-        open: true
-      });
-    } finally {
-      setIsSubmitting(false);
-      setConfirmOpen(false);
-    }
-  };
+  } catch (err) {
+    console.error("Submission failed:", err);
+    
+    // Show error popup
+    await Swal.fire({
+      icon: "error",
+      title: "Submission Failed",
+      text: "Please check the console for details.",
+      confirmButtonText: "OK",
+    });
+  } finally {
+    setIsSubmitting(false);
+    setConfirmOpen(false);
+  }
+};
+
+   
 
   return (
     <>

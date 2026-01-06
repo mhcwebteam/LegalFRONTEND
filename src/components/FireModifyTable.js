@@ -2893,7 +2893,14 @@ const FireModifyTable = () => {
                           viewedStepDetails?.APPLY_DT || formData.applyDate
                         }
                         readOnly
-                        className="bg-white"
+                        
+                         // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                           style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+      // /------------------------------------------------------------------------------------------
                       />
                     </Form.Group>
                   </Col>
@@ -2910,7 +2917,14 @@ const FireModifyTable = () => {
                           rows={2}
                           value={viewedStepDetails.COMMENTS}
                           readOnly
-                          className="bg-white"
+                          // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                           style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+      // /------------------------------------------------------------------------------------------
+                         
                         />
                       </Form.Group>
                     </Col>
@@ -2950,7 +2964,13 @@ const FireModifyTable = () => {
                             type="text"
                             value={viewedStepDetails.FEE_AMOUNT}
                             readOnly
-                            className="bg-white"
+                             // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                           style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+      // /------------------------------------------------------------------------------------------
                           />
                         </Form.Group>
                       </Col>
@@ -2968,7 +2988,13 @@ const FireModifyTable = () => {
                           type="text"
                           value={viewedStepDetails.FEE_PAID_STATUS}
                           readOnly
-                          className="bg-white"
+                          // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                           style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+      // /------------------------------------------------------------------------------------------
                         />
                       </Form.Group>
                     </Col>
@@ -2994,7 +3020,13 @@ const FireModifyTable = () => {
                             "Not Available"
                           }
                           readOnly
-                          className="bg-white"
+                          // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                           style={{
+        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+        color: isViewingCompletedStep ? '#6c757d' : '',
+        cursor: isViewingCompletedStep ? 'not-allowed' : ''
+      }}
+      // /------------------------------------------------------------------------------------------
                         />
                       </Form.Group>
                     </Col>

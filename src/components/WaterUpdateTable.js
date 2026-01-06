@@ -1,7 +1,5 @@
 
 
-
-
 import React, { useEffect, useState, useRef, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -121,7 +119,6 @@ const WaterUpdateTable = () => {
     }
   };
 
-
     useEffect(() => {
       checkRecordExists();
     }, [storeData, selectedPlant, immediateNextStep]);
@@ -180,9 +177,7 @@ const WaterUpdateTable = () => {
   }, [immediateNextStepIndex]);
 
   // Fetch steps
-useEffect(() => {
-  // Only fetch steps if a plant is selected
-  if (selectedPlant) {
+  useEffect(() => {
     axios
       .get(`${API_BASE_URL}/water-process`)
       .then((res) => {
@@ -190,15 +185,12 @@ useEffect(() => {
         if (res.data.length > 0) setActiveStep(0);
       })
       .catch((err) => console.error("Error fetching processes", err));
-  } else {
-    // Clear steps when no plant is selected
-    setSteps([]);
-  }
-}, [selectedPlant]); 
+  }, []);
 
   useEffect(() => {
     if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
       const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+
       if (nextStepName) {
         axios
           .get(
@@ -1040,12 +1032,11 @@ useEffect(() => {
       });
   setSelectedPlant(""); 
 
-
    // ✅ Clear everything after submission
     setStoreData([]);       // Clear sidebar history
     setHeaderData(null);    // Clear header project info
     setSelectedPlant("");   // This will hide the process steps
-    setSteps([]);          // ADD THIS LINE to clear the steps array
+         // ADD THIS LINE to clear the steps array
 
       // const res = await axios.get(
       //   `${API_BASE_URL}/water-data?plant=${selectedPlant}`
@@ -1071,7 +1062,7 @@ useEffect(() => {
         ProjectBuildArea: "",
         TotalProjectArea: ""
       });
-       setStoreData([]); 
+      
       setHeaderData(null);
    // Optional: keep response data if needed, or set to null
 
@@ -1095,15 +1086,24 @@ setAllStepsCompleted(false);
 
       setSubmitted(true);
 
-      setDialogConfig({
-        title: 'Success',
-        message: result.data.emailSent 
-          ? `Form submitted successfully.!`
-          : 'Form submitted successfully!',
-        confirmText: 'OK',
-        showCancel: false,
-        open: true
-      });
+      // setDialogConfig({
+      //   title: 'Success',
+      //   message: result.data.emailSent 
+      //     ? `Form submitted successfully.!`
+      //     : 'Form submitted successfully!',
+      //   confirmText: 'OK',
+      //   showCancel: false,
+      //   open: true
+      // });
+
+
+          await Swal.fire({
+            icon: "success",
+            title:  "Updated!",
+            text: "Your data has been saved successfully.",
+            timer: 1500,
+            showConfirmButton: false,
+          });
 
     } catch (err) {
       console.error("❌ Submission failed:", err);
@@ -1150,11 +1150,7 @@ setAllStepsCompleted(false);
           <div className="border rounded p-3 bg-light flex-fill">
             <h6 className="text-center mb-3">Process Steps</h6>
         {/* ADD THIS CONDITION */}
-    {!selectedPlant ? (
-      <div className="text-center text-muted mt-4 p-3">
-        <p>Please select a plant to view process steps</p>
-      </div>
-    ) : (
+
       <Nav variant="pills" className="flex-column">
         {steps.map((step, idx) => {
           let variant = "secondary";
@@ -1210,7 +1206,7 @@ setAllStepsCompleted(false);
           );
         })}
       </Nav>
-    )}
+  
           </div>
         </Col>
         <Col
@@ -1255,10 +1251,7 @@ setAllStepsCompleted(false);
                 <>
                   {/* Show different messages based on state */}
                   {!formData.loc ? (
-                    <Alert variant="secondary" className="mb-2">
-                      <i className="fas fa-info-circle me-2"></i>
-                      Please select a plant to enable submission.
-                    </Alert>
+                ""
                   ) : !recordExists ? (
                  ""
                   ) : null}
@@ -1356,3 +1349,4 @@ setAllStepsCompleted(false);
 };
 
 export default WaterUpdateTable;
+

@@ -1856,55 +1856,126 @@ const PcbUpdateTable = () => {
                           '-'
                         )}
                       </td> */}
-                      <td style={{ whiteSpace: 'nowrap' }}>
-  {storeInfo?.DOC_PATH && storeInfo.DOC_PATH.trim() !== '' && storeInfo.DOC_PATH !== '[]' ? (
-    <button
-      className="btn btn-outline-primary btn-sm"
-      title="View Document"
-      onClick={() => {
-        if (!storeInfo?.DOC_PATH) {
-          alert('No documents available for this process');
-          return;
-        }
-
-        let docs = [];
-        let names = [];
-
-        try {
-          const parsedDocs = JSON.parse(storeInfo.DOC_PATH || '[]');
-          const parsedNames = JSON.parse(storeInfo.DOC_NAME || '[]');
-          
-          // Ensure docs is an array
-          docs = Array.isArray(parsedDocs) ? parsedDocs : [];
-          names = Array.isArray(parsedNames) ? parsedNames : [];
-        } catch (e) {
-          console.error('Error parsing DOC_PATH/DOC_NAME:', e);
-          docs = [];
-          names = [];
-        }
-
-        // Check if we actually have valid document paths
-        const validDocs = docs ? docs.filter(doc => doc && doc.trim() !== '') : [];
+                      {/* added on 4-1-2026 by rajakumari.m---------------------------------- */}
+                     <td style={{ whiteSpace: 'nowrap' }}>
+  {(() => {
+    const docPath = storeInfo?.DOC_PATH;
+    
+    // Check if DOC_PATH exists and is a valid non-empty string
+    if (!docPath || docPath === null || docPath === undefined) {
+      return '-';
+    }
+    
+    // Convert to string and trim
+    const docPathStr = String(docPath).trim();
+    
+    // Check for all possible empty/blank values
+    const isEmptyValue = [
+      '', '[]', '""', "''", '[""]', '[" "]', '["null"]', 
+      'null', 'undefined', 'NULL', 'UNDEFINED'
+    ].includes(docPathStr) || docPathStr.toLowerCase() === 'null' || docPathStr.toLowerCase() === 'undefined';
+    
+    if (isEmptyValue) {
+      return '-';
+    }
+    
+    // Try to parse as JSON array
+    try {
+      const parsed = JSON.parse(docPathStr);
+      
+      // If it's an array, check for valid documents
+      if (Array.isArray(parsed)) {
+        const validDocs = parsed.filter(doc => 
+          doc && String(doc).trim() !== '' && 
+          String(doc).trim().toLowerCase() !== 'null' && 
+          String(doc).trim().toLowerCase() !== 'undefined'
+        );
         
         if (validDocs.length === 0) {
-          alert('No documents available for this process');
-          return;
+          return '-';
         }
+        
+        // Has valid documents - show button
+        return (
+          <button
+            className="btn btn-outline-primary btn-sm"
+            title="View Document"
+            onClick={() => {
+              let names = [];
+              try {
+                names = JSON.parse(storeInfo?.DOC_NAME || '[]');
+              } catch (e) {
+                console.error('Error parsing DOC_NAME:', e);
+              }
 
-        const files = validDocs.map((docPath, idx) => ({
-          DOC_PATH: docPath,
-          DOC_NAME: names[idx] || `Document ${idx + 1}`,
-        }));
+              const files = validDocs.map((docPath, idx) => ({
+                DOC_PATH: docPath,
+                DOC_NAME: names[idx] || `Document ${idx + 1}`,
+              }));
 
-        setModalDocs(files);
-        setModalTitle(row.PROCESS);
-        setShowDocModal(true);
-      }}
-    >
-      <i className="fas fa-file-alt"></i>
-    </button>
-  ) : "-"}
+              setModalDocs(files);
+              setModalTitle(row.PROCESS);
+              setShowDocModal(true);
+            }}
+          >
+            <i className="fas fa-file-alt"></i>
+          </button>
+        );
+      }
+      
+      // If single string document
+      if (typeof parsed === 'string' && parsed.trim() !== '') {
+        return (
+          <button
+            className="btn btn-outline-primary btn-sm"
+            title="View Document"
+            onClick={() => {
+              setModalDocs([{
+                DOC_PATH: parsed,
+                DOC_NAME: row.PROCESS,
+              }]);
+              setModalTitle(row.PROCESS);
+              setShowDocModal(true);
+            }}
+          >
+            <i className="fas fa-file-alt"></i>
+          </button>
+        );
+      }
+      
+      return '-';
+      
+    } catch (e) {
+      // If not JSON, check if it's a plain file path string
+      if (docPathStr && 
+          !docPathStr.startsWith('[') && 
+          !docPathStr.startsWith('{') &&
+          docPathStr.trim() !== '' &&
+          docPathStr.toLowerCase() !== 'null' &&
+          docPathStr.toLowerCase() !== 'undefined') {
+        return (
+          <button
+            className="btn btn-outline-primary btn-sm"
+            title="View Document"
+            onClick={() => {
+              setModalDocs([{
+                DOC_PATH: docPathStr,
+                DOC_NAME: row.PROCESS,
+              }]);
+              setModalTitle(row.PROCESS);
+              setShowDocModal(true);
+            }}
+          >
+            <i className="fas fa-file-alt"></i>
+          </button>
+        );
+      }
+      
+      return '-';
+    }
+  })()}
 </td>
+{/* -------------------------------------------------------------------------------------- */}
 
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {storeInfo?.LOG ? (
