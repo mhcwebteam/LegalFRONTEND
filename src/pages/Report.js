@@ -15,8 +15,7 @@ const Report = () => {
   const [showSearch2, setShowSearch2] = useState(false);
   const searchRef1 = useRef(null);
   const searchRef2 = useRef(null);
-  console.log("reportData",reportData);
- 
+  
 
   // Process colors for headers only
   const processColors = {
@@ -28,13 +27,12 @@ const Report = () => {
       gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
       textColor: 'white'
     },
-    
-    'Fire': {
-      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      textColor: 'white'
-    },
     'HMDA/GHMC': {
       gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      textColor: 'white'
+    },
+    'Fire': {
+      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
       textColor: 'white'
     },
     'Water': {
@@ -50,8 +48,8 @@ const Report = () => {
   const processes = [
     'Pollution Control Board',
     'Airport Authority',
-    'Fire',
     'HMDA/GHMC',
+    'Fire',
     'Water',
     'RERA'
   ];
@@ -72,48 +70,6 @@ const Report = () => {
     'Fire': 'fire_steps',
     'Water': 'water_steps',
     'RERA': 'rera_steps'
-  };
-
-  // Helper function to extract only the latest comment from amendment comments
-  const getLatestAmendmentComment = (commentsString) => {
-    if (!commentsString) return '';
-    
-    try {
-      // Check if the string is valid JSON
-      const parsed = JSON.parse(commentsString);
-      
-      // If it's an array of objects with date and comment
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Get the latest comment (assuming the array is sorted with latest first or last)
-        // Let's assume latest is first, if not, we can sort by date
-        let latestComment = parsed[0];
-        
-        // If we want to be sure and sort by date to get the latest
-        // Sort by date in descending order (newest first)
-        const sortedByDate = [...parsed].sort((a, b) => {
-          const dateA = a.date ? new Date(a.date).getTime() : 0;
-          const dateB = b.date ? new Date(b.date).getTime() : 0;
-          return dateB - dateA; // Descending order (newest first)
-        });
-        
-        latestComment = sortedByDate[0];
-        
-        // Extract the comment text
-        if (typeof latestComment === 'object' && latestComment !== null && 'comment' in latestComment) {
-          return latestComment.comment || '';
-        }
-        return typeof latestComment === 'string' ? latestComment : '';
-      }
-      // If it's a single object with comment field
-      else if (typeof parsed === 'object' && parsed !== null && 'comment' in parsed) {
-        return parsed.comment || '';
-      }
-      // If it's already a string or other format
-      return commentsString;
-    } catch (error) {
-      // If not valid JSON, return the string as is
-      return commentsString;
-    }
   };
 
   const getActiveAmendment = (plantName) => {
@@ -137,6 +93,7 @@ const Report = () => {
       try {
         setLoading(true);
         setError(null);
+
         const endpoints = [
           `${API_BASE_URL}/status-updates`,
           `${API_BASE_URL}/airport-status-updates`,
@@ -145,6 +102,7 @@ const Report = () => {
           `${API_BASE_URL}/water-status-updates`,
           `${API_BASE_URL}/rera-status-updates`,
         ];
+
         const promises = endpoints.map(url =>
           fetch(url, {
             headers: {
@@ -152,15 +110,16 @@ const Report = () => {
             }
           }).then(res => res.json())
         );
+
         const results = await Promise.all(promises);
-        console.log("REsults::::::",results);
+
         let allData = [];
         results.forEach(data => {
           if (data.success && Array.isArray(data.data)) {
             allData = [...allData, ...data.data];
           }
         });
-        console.log("aaaaaaaaaaaaaaaaaa",allData);
+
         const plantsMap = {};
         const appCreatedDates = {};
 
@@ -226,8 +185,6 @@ const Report = () => {
           setProcessSteps(stepsResult.data);
         }
 
-        console.log("uuuuuuuuuuuuuuuuuuuu",uniquePlants);
-
         setPlants(uniquePlants);
         setLoading(false);
 
@@ -258,30 +215,45 @@ const Report = () => {
     };
   }, []);
 
+  // const calculateDuration = (startDate, endDate) => {
+  //   if (!startDate || !endDate) return null;
+
+  //   const start = new Date(startDate);
+  //   const end = new Date(endDate);
+
+  //   // Set both dates to midnight to calculate full days
+  //   const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  //   const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+  //   const diffTime = Math.abs(endMidnight - startMidnight);
+  //   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  //   return diffDays;
+  // };
   const calculateDuration = (startDate, endDate) => {
-    if (!startDate || !endDate) return null;
+  if (!startDate || !endDate) return null;
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
-    // If dates are invalid, return null
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return null;
-    }
+  // If dates are invalid, return null
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return null;
+  }
 
-    // Set both dates to midnight to calculate full days
-    const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-    const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  // Set both dates to midnight to calculate full days
+  const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
-    const diffTime = Math.abs(endMidnight - startMidnight);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const diffTime = Math.abs(endMidnight - startMidnight);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Add 1 to include both start and end dates
+  return diffDays + 1;
+};
 
-    // Add 1 to include both start and end dates
-    return diffDays + 1;
-  };
 
   const getAllRecordsForPlant = (plantName, processName) => {
-    console.log("plantName::::",plantName,"processName::::::",processName);
     const dataKey = processToDataKey[processName];
 
     if (!dataKey || !reportData[dataKey]) {
@@ -292,7 +264,6 @@ const Report = () => {
 
     const matchingRecords = storeData.filter(record => {
       const loc = record.LOC || record.loc;
-      //console.log("LOcation:::::",loc);
       return loc && loc.trim().toLowerCase() === plantName.trim().toLowerCase();
     });
 
@@ -304,13 +275,16 @@ const Report = () => {
   };
 
   const getProcessStepsWithStatus = (plantName, processName) => {
-    console.log("GetProcessPlant:::",plantName,"GEtProcessName",processName);
     const stepsKey = processToStepsKey[processName];
+
     if (!stepsKey) {
       return [];
     }
+
     let allSteps = [];
+
     const records = getAllRecordsForPlant(plantName, processName);
+
     if (processName === 'Pollution Control Board') {
       const activeAmendment = getActiveAmendment(plantName);
 
@@ -358,10 +332,7 @@ const Report = () => {
           const statusField = matchingRecord[`${amendPrefix}STATUS`];
           const updatedField = matchingRecord[`${amendPrefix}UPDATED`];
           const amendDateField = matchingRecord[`${amendPrefix}DATE`];
-          const rawComments = matchingRecord[`${amendPrefix}COMMENTS`] || '';
-
-          // Get only the latest comment from amendment comments
-          comments = getLatestAmendmentComment(rawComments);
+          comments = matchingRecord[`${amendPrefix}COMMENTS`] || '';
 
           isCompleted = statusField !== null &&
             statusField !== undefined &&
@@ -374,7 +345,7 @@ const Report = () => {
               statusField === true);
 
           updatedDate = matchingRecord.updated_at || '';
-          applyDate = amendDateField || '';
+          applyDate = amendDateField || ''; // Use AMENDX_DATE for amendments
 
           if (isCompleted && applyDate && updatedDate) {
             duration = calculateDuration(applyDate, updatedDate);
@@ -394,7 +365,7 @@ const Report = () => {
               updatedField.toString().trim().toLowerCase() === 'done');
 
           updatedDate = matchingRecord.updated_at || '';
-          applyDate = matchingRecord.APPLY_DT || '';
+          applyDate = matchingRecord.APPLY_DT || ''; // Use APPLY_DT for regular steps
 
           if (isCompleted && applyDate && updatedDate) {
             duration = calculateDuration(applyDate, updatedDate);
@@ -413,7 +384,6 @@ const Report = () => {
         };
       });
     }
-
     if (processName === 'Fire' && processSteps['fire_steps']) {
       const baseSteps = [...processSteps['fire_steps']];
 
@@ -452,15 +422,18 @@ const Report = () => {
       }
     } else {
       const keys = Array.isArray(stepsKey) ? stepsKey : [stepsKey];
+
       keys.forEach(key => {
         if (processSteps[key]) {
           allSteps = [...allSteps, ...processSteps[key]];
         }
       });
     }
+
     if (allSteps.length === 0) {
       return [];
     }
+
     const sortedSteps = [...allSteps].sort((a, b) => {
       const levelA = parseInt(a.LEVEL) || 0;
       const levelB = parseInt(b.LEVEL) || 0;
@@ -561,15 +534,15 @@ const Report = () => {
   };
 
   const hasCompletedAllProcesses = (plantName) => {
-   // alert(plantName);
     for (const process of processes) {
       const stepsWithStatus = getProcessStepsWithStatus(plantName, process);
-      console.log("stepsWithStatus:::::::::",stepsWithStatus);
+
       if (stepsWithStatus.length === 0) {
         return false;
       }
-      const allCompleted = stepsWithStatus.every(step => step.status == 'COMPLETED');
-      console.log("allCompleted::::::",allCompleted);
+
+      const allCompleted = stepsWithStatus.every(step => step.status === 'COMPLETED');
+
       if (!allCompleted) {
         return false;
       }
@@ -578,15 +551,13 @@ const Report = () => {
     return true;
   };
 
-  //console.log("hasCompletedAllProcesses:::",hasCompletedAllProcesses);
-  const filteredPlants1 = plants?.filter(plant => hasCompletedAllProcesses(plant.plant_name))
-    .filter(plant => plant?.plant_name?.toLowerCase().includes(searchTerm1.toLowerCase()));
-     console.log("PlantsLength::::::",filteredPlants1.length)
-
+  const filteredPlants1 = plants
+    .filter(plant => !hasCompletedAllProcesses(plant.plant_name))
+    .filter(plant => plant.plant_name?.toLowerCase().includes(searchTerm1.toLowerCase()));
 
   const filteredPlants2 = plants
-    .filter(plant => hasCompletedAllProcesses(plant?.plant_name))
-    .filter(plant => plant?.plant_name?.toLowerCase().includes(searchTerm2.toLowerCase()));
+    .filter(plant => !hasCompletedAllProcesses(plant.plant_name))
+    .filter(plant => plant.plant_name?.toLowerCase().includes(searchTerm2.toLowerCase()));
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -628,25 +599,23 @@ const Report = () => {
         let currentStep = null;
 
         for (let i = stepsWithStatus.length - 1; i >= 0; i--) {
-          console.log("stepsWithStatusiiiiiii;;;;;;",stepsWithStatus[i]);
-          if (stepsWithStatus[i].status === 'COMPLETED') 
-          {
+          if (stepsWithStatus[i].status === 'COMPLETED') {
             currentStep = stepsWithStatus[i];
-            console.log("currentStep::::::",currentStep);
             break;
           }
         }
+
         if (!currentStep) {
           currentStep = stepsWithStatus.find(step =>
             step.status === 'PENDING' && (step.date || step.comments)
           );
-           console.log("currentStepPENDING::::::",currentStep);
         }
+
         if (!currentStep) {
           currentStep = stepsWithStatus.find(step => step.status === 'PENDING');
         }
+
         if (currentStep) {
-          // For PCB, comments are already processed in getProcessStepsWithStatus
           return {
             process: currentStep.stepName,
             date: currentStep.date || '',
@@ -655,6 +624,7 @@ const Report = () => {
         }
       }
     }
+
     if (processName === 'Fire') {
       const provisionalRecords = matchingRecords.filter(record => {
         const stepType = (record.STEPTYPE || '').toString().trim().toLowerCase();
@@ -739,9 +709,7 @@ const Report = () => {
     const headers = ['S.No', 'PLANTS', ...processes.map(p => `${p} (Status)`), ...processes.map(p => `${p} (Date)`), ...processes.map(p => `${p} (Comments)`)];
     csvContent += headers.join(',') + '\n';
 
-    
     filteredPlants1.forEach((plant, rowIndex) => {
-      console.log("PLANTSSSSSS!!@@",plant);
       const row = [rowIndex + 1, `"${plant.plant_name || 'Unknown Plant'}"`];
 
       processes.forEach(process => {
@@ -1187,11 +1155,13 @@ const Report = () => {
                     border: '1px solid #ddd',
                     fontSize: '11px'
                   }}
-                    title={plant.plant_name || 'Unknown Plant'}>
-                    {plant?.plant_name || 'Unknown Plant'}
+                    title={plant.plant_name || 'Unknown Plant'}
+                  >
+                    {plant.plant_name || 'Unknown Plant'}
                   </td>
                   {processes.map((process, colIndex) => {
                     const cellData = getCellData(plant.plant_name, process);
+
                     return (
                       <td key={colIndex} style={{
                         padding: '8px',
@@ -1618,4 +1588,3 @@ const Report = () => {
 };
 
 export default Report;
-
