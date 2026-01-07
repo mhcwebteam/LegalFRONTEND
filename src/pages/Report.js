@@ -11,11 +11,13 @@ const Report = () => {
   const [error, setError] = useState(null);
   const [searchTerm1, setSearchTerm1] = useState('');
   const [searchTerm2, setSearchTerm2] = useState('');
+  const [searchTerm3, setSearchTerm3] = useState('');
   const [showSearch1, setShowSearch1] = useState(false);
   const [showSearch2, setShowSearch2] = useState(false);
+  const [showSearch3, setShowSearch3] = useState(false);
   const searchRef1 = useRef(null);
   const searchRef2 = useRef(null);
-  
+  const searchRef3 = useRef(null);
 
   // Process colors for headers only
   const processColors = {
@@ -27,12 +29,12 @@ const Report = () => {
       gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
       textColor: 'white'
     },
-    'HMDA/GHMC': {
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      textColor: 'white'
-    },
     'Fire': {
       gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      textColor: 'white'
+    },
+    'HMDA/GHMC': {
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
       textColor: 'white'
     },
     'Water': {
@@ -48,8 +50,8 @@ const Report = () => {
   const processes = [
     'Pollution Control Board',
     'Airport Authority',
-    'HMDA/GHMC',
     'Fire',
+    'HMDA/GHMC',
     'Water',
     'RERA'
   ];
@@ -207,6 +209,9 @@ const Report = () => {
       if (searchRef2.current && !searchRef2.current.contains(event.target)) {
         setShowSearch2(false);
       }
+      if (searchRef3.current && !searchRef3.current.contains(event.target)) {
+        setShowSearch3(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -215,43 +220,27 @@ const Report = () => {
     };
   }, []);
 
-  // const calculateDuration = (startDate, endDate) => {
-  //   if (!startDate || !endDate) return null;
-
-  //   const start = new Date(startDate);
-  //   const end = new Date(endDate);
-
-  //   // Set both dates to midnight to calculate full days
-  //   const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  //   const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-
-  //   const diffTime = Math.abs(endMidnight - startMidnight);
-  //   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  //   return diffDays;
-  // };
   const calculateDuration = (startDate, endDate) => {
-  if (!startDate || !endDate) return null;
+    if (!startDate || !endDate) return null;
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-  // If dates are invalid, return null
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return null;
-  }
+    // If dates are invalid, return null
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return null;
+    }
 
-  // Set both dates to midnight to calculate full days
-  const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    // Set both dates to midnight to calculate full days
+    const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
-  const diffTime = Math.abs(endMidnight - startMidnight);
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  // Add 1 to include both start and end dates
-  return diffDays + 1;
-};
+    const diffTime = Math.abs(endMidnight - startMidnight);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
+    // Add 1 to include both start and end dates
+    return diffDays + 1;
+  };
 
   const getAllRecordsForPlant = (plantName, processName) => {
     const dataKey = processToDataKey[processName];
@@ -345,7 +334,7 @@ const Report = () => {
               statusField === true);
 
           updatedDate = matchingRecord.updated_at || '';
-          applyDate = amendDateField || ''; // Use AMENDX_DATE for amendments
+          applyDate = amendDateField || '';
 
           if (isCompleted && applyDate && updatedDate) {
             duration = calculateDuration(applyDate, updatedDate);
@@ -365,7 +354,7 @@ const Report = () => {
               updatedField.toString().trim().toLowerCase() === 'done');
 
           updatedDate = matchingRecord.updated_at || '';
-          applyDate = matchingRecord.APPLY_DT || ''; // Use APPLY_DT for regular steps
+          applyDate = matchingRecord.APPLY_DT || '';
 
           if (isCompleted && applyDate && updatedDate) {
             duration = calculateDuration(applyDate, updatedDate);
@@ -484,6 +473,7 @@ const Report = () => {
         });
       }
 
+
       let isCompleted = false;
       let stepDate = '';
       let stepComments = '';
@@ -493,7 +483,21 @@ const Report = () => {
         stepDate = matchingRecord.APPLY_DT || matchingRecord.applyDate || '';
         stepComments = matchingRecord.COMMENTS || matchingRecord.Comments || '';
 
-        const updatedField = matchingRecord.UPDATED;
+        // For Fire process, check the appropriate field based on step type
+        let updatedField;
+        if (processName === 'Fire' && step.stepType) {
+          if (step.stepType === 'OC') {
+            // For OC steps, check OC_UPDATED field
+            updatedField = matchingRecord.OC_UPDATED;
+          } else {
+            // For Provisional NOC steps, check UPDATED field
+            updatedField = matchingRecord.UPDATED;
+          }
+        } else {
+          // For other processes, use UPDATED field
+          updatedField = matchingRecord.UPDATED;
+        }
+
         const applyDate = matchingRecord.APPLY_DT || matchingRecord.applyDate || '';
         const updatedDate = matchingRecord.updated_at || '';
 
@@ -508,7 +512,8 @@ const Report = () => {
             updatedStr === 'DONE' ||
             updatedStr === 'TRUE';
         } else {
-          isCompleted = !!(matchingRecord.APPLY_DT || matchingRecord.applyDate);
+          // If UPDATED field doesn't exist or is empty, step is PENDING
+          isCompleted = false;
         }
 
         // Calculate duration using APPLY_DT and updated_at
@@ -559,6 +564,12 @@ const Report = () => {
     .filter(plant => !hasCompletedAllProcesses(plant.plant_name))
     .filter(plant => plant.plant_name?.toLowerCase().includes(searchTerm2.toLowerCase()));
 
+  // Get completed plants
+  const completedPlants = plants.filter(plant => hasCompletedAllProcesses(plant.plant_name));
+  const filteredPlants3 = completedPlants.filter(plant =>
+    plant.plant_name?.toLowerCase().includes(searchTerm3.toLowerCase())
+  );
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     try {
@@ -572,6 +583,7 @@ const Report = () => {
       return dateStr;
     }
   };
+
 
   const getCellData = (plantName, processName) => {
     const dataKey = processToDataKey[processName];
@@ -596,110 +608,138 @@ const Report = () => {
       const stepsWithStatus = getProcessStepsWithStatus(plantName, processName);
 
       if (stepsWithStatus.length > 0) {
-        let currentStep = null;
+        // Find the last COMPLETED step only
+        let lastCompletedStep = null;
 
         for (let i = stepsWithStatus.length - 1; i >= 0; i--) {
           if (stepsWithStatus[i].status === 'COMPLETED') {
-            currentStep = stepsWithStatus[i];
+            lastCompletedStep = stepsWithStatus[i];
             break;
           }
         }
 
-        if (!currentStep) {
-          currentStep = stepsWithStatus.find(step =>
-            step.status === 'PENDING' && (step.date || step.comments)
-          );
-        }
-
-        if (!currentStep) {
-          currentStep = stepsWithStatus.find(step => step.status === 'PENDING');
-        }
-
-        if (currentStep) {
+        // If there's a completed step, show it
+        if (lastCompletedStep) {
           return {
-            process: currentStep.stepName,
-            date: currentStep.date || '',
-            comments: currentStep.comments || ''
+            process: lastCompletedStep.stepName,
+            date: lastCompletedStep.date || '',
+            comments: lastCompletedStep.comments || ''
           };
         }
+
+        // If no completed steps, return default
+        return { process: '-', date: '', comments: '' };
       }
     }
 
     if (processName === 'Fire') {
-      const provisionalRecords = matchingRecords.filter(record => {
-        const stepType = (record.STEPTYPE || '').toString().trim().toLowerCase();
-        return stepType.includes('provisional') || stepType.includes('noc');
-      });
-
-      const ocRecords = matchingRecords.filter(record => {
-        const stepType = (record.STEPTYPE || '').toString().trim().toLowerCase();
-        return stepType.includes('oc') && !stepType.includes('noc');
-      });
-
       const totalSteps = processSteps['fire_steps'] ? processSteps['fire_steps'].length : 5;
 
-      const provisionalCompleted = provisionalRecords.filter(record =>
+      // Count NOC completed steps (using UPDATED field)
+      const nocCompletedCount = matchingRecords.filter(record =>
         record.UPDATED &&
         record.UPDATED.toString().trim().toUpperCase() === 'YES'
       ).length;
 
-      const ocCompleted = ocRecords.filter(record =>
-        record.UPDATED &&
-        record.UPDATED.toString().trim().toUpperCase() === 'YES'
+      // Count OC completed steps (using OC_UPDATED field)
+      const ocCompletedCount = matchingRecords.filter(record =>
+        record.OC_UPDATED &&
+        record.OC_UPDATED.toString().trim().toUpperCase() === 'YES'
       ).length;
 
-      let currentStepType = '';
-      let currentRecords = [];
+      let lastCompletedStep = null;
+      let currentPhase = '';
 
-      if (provisionalCompleted < totalSteps) {
-        currentStepType = 'Provisional NOC';
-        currentRecords = provisionalRecords;
-      } else {
-        currentStepType = 'OC Process';
-        currentRecords = ocRecords;
-      }
-
-      const latestStep = currentRecords.length > 0
-        ? currentRecords.sort((a, b) => {
+      // If OC has any completed steps, show latest OC step
+      if (ocCompletedCount > 0) {
+        const ocCompleted = matchingRecords.filter(record =>
+          record.OC_UPDATED &&
+          record.OC_UPDATED.toString().trim().toUpperCase() === 'YES'
+        ).sort((a, b) => {
           const dateA = new Date(a.updated_at || a.created_at || a.APPLY_DT || 0);
           const dateB = new Date(b.updated_at || b.created_at || b.APPLY_DT || 0);
           return dateB - dateA;
-        })[0]
-        : null;
+        });
 
-      if (latestStep) {
-        const isCompleted = latestStep.UPDATED &&
-          latestStep.UPDATED.toString().trim().toUpperCase() === 'YES';
+        if (ocCompleted.length > 0) {
+          lastCompletedStep = ocCompleted[0];
+          currentPhase = 'OC Process';
+        }
+      }
+      // Otherwise, if NOC has completed steps, show latest NOC step
+      else if (nocCompletedCount > 0) {
+        const nocCompleted = matchingRecords.filter(record =>
+          record.UPDATED &&
+          record.UPDATED.toString().trim().toUpperCase() === 'YES'
+        ).sort((a, b) => {
+          const dateA = new Date(a.updated_at || a.created_at || a.APPLY_DT || 0);
+          const dateB = new Date(b.updated_at || b.created_at || b.APPLY_DT || 0);
+          return dateB - dateA;
+        });
 
+        if (nocCompleted.length > 0) {
+          lastCompletedStep = nocCompleted[0];
+          currentPhase = 'Provisional NOC';
+        }
+      }
+
+      if (lastCompletedStep) {
         return {
-          process: `${currentStepType}: ${latestStep.PROCESS || 'In Progress'}`,
-          date: isCompleted ? (latestStep.APPLY_DT || '') : '',
-          comments: latestStep.COMMENTS || ''
-        };
-      } else {
-        return {
-          process: `${currentStepType}: Not Started `,
-          date: '',
-          comments: ''
+          process: `${currentPhase}: ${lastCompletedStep.PROCESS || 'Completed'}`,
+          date: lastCompletedStep.APPLY_DT || '',
+          comments: lastCompletedStep.COMMENTS || ''
         };
       }
+
+      // No completed steps yet
+      return { process: '-', date: '', comments: '' };
     }
 
-    const latestRecord = matchingRecords.sort((a, b) => {
-      const dateA = new Date(a.created_at || a.APPLY_DT || 0);
-      const dateB = new Date(b.created_at || b.APPLY_DT || 0);
-      return dateB - dateA;
-    })[0];
+    // For other processes, find the last COMPLETED step
+    const completedRecords = matchingRecords.filter(record => {
+      const updatedField = record.UPDATED;
+      if (updatedField !== null && updatedField !== undefined) {
+        const updatedStr = updatedField.toString().trim().toUpperCase();
+        return updatedStr === 'YES' ||
+          updatedStr === '1' ||
+          updatedField === 1 ||
+          updatedField === true ||
+          updatedStr === 'COMPLETED' ||
+          updatedStr === 'DONE' ||
+          updatedStr === 'TRUE';
+      }
+      return false;
+    });
 
-    let comments = latestRecord.COMMENTS || latestRecord.Comments || '';
-    if (processName === 'Water' && !comments && latestRecord.REASON) {
-      comments = latestRecord.REASON;
+    if (completedRecords.length > 0) {
+      const latestCompletedRecord = completedRecords.sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.created_at || a.APPLY_DT || 0);
+        const dateB = new Date(b.updated_at || b.created_at || b.APPLY_DT || 0);
+        return dateB - dateA;
+      })[0];
+
+      let comments = latestCompletedRecord.COMMENTS || latestCompletedRecord.Comments || '';
+      if (processName === 'Water' && !comments && latestCompletedRecord.REASON) {
+        comments = latestCompletedRecord.REASON;
+      }
+
+      return {
+        process: latestCompletedRecord.PROCESS || latestCompletedRecord.STATUS || 'COMPLETED',
+        date: latestCompletedRecord.APPLY_DT || latestCompletedRecord.applyDate || '',
+        comments: comments
+      };
     }
 
+    // No completed steps found
+    return { process: '-', date: '', comments: '' };
+  };
+
+  const getCompletedPlantCellData = (plantName, processName) => {
+    // For completed plants, simply return "ALL PROCESS COMPLETED" text
     return {
-      process: latestRecord.PROCESS || latestRecord.STATUS || 'PENDING',
-      date: latestRecord.APPLY_DT || latestRecord.applyDate || '',
-      comments: comments
+      process: 'ALL PROCESS COMPLETED',
+      date: '',
+      comments: 'All steps completed successfully'
     };
   };
 
@@ -765,7 +805,7 @@ const Report = () => {
         }
       });
 
-      csvContent += row.join(',') + '\n';
+     csvContent += row.join(',') + '\n';
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -773,6 +813,35 @@ const Report = () => {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `Detailed_Process_Steps_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadThirdTableAsExcel = () => {
+    let csvContent = '';
+
+    const headers = ['S.No', 'PLANTS', ...processes.map(p => `${p} (Status)`), ...processes.map(p => `${p} (Comments)`)];
+    csvContent += headers.join(',') + '\n';
+
+    filteredPlants3.forEach((plant, rowIndex) => {
+      const row = [rowIndex + 1, `"${plant.plant_name || 'Unknown Plant'}"`];
+
+      processes.forEach(process => {
+        const cellData = getCompletedPlantCellData(plant.plant_name, process);
+        row.push(`"${cellData.process}"`);
+        row.push(`"${cellData.comments}"`);
+      });
+
+      csvContent += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Completed_Plants_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -956,7 +1025,113 @@ const Report = () => {
                   transition: 'border-color 0.3s'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#2196F3'}
-                onBlur={(e) => e.target.style.borderColor = '#ddd'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#ddd'}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#999',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    marginLeft: '8px',
+                    padding: '4px'
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <div style={{
+              fontSize: '11px',
+              color: '#666',
+              textAlign: 'center',
+              padding: '4px',
+              borderTop: '1px solid #eee',
+              marginTop: '8px'
+            }}>
+              Showing {resultCount} of {totalCount} plants
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const CompactSearchBar3 = ({ searchTerm, setSearchTerm, showSearch, setShowSearch, placeholder, resultCount, totalCount }) => {
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+      if (showSearch && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, [showSearch]);
+
+    return (
+      <div style={{ position: 'relative' }} ref={searchRef3}>
+        <button
+          onClick={() => setShowSearch(!showSearch)}
+          style={{
+            backgroundColor: '#2196F3',
+            color: 'white',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'background-color 0.3s',
+            width: '120px',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1976D2'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2196F3'}
+        >
+          <span>🔍</span>
+          <span>Search</span>
+        </button>
+
+        {showSearch && (
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            marginTop: '5px',
+            backgroundColor: 'white',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            zIndex: 100,
+            width: '250px',
+            padding: '10px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '8px'
+            }}>
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={placeholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  outline: 'none',
+                  transition: 'border-color 0.3s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#2196F3'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#ddd'}
               />
               {searchTerm && (
                 <button
@@ -992,7 +1167,10 @@ const Report = () => {
   };
 
   const renderFirstTable = (title) => (
-    <div style={{ marginBottom: '15px' }}>
+    <div style={{
+      marginBottom: '15px',
+      flex: '0 0 auto' // Don't allow this to grow or shrink
+    }}>
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -1046,7 +1224,7 @@ const Report = () => {
 
       <div
         style={{
-          maxHeight: 'calc(42vh - 80px)',
+          height: '300px', // Fixed height
           overflowX: 'auto',
           overflowY: 'auto',
           backgroundColor: '#fff',
@@ -1220,7 +1398,10 @@ const Report = () => {
   );
 
   const renderSecondTable = (title) => (
-    <div style={{ marginBottom: '15px' }}>
+    <div style={{
+      marginBottom: '15px',
+      flex: '0 0 auto' // Don't allow this to grow or shrink
+    }}>
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -1274,7 +1455,7 @@ const Report = () => {
 
       <div
         style={{
-          maxHeight: 'calc(50vh - 80px)',
+          height: '300px', // Fixed height
           overflowX: 'auto',
           overflowY: 'auto',
           backgroundColor: '#fff',
@@ -1520,6 +1701,234 @@ const Report = () => {
     </div>
   );
 
+  const renderThirdTable = (title) => (
+    <div style={{
+      marginBottom: '15px',
+      flex: '0 0 auto' // Don't allow this to grow or shrink
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '6px'
+      }}>
+        <h3 style={{
+          margin: '0',
+          color: '#333',
+          fontSize: '14px',
+          fontWeight: 'bold'
+        }}>
+          {title}
+        </h3>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <CompactSearchBar3
+            searchTerm={searchTerm3}
+            setSearchTerm={setSearchTerm3}
+            showSearch={showSearch3}
+            setShowSearch={setShowSearch3}
+            placeholder="Search completed plants..."
+            resultCount={filteredPlants3.length}
+            totalCount={completedPlants.length}
+          />
+          <button
+            onClick={downloadThirdTableAsExcel}
+            style={{
+              backgroundColor: '#4caf50',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'background-color 0.3s',
+              width: '120px',
+              justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#45a049'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4caf50'}
+          >
+            <span>⬇️</span>
+            <span>Download</span>
+          </button>
+        </div>
+      </div>
+
+      <div
+        style={{
+          height: '150px', // Fixed height
+          marginBottom: '100px',
+          overflowX: 'auto',
+          overflowY: 'auto',
+          backgroundColor: '#fff',
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          position: 'relative'
+        }}
+      >
+        <table style={{
+          borderCollapse: 'collapse',
+          backgroundColor: '#fff',
+          fontSize: '11px',
+          width: '100%'
+        }}>
+          <thead>
+            <tr>
+              <th style={{
+                backgroundColor: '#2196F3',
+                color: 'white',
+                padding: '10px 8px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                border: '1px solid #ddd',
+                fontSize: '12px',
+                minWidth: '60px',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}>
+                S.No
+              </th>
+              <th style={{
+                backgroundColor: '#2196F3',
+                color: 'white',
+                padding: '10px 12px',
+                textAlign: 'left',
+                fontWeight: 'bold',
+                border: '1px solid #ddd',
+                fontSize: '12px',
+                minWidth: '200px',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}>
+                PLANTS
+              </th>
+              {processes.map((process, index) => {
+                const colors = processColors[process] || { gradient: '#2196F3', textColor: 'white' };
+                return (
+                  <th key={index} style={{
+                    background: colors.gradient,
+                    color: colors.textColor,
+                    padding: '10px 12px',
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    border: '1px solid #ddd',
+                    fontSize: '12px',
+                    minWidth: process === 'Fire' ? '220px' : '180px',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 10
+                  }}>
+                    {process}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {filteredPlants3.length === 0 ? (
+              <tr>
+                <td colSpan={processes.length + 2} style={{
+                  textAlign: 'center',
+                  padding: '20px',
+                  color: '#999',
+                  fontStyle: 'italic'
+                }}>
+                  {searchTerm3 ? `No completed plants found matching "${searchTerm3}"` : 'No completed plants available'}
+                </td>
+              </tr>
+            ) : (
+              filteredPlants3.map((plant, rowIndex) => (
+                <tr key={rowIndex} style={{
+                  transition: 'background-color 0.3s',
+                  backgroundColor: '#f0fff4'
+                }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e0f7e9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f0fff4'}
+                >
+                  <td style={{
+                    backgroundColor: '#e8f5e9',
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    color: '#2e7d32',
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    fontSize: '11px'
+                  }}>
+                    {rowIndex + 1}
+                  </td>
+                  <td style={{
+                    backgroundColor: '#c8e6c9',
+                    fontWeight: '600',
+                    textAlign: 'left',
+                    color: '#1b5e20',
+                    padding: '8px 12px',
+                    border: '1px solid #ddd',
+                    fontSize: '11px'
+                  }}
+                    title={plant.plant_name || 'Unknown Plant'}
+                  >
+                    {plant.plant_name || 'Unknown Plant'}
+                  </td>
+                  {processes.map((process, colIndex) => {
+                    const cellData = getCompletedPlantCellData(plant.plant_name, process);
+
+                    return (
+                      <td key={colIndex} style={{
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        textAlign: 'center',
+                        fontSize: '10px',
+                        backgroundColor: rowIndex % 2 === 1 ? '#f1f8e9' : '#f0fff4',
+                        verticalAlign: 'middle',
+                        minWidth: process === 'Fire' ? '220px' : '180px'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{
+                            fontWeight: 'bold',
+                            color: '#2e7d32',
+                            fontSize: '11px',
+                            backgroundColor: '#e8f5e9',
+                            padding: '6px 12px',
+                            borderRadius: '4px',
+                            border: '2px solid #4caf50'
+                          }}>
+                            ✅ {cellData.process}
+                          </div>
+                          {cellData.comments && (
+                            <div style={{
+                              fontSize: '9px',
+                              color: '#555',
+                              marginTop: '2px',
+                              fontStyle: 'italic'
+                            }}
+                              title={cellData.comments}
+                            >
+                              {cellData.comments}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
@@ -1571,17 +1980,25 @@ const Report = () => {
         fontWeight: 'bold',
         flexShrink: 0
       }}>
-
+        {/* Page Title */}
       </h2>
 
       <div style={{
         flex: 1,
-        overflow: 'hidden',
+        overflow: 'auto',
         display: 'flex',
         flexDirection: 'column'
       }}>
-        {renderFirstTable('WORK IN PROGRESS PLANTS')}
-        {renderSecondTable('DETAILED PROCESS STEPS')}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '15px',
+          minHeight: 'min-content' // Allow content to determine minimum height
+        }}>
+          {renderFirstTable('WORK IN PROGRESS PLANTS')}
+          {renderSecondTable('DETAILED PROCESS STEPS')}
+          {renderThirdTable('ALL PROCESSES COMPLETED PLANTS')}
+        </div>
       </div>
     </div>
   );
