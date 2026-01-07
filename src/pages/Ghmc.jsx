@@ -42,7 +42,11 @@ const Ghmc = () => {
         noOfTowers: '',
         Comments: ''
     });
-
+//7-1-2025 by rajakumari.m-------------------------------------------------------------------------------------------------------
+const [errorMessage, setErrorMessage] = useState('');
+const [showError, setShowError] = useState(false);
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
+// ---------------------------------------------------------------------------------------------------------------------------
     // ✅ Strict PDF validation function
     const validateFileType = (file) => {
         const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
@@ -96,7 +100,90 @@ const Ghmc = () => {
             setTowerDocuments([]);
         }
     }, [formData.noOfTowers]);
+// 7-1-2026 by rajakumari.m---------------------------------------------------------------------------------------------------
+const ErrorPopup = () => {
+    if (!showError) return null;
 
+    return (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000
+        }}>
+            <div style={{
+                backgroundColor: 'white',
+                borderRadius: '8px',
+                padding: '40px',
+                maxWidth: '400px',
+                width: '90%',
+                textAlign: 'center',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+            }}>
+                <div style={{
+                    width: '80px',
+                    height: '80px',
+                    margin: '0 auto 20px',
+                    borderRadius: '50%',
+                    border: '4px solid #ef5350',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                        <path 
+                            d="M18 6L6 18M6 6L18 18" 
+                            stroke="#ef5350" 
+                            strokeWidth="3" 
+                            strokeLinecap="round"
+                        />
+                    </svg>
+                </div>
+                <h3 style={{
+                    fontSize: '24px',
+                    fontWeight: '600',
+                    color: '#333',
+                    marginBottom: '12px'
+                }}>
+                    Invalid File Type
+                </h3>
+                <p style={{
+                    fontSize: '16px',
+                    color: '#666',
+                    marginBottom: '24px',
+                    lineHeight: '1.5'
+                }}>
+                    File size should not be Larger!
+                </p>
+                <button
+                    onClick={() => setShowError(false)}
+                    style={{
+                        backgroundColor: '#2196F3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '10px 40px',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1976D2'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2196F3'}
+                >
+                    OK
+                </button>
+            </div>
+        </div>
+    );
+};
+//----------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -485,31 +572,68 @@ const Ghmc = () => {
             )
         );
     };
+//7-1-2026 by rajakumari.m------------------------------------------------------------------------------------
+const handleTowerFileInput = (towerId, currentDocs) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.pdf,application/pdf';
 
-    // ✅ Handle tower file input with PDF validation
-    const handleTowerFileInput = (towerId, currentDocs) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.multiple = true;
-        input.accept = '.pdf,application/pdf'; // ✅ Only show PDFs in file picker
+    input.onchange = (e) => {
+        const files = Array.from(e.target.files);
 
-        input.onchange = (e) => {
-            const files = Array.from(e.target.files);
+        // Check for oversized files
+        const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+        
+        if (oversizedFiles.length > 0) {
+            const fileNames = oversizedFiles.map(f => f.name).join(', ');
+            setErrorMessage(
+                `The following files exceed 1MB limit: ${fileNames}. Please select smaller files.`
+            );
+            setShowError(true);
+            return;
+        }
 
-            // Validate all files are PDFs
-            const allValid = files.every(file => validateFileType(file));
+        // Validate all files are PDFs
+        const allValid = files.every(file => validateFileType(file));
 
-            if (allValid) {
-                updateTowerDocs(towerId, [...currentDocs, ...files]);
-            } else {
-                toast.error('Some files were not added because they are not PDFs');
-            }
-        };
-
-        input.click();
+        if (allValid) {
+            updateTowerDocs(towerId, [...currentDocs, ...files]);
+        } else {
+            toast.error('Some files were not added because they are not PDFs');
+        }
     };
 
+    input.click();
+};
+//-----------------------------------------------------------------------------------------------------------
+    // ✅ Handle tower file input with PDF validation
+    // const handleTowerFileInput = (towerId, currentDocs) => {
+    //     const input = document.createElement('input');
+    //     input.type = 'file';
+    //     input.multiple = true;
+    //     input.accept = '.pdf,application/pdf'; // ✅ Only show PDFs in file picker
+
+    //     input.onchange = (e) => {
+    //         const files = Array.from(e.target.files);
+
+    //         // Validate all files are PDFs
+    //         const allValid = files.every(file => validateFileType(file));
+
+    //         if (allValid) {
+    //             updateTowerDocs(towerId, [...currentDocs, ...files]);
+    //         } else {
+    //             toast.error('Some files were not added because they are not PDFs');
+    //         }
+    //     };
+
+    //     input.click();
+    // };
+
     return (
+         <>
+        {/* Error Popup */}
+        <ErrorPopup />
         <div className="ghmc-form-wrapper">
             <form className="ghmc-form-container" onSubmit={handleSubmit}>
                 {/* HEADER */}
@@ -897,6 +1021,7 @@ const Ghmc = () => {
                 pauseOnHover
             />
         </div>
+          </>
     );
 };
 

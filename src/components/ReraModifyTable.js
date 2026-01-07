@@ -368,34 +368,73 @@ const ReraModifyTable = () => {
     }
   }, [selectedPlant, steps]);
 
-  
-  useEffect(() => {
-    if (
-      nextStepDetails &&
-      typeof nextStepDetails === "object" &&
-      Object.keys(nextStepDetails).length > 0
-    ) {
-      const details = nextStepDetails;
+ useEffect(() => {
+  if (
+    nextStepDetails &&
+    typeof nextStepDetails === "object" &&
+    Object.keys(nextStepDetails).length > 0
+  ) {
+    const details = nextStepDetails;
 
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: details.APPLY_DT,
-        fromDate: details.FRM_DT || "",
-        toDate: details.TO_DT || "",
-        comments: "",
-        // CHANGE THIS LINE: Always default to "Yes" when loading data
-        subLevelStatus: "Yes", // Changed from: details.LEVEL_STATUS === "No" ? "No" : "Yes"
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: "",
-        fromDate: "",
-        toDate: "",
-        comments: "",
-      }));
-    }
-  }, [nextStepDetails]);
+    console.log("=== DEBUG: Setting Form Data ===");
+    console.log("- LEVEL:", details.LEVEL);
+    console.log("- LEVEL_STATUS:", details.LEVEL_STATUS);
+    
+    // ✅ FIX: Check if Level 4 is completed and preserve it
+    const isLevel4Complete = details.LEVEL === "Level 4" && details.LEVEL_STATUS === "Completed";
+    
+    setFormData((prev) => ({
+      ...prev,
+      applyDate: details.APPLY_DT,
+      fromDate: details.FRM_DT || "",
+      toDate: details.TO_DT || "",
+      comments: "",
+      // ✅ FIX: If Level 4 is completed, set status to "Completed"
+      subLevelStatus: isLevel4Complete ? "Completed" : (details.LEVEL_STATUS === "No" ? "No" : "Yes"),
+    }));
+    
+    // Set the Level 4 completed flag
+    setIsLevel4Completed(isLevel4Complete);
+    console.log("- Set isLevel4Completed to:", isLevel4Complete);
+    
+  } else {
+    setFormData((prev) => ({
+      ...prev,
+      applyDate: "",
+      fromDate: "",
+      toDate: "",
+      comments: "",
+    }));
+    setIsLevel4Completed(false);
+  }
+}, [nextStepDetails]);
+  // useEffect(() => {
+  //   if (
+  //     nextStepDetails &&
+  //     typeof nextStepDetails === "object" &&
+  //     Object.keys(nextStepDetails).length > 0
+  //   ) {
+  //     const details = nextStepDetails;
+
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       applyDate: details.APPLY_DT,
+  //       fromDate: details.FRM_DT || "",
+  //       toDate: details.TO_DT || "",
+  //       comments: "",
+  //       // CHANGE THIS LINE: Always default to "Yes" when loading data
+  //       subLevelStatus: "Yes", // Changed from: details.LEVEL_STATUS === "No" ? "No" : "Yes"
+  //     }));
+  //   } else {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       applyDate: "",
+  //       fromDate: "",
+  //       toDate: "",
+  //       comments: "",
+  //     }));
+  //   }
+  // }, [nextStepDetails]);
   // Validation function
 
   const validateForm = () => {
@@ -440,26 +479,59 @@ const ReraModifyTable = () => {
 
     return newErrors;
   };
-  // The activeSubLevelIndex logic is correct and unchanged.
   const activeSubLevelIndex = useMemo(() => {
-    const currentLevel = nextStepDetails?.LEVEL;
-    const currentStatus = nextStepDetails?.LEVEL_STATUS;
-    if (currentLevel === "Level 4" && currentStatus === "Completed") {
-      return SUB_LEVELS.length;
-    }
+  const currentLevel = nextStepDetails?.LEVEL;
+  const currentStatus = nextStepDetails?.LEVEL_STATUS;
+  
+  console.log("=== DEBUG: activeSubLevelIndex ===");
+  console.log("- currentLevel:", currentLevel);
+  console.log("- currentStatus:", currentStatus);
+  
+  // ✅ FIX 1: Properly handle Level 4 Completed status
+  if (currentLevel === "Level 4" && currentStatus === "Completed") {
+    console.log("- Level 4 is completed, returning index 4");
+    return SUB_LEVELS.length; // This will be 4 for Level 4 completed
+  }
+  
+  if (!currentLevel) {
+    console.log("- No current level, returning 0");
+    return 0;
+  }
+  
+  let currentIndex = SUB_LEVELS.indexOf(currentLevel);
+  if (currentIndex === -1) {
+    currentIndex = 0;
+  }
+  
+  // ✅ FIX 2: Only advance if status is "Yes"
+  if (currentStatus === "Yes") {
+    console.log("- Status is Yes, advancing to next level:", currentIndex + 1);
+    return currentIndex + 1;
+  }
+  
+  console.log("- Status is not Yes, staying at level:", currentIndex);
+  return currentIndex;
+}, [nextStepDetails]);
+  // The activeSubLevelIndex logic is correct and unchanged.
+  // const activeSubLevelIndex = useMemo(() => {
+  //   const currentLevel = nextStepDetails?.LEVEL;
+  //   const currentStatus = nextStepDetails?.LEVEL_STATUS;
+  //   if (currentLevel === "Level 4" && currentStatus === "Completed") {
+  //     return SUB_LEVELS.length;
+  //   }
 
-    if (!currentLevel) {
-      return 0;
-    }
-    let currentIndex = SUB_LEVELS.indexOf(currentLevel);
-    if (currentIndex === -1) {
-      currentIndex = 0;
-    }
-    if (currentStatus === "Yes") {
-      return currentIndex + 1;
-    }
-    return currentIndex;
-  }, [nextStepDetails]);
+  //   if (!currentLevel) {
+  //     return 0;
+  //   }
+  //   let currentIndex = SUB_LEVELS.indexOf(currentLevel);
+  //   if (currentIndex === -1) {
+  //     currentIndex = 0;
+  //   }
+  //   if (currentStatus === "Yes") {
+  //     return currentIndex + 1;
+  //   }
+  //   return currentIndex;
+  // }, [nextStepDetails]);
 
   useEffect(() => {
   if (immediateNextStepIndex === 1) {
@@ -1164,45 +1236,51 @@ const handleDemoteConfirm = (newLevel) => {
     payload.append("toDate", formData.toDate);
 
     // Handle task status - CRITICAL FIX HERE
-    if (immediateNextStepIndex === 1) {
-      console.log("=== DEBUG: Handling task status ===");
-      console.log("- formData.subLevelStatus:", formData.subLevelStatus);
-      console.log("- levelToSubmit:", levelToSubmit);
-      console.log("- SUB_LEVELS[activeSubLevelIndex]:", SUB_LEVELS[activeSubLevelIndex]);
-      
-      // For "Yes", we should submit the CURRENT active level
-      // For "Reject", we submit the selected rejection level (levelToSubmit)
-      // For "No", we submit the current level
-      let pendingTaskToSubmit = "";
-      
-      if (formData.subLevelStatus === "Yes") {
-        // When "Yes", submit the current active level (will progress to next)
-        pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
-      } else if (formData.subLevelStatus === "Reject") {
-        // When "Reject", submit the selected rejection level
-        pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
-      } else if (formData.subLevelStatus === "No") {
-        // When "No", submit the current level (stay at same)
-        pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
-      }
-      
-      console.log("- pendingTaskToSubmit:", pendingTaskToSubmit);
-      
-      // Make sure we have a valid pending task
-      if (!pendingTaskToSubmit) {
-        console.error("ERROR: No pending task determined!");
-        pendingTaskToSubmit = SUB_LEVELS[0];
-      }
-      
-      payload.append("pending_task", pendingTaskToSubmit);
-      
-      // For backend: "Reject" becomes "No"
-      const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
-      payload.append("task_status", backendStatus);
-      
-      console.log("- Backend task_status:", backendStatus);
-    }
-
+   // Handle task status - CRITICAL FIX HERE
+if (immediateNextStepIndex === 1) {
+  console.log("=== DEBUG: Handling task status ===");
+  console.log("- formData.subLevelStatus:", formData.subLevelStatus);
+  console.log("- levelToSubmit:", levelToSubmit);
+  console.log("- SUB_LEVELS[activeSubLevelIndex]:", SUB_LEVELS[activeSubLevelIndex]);
+  
+  let pendingTaskToSubmit = "";
+  
+  // FIX: Check if Level 4 is completed
+  const isLevel4Complete = isLevel4Completed;
+  
+  if (isLevel4Complete) {
+    // If Level 4 is completed, submit "Level 4" as pending task
+    pendingTaskToSubmit = "Level 4";
+  } else if (formData.subLevelStatus === "Yes") {
+    // When "Yes", submit the current active level (will progress to next)
+    pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+  } else if (formData.subLevelStatus === "Reject") {
+    // When "Reject", submit the selected rejection level
+    pendingTaskToSubmit = levelToSubmit || SUB_LEVELS[0];
+  } else if (formData.subLevelStatus === "No") {
+    // When "No", submit the current level (stay at same)
+    pendingTaskToSubmit = SUB_LEVELS[activeSubLevelIndex] || "Level 1";
+  }
+  
+  console.log("- pendingTaskToSubmit:", pendingTaskToSubmit);
+  console.log("- isLevel4Complete:", isLevel4Complete);
+  
+  // Make sure we have a valid pending task
+  if (!pendingTaskToSubmit) {
+    console.error("ERROR: No pending task determined!");
+    pendingTaskToSubmit = SUB_LEVELS[0];
+  }
+  
+  payload.append("pending_task", pendingTaskToSubmit);
+  
+  // For backend: "Reject" becomes "No"
+  const backendStatus = formData.subLevelStatus === "Reject" ? "No" : formData.subLevelStatus;
+  // If Level 4 is completed, send "Completed" status
+  const finalStatus = isLevel4Complete ? "Completed" : backendStatus;
+  payload.append("task_status", finalStatus);
+  
+  console.log("- Backend task_status:", finalStatus);
+}
     newDocs.forEach((file) => payload.append("UPLOAD_DOC[]", file));
 
     console.log("=== DEBUG: Final Payload ===");
@@ -1313,7 +1391,7 @@ const renderDocumentHistory = () => {
           </a>
 
           {/* Only show delete button for active step, not completed ones */}
-          {!selectedProcessDetails && isUpdatable && (
+          {!selectedProcessDetails && isUpdatable && !isLevel4Completed && (
             <Button
               variant="outline-danger"
               size="sm"
@@ -1340,6 +1418,11 @@ const renderDocumentHistory = () => {
   );
 };
 
+
+const existingRecordForProcess = storeData.find(
+  item =>
+    item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim()
+);
 
 
   //-------------------2-1-2025 by rajakumari.m-----------------------------------------------------------------
@@ -1573,6 +1656,7 @@ const renderNextStepFields = () => {
                 name="applyDate"
                 value={formData.applyDate || ""}
                 onChange={handleChange}
+                disabled = {!!existingRecordForProcess}
                 isInvalid={!!errors.applyDate}
                 max={new Date().toISOString().split("T")[0]}
               />
@@ -1651,6 +1735,7 @@ const renderNextStepFields = () => {
                 type="text"
                 name="prjName"
                 value={formData.prjName || ""}
+                disabled = {!!existingRecordForProcess}
                 onChange={handleChange}
               />
             </Form.Group>
@@ -1662,6 +1747,7 @@ const renderNextStepFields = () => {
                 type="text"
                 name="address"
                 value={formData.address || ""}
+                disabled ={!!existingRecordForProcess}
                 onChange={handleChange}
               />
             </Form.Group>
@@ -1850,7 +1936,7 @@ const renderNextStepFields = () => {
 </Col>
 
         {/* 08-12-2025t */}
-        <Col md={3}>
+        {/* <Col md={3}>
           <div className="d-flex flex-column" style={{ height: "100%" }}>
             <Card
               className="p-3 mb-2"
@@ -1863,7 +1949,7 @@ const renderNextStepFields = () => {
             </Card>
 
             {/* 08-12-2025: Added View Logs button at bottom */}
-            <div className="p-2 border-top bg-light text-center">
+            {/* <div className="p-2 border-top bg-light text-center">
               <Button
                 variant="info"
                 size="sm"
@@ -1885,7 +1971,69 @@ const renderNextStepFields = () => {
               </Button>
             </div>
           </div>
-        </Col>
+        </Col> */} 
+     <Col md={3}>
+  <div className="d-flex flex-column" style={{ height: "100%" }}>
+    {/* Conditional rendering based on whether plant is selected */}
+    {formData.loc ? (
+      <>
+        {/* When plant is selected, show documents with 80% height */}
+        <Card
+          className="p-3 mb-2"
+          style={{ height: "80%", overflow: "auto" }}
+        >
+          <h6 className="text-center mb-3">
+            Previously Uploaded Documents
+          </h6>
+          {renderDocumentHistory()}
+        </Card>
+
+        {/* View Logs button at bottom (20% height) */}
+       {/* // In your ReraModifyTable component, update the View Logs button section: */}
+
+{/* View Logs button at bottom (20% height) */}
+<div className="p-2 border-top bg-light text-center" style={{ height: "20%" }}>
+  <Button
+    variant="info"
+    size="sm"
+    onClick={() => {
+      let logs = [];
+      try {
+        // ✅ FIX: Check which data source to use for logs
+        if (selectedProcessDetails) {
+          // If viewing a completed step, get logs from selectedProcessDetails
+          if (selectedProcessDetails.LOG) {
+            logs = JSON.parse(selectedProcessDetails.LOG);
+          }
+        } else if (nextStepDetails?.LOG) {
+          // If viewing the next step, get logs from nextStepDetails
+          logs = JSON.parse(nextStepDetails.LOG);
+        }
+      } catch (error) {
+        console.error("Failed to parse logs:", error);
+      }
+      setSelectedLogs(logs);
+      setShowLogsModal(true);
+    }}
+  >
+    View Logs
+  </Button>
+</div>
+      </>
+    ) : (
+      // When no plant is selected, documents take full height
+      <Card
+        className="p-3"
+        style={{ height: "100%", overflow: "auto" }}
+      >
+        <h6 className="text-center mb-3">
+          Previously Uploaded Documents
+        </h6>
+        {renderDocumentHistory()}
+      </Card>
+    )}
+  </div>
+</Col>
       </Row>
 
       <Modal show={showDemoteModal} onHide={() => setShowDemoteModal(false)} centered>

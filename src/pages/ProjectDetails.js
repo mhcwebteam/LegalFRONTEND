@@ -257,7 +257,27 @@ const ProjectDetails = () => {
       plantName: '',
       plantdes: ''
     });
+
+      setFormData({
+        plantcode: '',
+        loc: '',
+        applyDate: '',
+        noOfTowers: '',
+        BuildArea: '',
+        TotalProjectArea: '',
+        ProjectName: '',
+        Address: '',
+        noOfFlats: '',
+        streetName: '',
+        district: '',
+        city: '',
+        mandal: '',
+        pincode: ''
+      });
   };
+
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

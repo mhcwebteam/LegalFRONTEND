@@ -17,7 +17,7 @@ const ReraDocUploadModal = ({
   // Function to validate if file is PDF
   const validatePDF = (file) => {
     const allowedTypes = ['application/pdf'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 1 * 1024 * 1024; // 10MB
     
     // Check file type
     if (!allowedTypes.includes(file.type)) {
@@ -26,7 +26,7 @@ const ReraDocUploadModal = ({
     
     // Check file size
     if (file.size > maxSize) {
-      return 'File size should not exceed 10MB';
+      return 'File size should not be Larger';
     }
     
     // Check file extension
@@ -50,6 +50,9 @@ const ReraDocUploadModal = ({
       // Validate each file
       incomingFiles.forEach(file => {
         const validationError = validatePDF(file);
+
+
+        console.log("validationError",validationError,file)
         if (validationError) {
           errors.push(`${file.name}: ${validationError}`);
         } else {

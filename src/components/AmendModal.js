@@ -757,7 +757,7 @@ const AmendModal = ({
                 readOnly
               />
 
-              {/* Optional: Show a tooltip or note when showing amendDate instead of applyDate */}
+        
               {!amendData?.applyDate && amendData?.amendDate && (
                 <Form.Text className="text-muted">
                   Showing Amendment Date as Apply Date was not available
@@ -930,21 +930,49 @@ const AmendModal = ({
                 ref={fileInputRef}
                 onChange={(e) => {
                   const files = Array.from(e.target.files);
+   const MAX_FILE_SIZE = 1 * 1024 * 1024; 
 
-                  const invalidFiles = files.filter(
-                    (file) => file.type !== "application/pdf"
-                  );
 
-                  if (invalidFiles.length > 0) {
-                    toast.error("Only PDF files are allowed!");
+                 const invalidFiles = files.filter(
+                      (file) => file.type !== "application/pdf"
+                    );
+              
+                    if (invalidFiles.length > 0) {
 
-                    // Clear input
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = null;
+
+                      Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'File size should not be Larger!',
+                    
+                      });
+                      
+                      // Clear input
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = null;
+                      }
+                      return;
                     }
-                    return; // Stop here
-                  }
 
+
+  const invalidSizeFiles = files.filter(
+        (file) => file.size > MAX_FILE_SIZE
+      );
+
+        if (invalidSizeFiles.length > 0) {
+              Swal.fire({
+                icon: 'error',
+               title: 'Invalid File Type',
+              text: 'File size should not be Larger!',
+                confirmButtonColor: '#3085d6',
+              });
+      
+              if (fileInputRef.current) {
+                fileInputRef.current.value = null;
+              }
+              return;
+            }
+      
                   // Add valid PDF files
                   setAmendData((prev) => ({
                     ...prev,

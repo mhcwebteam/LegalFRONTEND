@@ -1084,6 +1084,7 @@ const isCurrentStepEditable = immediateNextStep &&
   // This is the main effect that runs when a plant is selected
   useEffect(() => {
     // Reset everything
+     setStoreData([])
     setImmediateNextStep(null);
     setImmediateNextStepIndex(-1);
     setViewedStep(null);
@@ -1278,7 +1279,7 @@ const handleConfirmSubmit = async (emails) => {
     await axios.post(apiUrl, payload);
 
     // ✅ Wait a moment for backend to process
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // await new Promise(resolve => setTimeout(resolve, 500));
 
     // ✅ FIRST: Refresh the storeData to update step completion status
     const res = await axios.get(`${API_BASE_URL}/rera-data?plant=${selectedPlant}`);
@@ -1296,7 +1297,7 @@ const handleConfirmSubmit = async (emails) => {
     setSelectedProcessDetails(null);
     setHeaderData(null);
     setProjectInfo({ prjName: "", address: "" });
-
+  setStoreData([]);
     // ✅ SECOND: Check current step status
     const completedProcesses = fetchedData.filter((item) => item.UPDATED === "YES").map((item) => item.PROCESS);
     const nextStep = steps.find((step) => !completedProcesses.includes(step.PROCESS));
@@ -1446,6 +1447,7 @@ useEffect(() => {
       <ProjectInfoHeader data={headerData} />
       <Row className="align-items-stretch">
         <Col md={3} className="d-flex">
+     
           <div className="border rounded p-3 bg-light flex-fill">
             <h6 className="text-center mb-3">Process Steps</h6>
             <Nav variant="pills" className="flex-column">
@@ -1736,55 +1738,53 @@ useEffect(() => {
 </Col>
         
         <Col md={3}>
-          <Card
-            className="border rounded bg-white p-3 d-flex flex-column"
-            style={{
-              height: "100%",
-              minHeight: "400px",
-            }}
-          >
-            {/* 📂 Document History (70%) */}
-            <div
-              style={{
-                flexBasis: "70%",
-                overflowY: "auto",
-                overflowX: "hidden",
-                borderBottom: "1px solid #ddd",
-                paddingBottom: "8px",
-                marginBottom: "8px",
-              }}
-            >
-              <h5 className="mb-3 text-dark">Document History</h5>
-              {renderDocumentHistory()}
-            </div>
+  <Card
+    className="border rounded bg-white p-3 d-flex flex-column"
+    style={{
+      height: "100%",
+      minHeight: "400px",
+    }}
+  >
+    {/* 📂 Document History section - adjust height based on whether View Logs is shown */}
+    <div
+      style={{
+        flexBasis: selectedPlant ? "70%" : "100%",
+        overflowY: "auto",
+        overflowX: "hidden",
+        borderBottom: selectedPlant ? "1px solid #ddd" : "none",
+        paddingBottom: selectedPlant ? "8px" : "0",
+        marginBottom: selectedPlant ? "8px" : "0",
+      }}
+    >
+      <h5 className="mb-3 text-dark">Document History</h5>
+      {renderDocumentHistory()}
+    </div>
 
-                <div className="p-2 border-top bg-light text-center">
-                          <Button 
-                            variant="info" 
-                            size="sm" 
-                            onClick={() => {
-                              // 08-12-2025: Parse logs from nextStepDetails
-                              let logs = [];
-                              try {
-                                if (viewedStepDetails?.LOG) {
-                                  logs = JSON.parse(viewedStepDetails?.LOG);
-                                }
-                              } catch (error) {
-                                console.error("Failed to parse logs:", error);
-                              }
-                              setSelectedLogs(logs);
-                              setShowLogsModal(true);
-                            }}
-                          >
-                            View Logs
-                          </Button>
-                        </div>
-
-            {/* 💬 Comments (30%) */}
-           
-            
-          </Card>
-        </Col>
+    {/* View Logs button - only show when plant is selected */}
+    {selectedPlant && (
+      <div className="p-2 border-top bg-light text-center">
+        <Button 
+          variant="info" 
+          size="sm" 
+          onClick={() => {
+            let logs = [];
+            try {
+              if (viewedStepDetails?.LOG) {
+                logs = JSON.parse(viewedStepDetails?.LOG);
+              }
+            } catch (error) {
+              console.error("Failed to parse logs:", error);
+            }
+            setSelectedLogs(logs);
+            setShowLogsModal(true);
+          }}
+        >
+          View Logs
+        </Button>
+      </div>
+    )}
+  </Card>
+</Col>
       </Row>
 
       

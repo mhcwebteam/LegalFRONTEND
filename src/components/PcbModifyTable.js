@@ -1495,43 +1495,72 @@ const PcbModifyTable = () => {
 
             </div>
             {/*  20/11/2025--------------/// */}
-            <Form.Group className="mb-3">
-              <Form.Label>Upload Document (PDF Only)</Form.Label>
-              <Form.Control
-                type="file"
-                multiple
-                accept="application/pdf"
-                ref={fileInputRef}
-                onChange={(e) => {
-                  const files = Array.from(e.target.files);
+          <Form.Group className="mb-3">
+  <Form.Label>Upload Document (PDF Only)</Form.Label>
+  <Form.Control
+    type="file"
+    multiple
+    accept="application/pdf"
+    ref={fileInputRef}
+    onChange={(e) => {
+      const files = Array.from(e.target.files);
+      const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+      
+      // Check file types
+      const invalidFiles = files.filter(
+        (file) => file.type !== "application/pdf"
+      );
 
-                  const invalidFiles = files.filter(
-                    (file) => file.type !== "application/pdf"
-                  );
+      if (invalidFiles.length > 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Invalid File Type',
+          text: 'File size should not be Larger!',
+      
+        });
+        
+        // Clear input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = null;
+        }
+        return;
+      }
 
-                  if (invalidFiles.length > 0) {
-                    toast.error("Only PDF files are allowed!");
+      // Validate file size
+      const invalidSizeFiles = files.filter(
+        (file) => file.size > MAX_FILE_SIZE
+      );
 
-                    // Clear input
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = null;
-                    }
-                    return; // Stop here
-                  }
+      if (invalidSizeFiles.length > 0) {
+        Swal.fire({
+          icon: 'error',
+         title: 'Invalid File Type',
+        text: 'File size should not be Larger!',
+          confirmButtonColor: '#3085d6',
+        });
 
-                  // Add valid PDF files
-                  setModalData((prev) => ({
-                    ...prev,
-                    selectedFiles: [...prev.selectedFiles, ...files],
-                  }));
+        if (fileInputRef.current) {
+          fileInputRef.current.value = null;
+        }
+        return;
+      }
 
-                  // Clear the input after selection
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = null;
-                  }
-                }}
-              />
-            </Form.Group>
+      // Add valid PDF files
+      setModalData((prev) => ({
+        ...prev,
+        selectedFiles: [...prev.selectedFiles, ...files],
+      }));
+
+      // Show success message if files were added
+      
+
+      // Clear the input after selection
+      if (fileInputRef.current) {
+        fileInputRef.current.value = null;
+      }
+    }}
+  />
+</Form.Group>
             {/*  20/11/2025--------------/// */}
 
             {modalData.selectedFiles.length > 0 && (
