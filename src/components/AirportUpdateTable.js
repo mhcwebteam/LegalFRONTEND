@@ -589,18 +589,20 @@ const [recordExists, setRecordExists] = useState(false);
       (item) => item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
     );
 
-    setSelectedProcessDetails(processDetails || null);
+   setSelectedProcessDetails(processDetails || null);
+  setImmediateNextStep(null); // Reset immediateNextStep when viewing completed step
+  setImmediateNextStepIndex(-1); // Reset index
 
-    // If process details found, also set it as the active step
-    if (processDetails) {
-      const stepIndex = steps.findIndex(step =>
-        step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
-      );
-      if (stepIndex !== -1) {
-        setActiveStep(stepIndex);
-      }
+  // If process details found, also set it as the active step
+  if (processDetails) {
+    const stepIndex = steps.findIndex(step =>
+      step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+    );
+    if (stepIndex !== -1) {
+      setActiveStep(stepIndex);
     }
-  };
+  }
+};
 
   // ✅ Check if the current step is already submitted
   const isStepAlreadySubmitted = () => {
@@ -639,7 +641,14 @@ const [recordExists, setRecordExists] = useState(false);
         </Col>
         <Col md={6}>
           <Form.Group>
-            <Form.Label>{processingDt}</Form.Label>
+            <Form.Label>
+  {selectedProcessDetails 
+    ? getDateLabel(selectedProcessDetails.PROCESS)  // For viewing completed steps
+    : immediateNextStep 
+      ? getDateLabel(immediateNextStep.PROCESS)     // For current active step
+      : "Application Date"                           // Default
+  }
+</Form.Label>
             <Form.Control
               type="date"
               name="applyDate"
@@ -781,7 +790,7 @@ const [recordExists, setRecordExists] = useState(false);
         </Col>
         <Col md={6}>
           <Form.Group>
-            <Form.Label>Apply Date</Form.Label>
+           <Form.Label>{getDateLabel(selectedProcessDetails.PROCESS)}</Form.Label>
             <Form.Control
               type="date"
               value={formData.applyDate ||  ""}
@@ -802,7 +811,7 @@ const [recordExists, setRecordExists] = useState(false);
             {hasFieldData(process.TOTAL_PRJ_AREA) && (
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label>Number of Flats</Form.Label>
+                  <Form.Label>Total Project Area</Form.Label>
                   <Form.Control
                     type="number"
                     value={process.TOTAL_PRJ_AREA || ""}
@@ -890,28 +899,62 @@ const [recordExists, setRecordExists] = useState(false);
   let totalProjectArea = stepData?.[0]?.TOTAL_PRJ_AREA;
   let noofNOCS = stepData?.[0]?.NO_OF_NOCS;
 
+
   const handleViewNextStep = () => {
-    setSelectedProcessDetails(null);
+  setSelectedProcessDetails(null);
 
-    if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
-      const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+  // Re-calculate the next step
+  if (steps.length > 0 && storeData.length > 0) {
+    const completedProcesses = storeData
+      .filter((item) => item.UPDATED === "YES")
+      .map((item) => item.PROCESS);
 
-      if (nextStepName) {
-        axios
-          .get(
-            `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
-              selectedPlant
-            )}/${encodeURIComponent(nextStepName)}`
-          )
-          .then((res) => {
-            setNextStepDetails(res.data);
-          })
-          .catch((err) =>
-            console.error("Error fetching next step details:", err)
-          );
-      }
+    const nextStep = steps.find(
+      (step) => !completedProcesses.includes(step.PROCESS)
+    );
+
+    if (nextStep) {
+      setImmediateNextStep(nextStep);
+      setImmediateNextStepIndex(steps.indexOf(nextStep));
+
+      // Fetch step details
+      axios
+        .get(
+          `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+            selectedPlant
+          )}/${encodeURIComponent(nextStep.PROCESS)}`
+        )
+        .then((res) => {
+          setNextStepDetails(res.data);
+        })
+        .catch((err) =>
+          console.error("Error fetching next step details:", err)
+        );
     }
-  };
+  }
+};
+  // const handleViewNextStep = () => {
+  //   setSelectedProcessDetails(null);
+
+  //   if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+  //     const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+
+  //     if (nextStepName) {
+  //       axios
+  //         .get(
+  //           `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+  //             selectedPlant
+  //           )}/${encodeURIComponent(nextStepName)}`
+  //         )
+  //         .then((res) => {
+  //           setNextStepDetails(res.data);
+  //         })
+  //         .catch((err) =>
+  //           console.error("Error fetching next step details:", err)
+  //         );
+  //     }
+  //   }
+  // };
 
   return (
     <>
@@ -977,69 +1020,71 @@ const [recordExists, setRecordExists] = useState(false);
           </div>
         </Col>
 
-        <Col
-          md={6}
-          className="d-flex flex-column"
-          style={{ height: '400px', overflowY: 'auto' }}
+      <Col
+  md={6}
+  className="d-flex flex-column"
+  style={{ height: '400px', overflowY: 'auto' }}
+>
+  <Form className="p-3 border rounded bg-light">
+    {/* Form header showing current view */}
+    {selectedProcessDetails ? (
+      <div className="mb-3">
+        <h4 className="mb-2 text-info fw-bold">
+          Viewing: {selectedProcessDetails.PROCESS} (Completed)
+        </h4>
+        {immediateNextStep && (
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={handleViewNextStep}
+          >
+            View Next Step
+          </Button>
+        )}
+      </div>
+    ) : immediateNextStep ? (
+      <h4 className="mb-3 text-warning fw-bold">
+        {immediateNextStep.PROCESS}
+        <h6 className="text-muted m-2">
+          {totalProjectArea && (
+            <>Total Area: {totalProjectArea} &nbsp; | &nbsp;</>
+          )}
+          {noofNOCS && <>NOCs: {noofNOCS}</>}
+        </h6>
+      </h4>
+    ) : allStepsCompleted ? (
+      <h4 className="mb-3 text-success fw-bold">
+        🎉 All Steps Completed!
+      </h4>
+    ) : null}
+
+    {renderFormFields()}
+
+    {/* Button section */}
+    <div className="d-grid mt-3">
+      {selectedProcessDetails ? (
+        <div className="alert alert-info d-flex align-items-center">
+          <i className="fas fa-info-circle me-2"></i>
+          You are viewing historical data. To make changes, select the current step.
+        </div>
+      ) : allStepsCompleted ? (
+        <div className="alert alert-success d-flex align-items-center">
+          <FaCheckCircle className="me-2" size={20} />
+          All steps completed! No further action required.
+        </div>
+      ) : (
+        <Button 
+          variant="primary" 
+          size="md" 
+          onClick={handleEmailSubmit}
+          disabled={isSubmitting || !formData.plant || !immediateNextStep || !formData.applyDate || !recordExists}
         >
-          <Form className="p-3 border rounded bg-light">
-            {/* Form header showing current view */}
-            {selectedProcessDetails ? (
-              <div className="mb-3">
-                <h4 className="mb-2 text-info fw-bold">
-                  Viewing: {selectedProcessDetails.PROCESS} (Completed)
-                </h4>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={handleViewNextStep}
-                  disabled={!immediateNextStep}
-                >
-                  View Next Step
-                </Button>
-              </div>
-            ) : immediateNextStep ? (
-              <h4 className="mb-3 text-warning fw-bold">
-                {immediateNextStep.PROCESS}
-                <h6 className="text-muted m-2">
-                  {totalProjectArea && (
-                    <>Total Area: {totalProjectArea} &nbsp; | &nbsp;</>
-                  )}
-                  {noofNOCS && <>NOCs: {noofNOCS}</>}
-                </h6>
-              </h4>
-            ) : allStepsCompleted ? (
-              <h4 className="mb-3 text-success fw-bold">
-                🎉 All Steps Completed!
-              </h4>
-            ) : null}
-
-            {renderFormFields()}
-
-            <div className="d-grid">
-              {selectedProcessDetails ? (
-                <div className="alert alert-info d-flex align-items-center">
-                  <i className="fas fa-info-circle me-2"></i>
-                  You are viewing historical data. To make changes, select the current step.
-                </div>
-              ) : allStepsCompleted ? (
-                <div className="alert alert-success d-flex align-items-center">
-                  <FaCheckCircle className="me-2" size={20} />
-                  All steps completed! No further action required.
-                </div>
-              ) : (
-                <Button 
-                  variant="primary" 
-                  size="md" 
-                  onClick={handleEmailSubmit}
-                  disabled={isSubmitting || !formData.plant || !immediateNextStep || !formData.applyDate || !recordExists}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </Button>
-              )}
-            </div>
-          </Form>
-        </Col>
+          {isSubmitting ? "Submitting..." : "Submit"}
+        </Button>
+      )}
+    </div>
+  </Form>
+</Col>
 
         <Col md={3} className="d-flex">
           <div className="border rounded p-3 bg-white flex-fill w-50">

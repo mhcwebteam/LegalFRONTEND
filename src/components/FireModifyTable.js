@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useMemo, useContext } from "react";
 import {
   Nav,
@@ -22,6 +20,7 @@ import ProjectInfoHeader from "./ProjectInfoHeader";
 import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
 import EmailSelectionModal from "./EmailModal";
+import { queries } from "@testing-library/dom";
 
 const FireModifyTable = () => {
   const token = localStorage.getItem("token");
@@ -55,6 +54,10 @@ const FireModifyTable = () => {
     noOfTowers: "",
     feepaidstatus: "",
     stepStatus_1: "YES",
+    site: "",
+    queries: "",
+    committe: "",
+    provisional: ""
   });
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
@@ -62,6 +65,8 @@ const FireModifyTable = () => {
   const [immediateNextStep, setImmediateNextStep] = useState(null);
   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
   const [nextStepDetails, setNextStepDetails] = useState(null);
+
+  console.log(nextStepDetails, "ffffffffffff")
 
   const [projectInfo, setProjectInfo] = useState({ prjName: "", address: "" });
   const [newDocs, setNewDocs] = useState([]);
@@ -86,6 +91,9 @@ const FireModifyTable = () => {
   //---------------------------------------------------------------------------------------------------------------
   const PROVISIONAL_NOC_STEP_INDICES = useMemo(() => [0, 1, 2, 3, 4], []);
   const OC_PROCESS_STEP_RANGE = useMemo(() => [5, 6, 7, 8, 9, 10], []);
+
+
+  console.log(viewedStepDetails, "deeeeeeeeeeeeeeeeeeeeeeeee2333333333333");
 
   const provisionalRadioLabels = {
     1: "Site Inspection Status",
@@ -282,7 +290,7 @@ const FireModifyTable = () => {
             // const allOCStepsCompleted = PROVISIONAL_NOC_STEP_INDICES.every(
             //   (index) =>
             //     steps[index] &&
-            //     fetchedData.some(
+           //     fetchedData.some(
             //       (item) =>
             //         item.PROCESS === steps[index].PROCESS &&
             //         item.OC_UPDATED === "YES"
@@ -322,7 +330,6 @@ const FireModifyTable = () => {
                 item.STEPTYPE === currentProcess
             );
 
-            console.log(":fffffffffffff", details);
 
             setFormData((prev) => ({
               ...prev,
@@ -334,8 +341,13 @@ const FireModifyTable = () => {
               acknowledgeName: details.ACKNOWLEDGE_NAME || "",
               noOfTowers: details.NO_OF_TOWERS || "",
               feepaidstatus: details.FEE_PAID_STATUS || "",
-              [`stepStatus_${immediateNextStepIndex}`]:
-                currentStepRecord?.LEVEL_STATUS || "", // Load feepaidstatus from backend
+              site: details.SIT_INFSTIN_STATUS || "",
+              queries: details.QUERIES_RECIEVED || "",
+              committe: details.COMMITE_APRVD || "",
+              provisional: details.PROVSINL_STATUS || "",
+
+              // [`stepStatus_${immediateNextStepIndex}`]:
+              //   currentStepRecord?.LEVEL_STATUS || "", // Load feepaidstatus from backend
             }));
           } else {
             setNextStepDetails(null);
@@ -349,6 +361,10 @@ const FireModifyTable = () => {
               acknowledgeName: "",
               noOfTowers: "",
               feepaidstatus: "",
+              site: "",
+              queries: "",
+              committe: "",
+              provisional: ""
             }));
           }
         })
@@ -400,13 +416,17 @@ const FireModifyTable = () => {
         feepaidstatus: details?.FEE_PAID_STATUS || "",
         feePaid: details?.FEE_PAID || "",
         feeAmount: details?.FEE_AMOUNT || "",
+        site: details.SIT_INFSTIN_STATUS || "",
+        queries: details?.QUERIES_RECIEVED || "",
+        committe: details?.COMMITE_APRVD || "",
+        provisional: details?.PROVSINL_STATUS || "",
         loc: selectedPlant, // Ensure plant is set
         // Set status for steps with radio buttons
         ...((conceptualIndex > 0 && conceptualIndex < 5) ||
-        (conceptualIndex >= 6 && conceptualIndex <= 9)
+          (conceptualIndex >= 6 && conceptualIndex <= 9)
           ? {
-              [`stepStatus_${conceptualIndex}`]: details?.STATUS || "YES",
-            }
+            [`stepStatus_${conceptualIndex}`]: details?.STATUS || "YES",
+          }
           : {}),
       }));
 
@@ -427,7 +447,7 @@ const FireModifyTable = () => {
       setViewedStepDetails(null);
       setSelectedLogs([]);
       setIsViewingCompletedStep(false);
-    }
+   }
   };
   //----------------------------------------------------------------------------------------------------------
   useEffect(() => {
@@ -599,6 +619,11 @@ const FireModifyTable = () => {
     payload.append("comments", formData.comments || "");
     payload.append("applyDate", formData.applyDate || "");
     payload.append("username", currentUserName || "");
+
+    payload.append("site", formData.site || "");
+     payload.append("queries", formData.queries || "");
+payload.append("committe", formData.committe || "");
+   payload.append("provisional", formData.provisional || "");
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
@@ -621,6 +646,7 @@ const FireModifyTable = () => {
         formData[`stepStatus_${immediateNextStepIndex}`] || ""
       );
     }
+
 
     newDocs.forEach((file) => payload.append("New_Doc[]", file));
 
@@ -650,11 +676,11 @@ const FireModifyTable = () => {
         showConfirmButton: false,
       });
 
-       // 1. Reset Plant Selection State
-      setSelectedPlant(""); 
+      // 1. Reset Plant Selection State
+      setSelectedPlant("");
 
       // 2. Reset Context Data (Clears Left Side Colors and Header)
-      setStoreData([]); 
+      setStoreData([]);
       setHeaderData(null);
 
       // 3. Reset Step Tracking (Clears Right Side Docs and Middle Form)
@@ -689,6 +715,10 @@ const FireModifyTable = () => {
         acknowledgeName: "",
         noOfTowers: "",
         feepaidstatus: "",
+        site: "",
+        queries: "",
+        committe: "",
+        provisional: "",
         stepStatus_1: "YES",
         stepStatus_2: "YES",
         stepStatus_3: "YES",
@@ -698,7 +728,7 @@ const FireModifyTable = () => {
         stepStatus_8: "YES",
         stepStatus_9: "YES",
       });
-      
+
       // --- END OF RESET LOGIC ---
       // setFormData((prev) => ({
       //   ...prev,
@@ -708,7 +738,7 @@ const FireModifyTable = () => {
       //   feePaid: "",
       //   feeAmount: "",
       //   acknowledgeName: "",
-      //   noOfTowers: "",
+     //   noOfTowers: "",
       //   feepaidstatus: "",
       // }));
       setNewDocs([]);
@@ -743,6 +773,7 @@ const FireModifyTable = () => {
         feepaidstatus: nextStepDetails.FEE_PAID_STATUS || "",
         feePaid: nextStepDetails.FEE_PAID || "",
         feeAmount: nextStepDetails.FEE_AMOUNT || "",
+        site: nextStepDetails.SIT_INFSTIN_STATUS || "",
       }));
     }
   };
@@ -845,230 +876,7 @@ const FireModifyTable = () => {
     }
   };
 
-  // const renderDocumentHistory = () => {
-  //   // added on 23-12-2025 by rajakumari.m-----------------
-  //  const details = viewedStepDetails || nextStepDetails;
 
-  // if (!details || typeof details !== "object" || Object.keys(details).length === 0) {
-  //   return (
-  //     <p className="text-muted mb-0">No previous documents for this step.</p>
-  //   );
-  // }
-
-  // // ------------------------------------------------------
-  //   if (
-  //     !nextStepDetails ||
-  //     typeof nextStepDetails !== "object" ||
-  //     Object.keys(nextStepDetails).length === 0
-  //   ) {
-  //     return (
-  //       <p className="text-muted mb-0">No previous documents for this step.</p>
-  //     );
-  //   }
-
-  //   let generalDocuments = [];
-  //   let acknowledgementReceipts = [];
-
-  //   if (nextStepDetails.UPLOAD_DOC) {
-  //     try {
-  //       const parsedDocs = JSON.parse(nextStepDetails.UPLOAD_DOC);
-  //       generalDocuments = parsedDocs.map((doc) => ({
-  //         name: doc.file_name,
-  //         url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-  //       }));
-  //     } catch (error) {
-  //       console.error("Failed to parse UPLOAD_DOC JSON:", error);
-  //     }
-  //   }
-
-  //   if (nextStepDetails.ACK_DOC) {
-  //     try {
-  //       const parsedAcknowledgeDocs = JSON.parse(nextStepDetails.ACK_DOC);
-  //       acknowledgementReceipts = parsedAcknowledgeDocs.map((doc) => ({
-  //         name: doc.file_name,
-  //         url: `${API_DOC_URL}/storage/${doc.stored_path.replace(/\\/g, "/")}`,
-  //       }));
-  //     } catch (error) {
-  //       console.error("Failed to parse ACK_DOC JSON:", error);
-  //     }
-  //   }
-
-  //   const currentStepLogs = getCurrentStepLogs();
-
-  //   return (
-  //     <div className="d-flex flex-column" style={{ height: "100%", maxHeight: "330px" }}>
-  //       <Card style={{
-  //         padding: "10px",
-  //         flex: "1 1 auto",
-  //         minHeight: "0",
-  //         display: "flex",
-  //         flexDirection: "column",
-  //         overflow: "hidden",
-  //         width: "300px"
-  //       }}>
-  //         <div style={{
-  //           flex: "1 1 auto",
-  //           overflowY: "auto",
-  //           paddingRight: "5px"
-  //         }}>
-  //           <div style={{ marginBottom: "15px" }}>
-  //             <h6 className="text-primary mb-2">General Uploaded Documents</h6>
-  //             {generalDocuments.length > 0 ? (
-  //               <div style={{
-  //                 border: "1px solid #dee2e6",
-  //                 borderRadius: "4px",
-  //                 padding: "5px",
-  //                 backgroundColor: "#f8f9fa"
-  //               }}>
-  //                 <ul className="list-unstyled mb-0">
-  //                   {generalDocuments.map((doc, idx) => (
-  //                     <li
-  //                       key={`gen-doc-${idx}`}
-  //                       className="d-flex justify-content-between align-items-center mb-1 p-1"
-  //                       style={{
-  //                         backgroundColor: "white",
-  //                         borderRadius: "3px",
-  //                         borderBottom: idx < generalDocuments.length - 1 ? "1px solid #e9ecef" : "none"
-  //                       }}
-  //                     >
-  //                       <div className="text-truncate" style={{
-  //                         maxWidth: "calc(100% - 40px)",
-  //                         flexShrink: 1
-  //                       }}>
-  //                         <a
-  //                           href={doc.url}
-  //                           target="_blank"
-  //                           rel="noreferrer"
-  //                           className="text-decoration-none text-dark"
-  //                           style={{ fontSize: "13px" }}
-  //                         >
-  //                           <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
-  //                           <span className="text-truncate" style={{
-  //                             display: "inline-block",
-  //                             maxWidth: "calc(100% - 30px)",
-  //                             verticalAlign: "middle"
-  //                           }}>
-  //                             {doc.name}
-  //                           </span>
-  //                         </a>
-  //                       </div>
-  //                       <Button
-  //                         variant="outline-danger"
-  //                         size="sm"
-  //                         className="flex-shrink-0"
-  //                         style={{
-  //                           padding: "2px 6px",
-  //                           fontSize: "11px",
-  //                           minWidth: "30px",
-  //                           height: "24px"
-  //                         }}
-  //                         onClick={() => handleDeleteDocument("UPLOAD_DOC", doc.name, idx)}
-  //                         title="Delete document"
-  //                       >
-  //                         <i className="fas fa-trash-alt"></i>
-  //                       </Button>
-  //                     </li>
-  //                   ))}
-  //                 </ul>
-  //               </div>
-  //             ) : (
-  //               <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
-  //                 No general documents were uploaded for this step.
-  //               </p>
-  //             )}
-  //           </div>
-
-  //           <div style={{ marginBottom: "15px" }}>
-  //            { immediateNextStepIndex === 0  &&  <h6 className="text-primary mb-2">Acknowledgement Receipts</h6>}
-  //             {acknowledgementReceipts.length > 0 ? (
-  //               <div style={{
-  //                 border: "1px solid #dee2e6",
-  //                 borderRadius: "4px",
-  //                 padding: "5px",
-  //                 backgroundColor: "#f8f9fa"
-  //               }}>
-  //                 <ul className="list-unstyled mb-0">
-  //                   {acknowledgementReceipts.map((doc, idx) => (
-  //                     <li
-  //                       key={`ack-doc-${idx}`}
-  //                       className="d-flex justify-content-between align-items-center mb-1 p-1"
-  //                       style={{
-  //                         backgroundColor: "white",
-  //                         borderRadius: "3px",
-  //                         borderBottom: idx < acknowledgementReceipts.length - 1 ? "1px solid #e9ecef" : "none"
-  //                       }}
-  //                     >
-  //                       <div className="text-truncate" style={{
-  //                         maxWidth: "calc(100% - 40px)",
-  //                         flexShrink: 1
-  //                       }}>
-  //                         <a
-  //                           href={doc?.url}
-  //                           target="_blank"
-  //                           rel="noreferrer"
-  //                           className="text-decoration-none text-dark"
-  //                           style={{ fontSize: "13px" }}
-  //                         >
-  //                           <FaFileAlt className="me-2" style={{ minWidth: "16px" }} />
-  //                           <span className="text-truncate" style={{
-  //                             display: "inline-block",
-  //                             maxWidth: "calc(100% - 30px)",
-  //                             verticalAlign: "middle"
-  //                           }}>
-  //                             {doc?.name}
-  //                           </span>
-  //                         </a>
-  //                       </div>
-  //                       <Button
-  //                         variant="outline-danger"
-  //                         size="sm"
-  //                         className="flex-shrink-0"
-  //                         style={{
-  //                           padding: "2px 6px",
-  //                           fontSize: "11px",
-  //                           minWidth: "30px",
-  //                           height: "24px"
-  //                         }}
-  //                         onClick={() => handleDeleteDocument("ACK_DOC", doc.name, idx)}
-  //                         title="Delete receipt"
-  //                       >
-  //                         <i className="fas fa-trash-alt"></i>
-  //                       </Button>
-  //                     </li>
-  //                   ))}
-  //                 </ul>
-  //               </div>
-  //             ) : (
-  //               <p className="text-muted mb-0 small" style={{ fontSize: "13px" }}>
-
-  //               </p>
-  //             )}
-  //           </div>
-  //         </div>
-  //       </Card>
-
-  //       <div className="p-2 border-top bg-light text-center" style={{ flexShrink: 0 }}>
-  //         <Button
-  //           variant="info"
-  //           size="sm"
-  //           onClick={() => {
-  //             const logs = getCurrentStepLogs();
-  //             setSelectedLogs(logs);
-  //             setShowLogsModal(true);
-  //           }}
-  //           disabled={currentStepLogs.length === 0}
-  //           style={{
-  //             minWidth: "120px",
-  //             fontSize: "13px",
-  //             padding: "4px 12px"
-  //           }}
-  //         >
-  //           {currentStepLogs.length === 0 ? "No Logs Available" : `View Logs (${currentStepLogs.length})`}
-  //         </Button>
-  //       </div>
-  //     </div>
-  //   );
-  // };
 
   const renderDocumentHistory = () => {
     // 1. Determine which data source to use (Viewed Step OR Current Step)
@@ -1249,8 +1057,8 @@ const FireModifyTable = () => {
               {/* Show header if documents exist OR if it's the specific step where they are relevant */}
               {(acknowledgementReceipts.length > 0 ||
                 immediateNextStepIndex === 0) && (
-                <h6 className="text-primary mb-2">Acknowledgement Receipts</h6>
-              )}
+                  <h6 className="text-primary mb-2">Acknowledgement Receipts</h6>
+                )}
 
               {acknowledgementReceipts.length > 0 ? (
                 <div
@@ -1521,7 +1329,9 @@ const FireModifyTable = () => {
 
                 {/* Display form fields in view-only mode */}
                 {/* <div className="bg-light p-3 rounded border"> */}
-                <h5 className="text-primary mb-3">Step Details</h5>
+                <h5 className="mb-3 text-success  fw-bold"> {steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length].PROCESS}
+                  <> Towers: <span className="text-dark">{NumberOfTowers} (Completed)</span></>
+                </h5>
                 <Button
                   variant="outline-primary"
                   size="sm"
@@ -1554,14 +1364,14 @@ const FireModifyTable = () => {
                           viewedStepDetails?.APPLY_DT || formData.applyDate
                         }
                         readOnly
-                        
-                         // added on 4-1-2026 by rajakumari.m-------------------------------------------------
-                           style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-      // /------------------------------------------------------------------------------------------
+
+                        // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                        style={{
+                          backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                          color: isViewingCompletedStep ? '#6c757d' : '',
+                          cursor: isViewingCompletedStep ? 'not-allowed' : ''
+                        }}
+                      // /------------------------------------------------------------------------------------------
                       />
                     </Form.Group>
                   </Col>
@@ -1579,13 +1389,13 @@ const FireModifyTable = () => {
                           value={viewedStepDetails.COMMENTS}
                           readOnly
                           // added on 4-1-2026 by rajakumari.m-------------------------------------------------
-                           style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-      // /------------------------------------------------------------------------------------------
-                         
+                          style={{
+                            backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                            color: isViewingCompletedStep ? '#6c757d' : '',
+                            cursor: isViewingCompletedStep ? 'not-allowed' : ''
+                          }}
+                        // /------------------------------------------------------------------------------------------
+
                         />
                       </Form.Group>
                     </Col>
@@ -1595,49 +1405,49 @@ const FireModifyTable = () => {
                 {/* Show Fee Amount and Number of Towers if they exist */}
                 {(viewedStepDetails?.FEE_AMOUNT ||
                   viewedStepDetails?.NO_OF_TOWERS) && (
-                  <Row className="mb-3">
-                    {viewedStepDetails?.NO_OF_TOWERS && (
-                      <Col md={6}>
-                       <Col md={4}>
-  <Form.Group>
-    <Form.Label>Number Of Towers</Form.Label>
-    <Form.Control
-      type="text"
-      name="noOfTowers"
-      value={formData.noOfTowers || ""}
-      disabled={!formData.loc || isViewingCompletedStep}
-      onChange={handleChange}
-      style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-    />
-  </Form.Group>
-</Col>
-                      </Col>
-                    )}
-                    {viewedStepDetails?.FEE_AMOUNT && (
-                      <Col md={6}>
-                        <Form.Group>
-                          <Form.Label>Fee Amount</Form.Label>
-                          <Form.Control
-                            type="text"
-                            value={viewedStepDetails.FEE_AMOUNT}
-                            readOnly
-                             // added on 4-1-2026 by rajakumari.m-------------------------------------------------
-                           style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-      // /------------------------------------------------------------------------------------------
-                          />
-                        </Form.Group>
-                      </Col>
-                    )}
-                  </Row>
-                )}
+                    <Row className="mb-3">
+                      {viewedStepDetails?.NO_OF_TOWERS && (
+                        <Col md={6}>
+                          <Col md={4}>
+                            <Form.Group>
+                              <Form.Label>Number Of Towers</Form.Label>
+                              <Form.Control
+                                type="text"
+                                name="noOfTowers"
+                                value={formData.noOfTowers || ""}
+                                disabled
+                                // onChange={handleChange}
+                                style={{
+                                  backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                                  color: isViewingCompletedStep ? '#6c757d' : '',
+                                  cursor: isViewingCompletedStep ? 'not-allowed' : ''
+                                }}
+                              />
+                            </Form.Group>
+                         </Col>
+                        </Col>
+                      )}
+                      {viewedStepDetails?.FEE_AMOUNT && (
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label>Fee Amount</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={viewedStepDetails.FEE_AMOUNT}
+                              readOnly
+                              // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                              style={{
+                                backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                                color: isViewingCompletedStep ? '#6c757d' : '',
+                                cursor: isViewingCompletedStep ? 'not-allowed' : ''
+                              }}
+                            // /------------------------------------------------------------------------------------------
+                            />
+                          </Form.Group>
+                        </Col>
+                      )}
+                    </Row>
+                  )}
 
                 {/* Show Fee Paid Status if it exists */}
                 {viewedStepDetails?.FEE_PAID_STATUS && (
@@ -1649,13 +1459,13 @@ const FireModifyTable = () => {
                           type="text"
                           value={viewedStepDetails.FEE_PAID_STATUS}
                           readOnly
-                          // added on 4-1-2026 by rajakumari.m-------------------------------------------------
-                           style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-      // /------------------------------------------------------------------------------------------
+                         // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                          style={{
+                            backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                            color: isViewingCompletedStep ? '#6c757d' : '',
+                            cursor: isViewingCompletedStep ? 'not-allowed' : ''
+                          }}
+                        // /------------------------------------------------------------------------------------------
                         />
                       </Form.Group>
                     </Col>
@@ -1663,36 +1473,90 @@ const FireModifyTable = () => {
                 )}
 
                 {/* Show status for steps with radio buttons */}
-                {(viewedStepConceptualIndex > 0 &&
-                  viewedStepConceptualIndex < 5) ||
-                (viewedStepConceptualIndex >= 6 &&
-                  viewedStepConceptualIndex <= 9) ? (
-                  <Row className="mb-3">
-                    <Col md={12}>
-                      <Form.Group>
-                        <Form.Label>Status</Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={
-                            viewedStepDetails?.STATUS ||
-                            formData[
-                              `stepStatus_${viewedStepConceptualIndex}`
-                            ] ||
-                            "Not Available"
-                          }
-                          readOnly
-                          // added on 4-1-2026 by rajakumari.m-------------------------------------------------
-                           style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-      // /------------------------------------------------------------------------------------------
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                ) : null}
+            {isViewingCompletedStep && (
+  <>
+   
+    {viewedStepConceptualIndex === 1 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Site Inspection Status</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.SIT_INFSTIN_STATUS || 
+                formData.site || 
+                "Not Available"
+              }
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}
+   {viewedStepConceptualIndex === 2 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Queries Received?</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.QUERIES_RECIEVED || 
+                formData.queries || 
+                "Not Available"
+              }
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}
+    {viewedStepConceptualIndex === 3 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Committee Approved?</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.COMMITE_APRVD || 
+                formData.committe || 
+                "Not Available"
+              }
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}
+
+    {/* Step 4: Provisional Status */}
+    {viewedStepConceptualIndex === 4 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Provisional Status?</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.PROVSINL_STATUS || 
+                formData.provisional || 
+                "Not Available"
+              }
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}  </>
+)}
+
+
 
                 {/* Show Upload button in disabled state */}
                 <Row className="mb-3">
@@ -1774,34 +1638,34 @@ const FireModifyTable = () => {
                     </Form.Group>
                   </Col>
 
-          <Col md={6}>
-  <Form.Group>
-    <Form.Label>
-      {immediateNextStepIndex === 1 ? "Inspection Date" : "Apply Date"}
-    </Form.Label>
-    <Form.Control
-      type="date"
-      name="applyDate"
-      max={new Date().toISOString().split("T")[0]}
-      value={formData.applyDate || ""}
-      disabled={
-        !formData.loc ||
-        (nextStepDetails && nextStepDetails.APPLY_DT) ||
-        isViewingCompletedStep
-      }
-      onChange={handleChange}
-      isInvalid={!!errors.applyDate}
-      style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-    />
-    <Form.Control.Feedback type="invalid">
-      {errors.applyDate}
-    </Form.Control.Feedback>
-  </Form.Group>
-</Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>
+                        {immediateNextStepIndex === 1 ? "Inspection Date" : "Apply Date"}
+                      </Form.Label>
+                      <Form.Control
+                        type="date"
+                        name="applyDate"
+                        max={new Date().toISOString().split("T")[0]}
+                        value={formData.applyDate || ""}
+                        disabled={
+                          !formData.loc ||
+                          (nextStepDetails && nextStepDetails.APPLY_DT) ||
+                          isViewingCompletedStep
+                        }
+                        onChange={handleChange}
+                        isInvalid={!!errors.applyDate}
+                        style={{
+                          backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                          color: isViewingCompletedStep ? '#6c757d' : '',
+                          cursor: isViewingCompletedStep ? 'not-allowed' : ''
+                       }}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.applyDate}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
                 </Row>
 
                 {/* Show Number of Towers and Fee Amount only for Application Submission */}
@@ -1856,8 +1720,9 @@ const FireModifyTable = () => {
                             type="text"
                             name="noOfTowers"
                             value={formData.noOfTowers || ""}
-                            disabled={!formData.loc || isViewingCompletedStep}
-                            onChange={handleChange}
+                            disabled
+                            // disabled={!formData.loc || isViewingCompletedStep}
+                            // onChange={handleChange}
                           />
                         </Form.Group>
                       </Col>
@@ -1867,8 +1732,8 @@ const FireModifyTable = () => {
 
                   {/* Column 3: Fee Amount - Only shown if feepaidstatus is YES */}
                   {immediateNextStepIndex === 0 &&
-                  immediateNextStep?.PROCESS === "Application Submission" &&
-                  formData.feepaidstatus === "YES" ? (
+                    immediateNextStep?.PROCESS === "Application Submission" &&
+                    formData.feepaidstatus === "YES" ? (
                     <Col md={4}>
                       <Form.Group>
                         <Form.Label>Fee Amount</Form.Label>
@@ -1877,13 +1742,13 @@ const FireModifyTable = () => {
                           name="feeAmount"
                           value={formData.feeAmount || ""}
                           disabled={!formData.loc || isViewingCompletedStep}
-                           onChange={handleChange}
-      style={{
-        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-        color: isViewingCompletedStep ? '#6c757d' : '',
-        cursor: isViewingCompletedStep ? 'not-allowed' : ''
-      }}
-    />
+                          onChange={handleChange}
+                          style={{
+                            backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                            color: isViewingCompletedStep ? '#6c757d' : '',
+                            cursor: isViewingCompletedStep ? 'not-allowed' : ''
+                          }}
+                        />
                       </Form.Group>
                     </Col>
                   ) : immediateNextStepIndex === 0 &&
@@ -1893,7 +1758,177 @@ const FireModifyTable = () => {
                   ) : null}
                 </Row>
 
-                {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
+
+                {
+                  immediateNextStepIndex === 1 && (
+                    <Form.Group>
+                      <Form.Label>Site Inspection Status</Form.Label>
+                      <Form.Check
+                        type="radio"
+                        label="Yes"
+                        name="site"
+                        value="YES"
+                        checked={formData.site === "YES"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            site: "YES",
+                            stepStatus_1: "YES",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="No"
+                        name="site"
+                        value="NO"
+                        checked={formData.site === "NO"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            site: "NO",
+                            stepStatus_1: "NO",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                    </Form.Group>
+                  )
+                }
+
+                {
+                  immediateNextStepIndex === 2 && (
+                    <Form.Group>
+                      <Form.Label>Queries Received?</Form.Label>
+                      <Form.Check
+                        type="radio"
+                        label="Yes"
+                        name="queries"
+                        value="YES"
+                        checked={
+                          formData.queries === "YES" ||
+                          nextStepDetails?.QUERIES_RECIEVED === "YES"
+                        }
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            queries: "YES",
+                            stepStatus_2: "YES",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="No"
+                        name="queries"
+                        value="NO"
+                        checked={
+                          formData.queries === "NO" ||
+                          nextStepDetails?.QUERIES_RECIEVED === "NO"
+                        }
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            queries: "NO",
+                            stepStatus_2: "NO",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                    </Form.Group>
+                  )
+                }
+
+                {
+                  immediateNextStepIndex === 3 && (
+                    <Form.Group>
+                      <Form.Label>Committee Approved?</Form.Label>
+                      <Form.Check
+                        type="radio"
+                        label="Yes"
+                        name="committe"
+                        value="YES"
+                        checked={
+                          formData.committe === "YES" ||
+                          nextStepDetails?.COMMITE_APRVD === "YES"
+                        }
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            committe: "YES",
+                            stepStatus_3: "YES",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="No"
+                        name="committe"
+                        value="NO"
+                        checked={
+                          formData.committe === "NO" ||
+                          nextStepDetails?.COMMITE_APRVD === "NO"
+                        }
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            committe: "NO",
+                            stepStatus_3: "NO",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                    </Form.Group>
+                  )
+                }
+
+                {
+                  immediateNextStepIndex === 4 && (
+                    <Form.Group>
+                      <Form.Label>Provisional Status?</Form.Label>
+                      <Form.Check
+                        type="radio"
+                        label="Yes"
+                        name="provisional"
+                        value="YES"
+                        checked={
+                          formData.provisional === "YES" ||
+                          nextStepDetails?.PROVSINL_STATUS === "YES"
+                        }
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            provisional: "YES",
+                            stepStatus_4: "YES",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="No"
+                        name="provisional"
+                        value="NO"
+                        checked={
+                          formData.provisional === "NO" ||
+                          nextStepDetails?.PROVSINL_STATUS === "NO"
+                        }
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            provisional: "NO",
+                            stepStatus_4: "NO",
+                          }))
+                        }
+                        disabled={isViewingCompletedStep}
+                      />
+                    </Form.Group>
+                  )
+                }
+                {/* {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
                   <Form.Group className="mb-3">
                     <Form.Label>
                       {provisionalRadioLabels[immediateNextStepIndex] ||
@@ -1936,7 +1971,7 @@ const FireModifyTable = () => {
     />
   </div>
                   </Form.Group>
-                )}
+                )} */}
 
                 <Row className="mb-3">
                   <Col md={6}>
@@ -1945,16 +1980,16 @@ const FireModifyTable = () => {
                       variant="outline-secondary"
                       className="form-control"
                       onClick={() => setShowUploadModal(true)}
-                     disabled={isViewingCompletedStep}
-    style={{
-      backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
-      color: isViewingCompletedStep ? '#6c757d' : '',
-      borderColor: isViewingCompletedStep ? '#dee2e6' : '',
-      cursor: isViewingCompletedStep ? 'not-allowed' : 'pointer'
-    }}
-  >
-    Upload Docs {newDocs.length > 0 && `(${newDocs.length} files)`}
-  </Button>
+                      disabled={isViewingCompletedStep}
+                      style={{
+                        backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
+                        color: isViewingCompletedStep ? '#6c757d' : '',
+                        borderColor: isViewingCompletedStep ? '#dee2e6' : '',
+                        cursor: isViewingCompletedStep ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Upload Docs {newDocs.length > 0 && `(${newDocs.length} files)`}
+                    </Button>
                     {errors.newDocs && (
                       <div className="text-danger mt-1">{errors.newDocs}</div>
                     )}
@@ -2005,7 +2040,7 @@ const FireModifyTable = () => {
                         This step has already been completed and cannot be
                         modified
                       </p>
-                    </div>
+                   </div>
                   )}
                 </div>
               </> // {/*added on 23-12-2025 by rajakumari.m */}

@@ -1616,6 +1616,7 @@ useEffect(() => {
         value={viewedStepDetails?.APPLY_DT || ""} 
         onChange={(e) => setViewedStepDetails(prev => ({ ...prev, APPLY_DT: e.target.value }))}
         readOnly={!isCurrentStepEditable}
+              max={new Date().toISOString().split("T")[0]}
         style={{ 
           backgroundColor: !isCurrentStepEditable ? "#e9ecef" : "white",
           cursor: !isCurrentStepEditable ? "not-allowed" : "text"

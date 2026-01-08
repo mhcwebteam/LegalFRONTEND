@@ -280,7 +280,15 @@ const WaterUpdateTable = () => {
   }, [nextStepDetails, selectedProcessDetails]);
 
   useEffect(() => {
-    if (selectedPlant) {
+
+      setStoreData([])
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    // setViewedStep(null);
+  
+
+
+    if (selectedPlant && steps.length > 0) {
       axios
         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
         .then((res) => {

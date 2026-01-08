@@ -944,7 +944,7 @@ const handleEmailSelectionSubmit = async (emails) => {
                     type="number"
                     name="noOfFlats"
                     value={formData.noOfFlats || ""}
-                    disabled={!formData.loc}
+                    disabled
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -971,7 +971,7 @@ const handleEmailSelectionSubmit = async (emails) => {
                     type="number"
                     name="amountPaid"
                     value={formData.amountPaid || ""}
-                    disabled={!formData.loc}
+                    disabled
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -983,7 +983,7 @@ const handleEmailSelectionSubmit = async (emails) => {
                     type="number"
                     name="TotalProjectArea"
                     value={formData.TotalProjectArea || ""}
-                    disabled={!formData.loc}
+                    disabled
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -995,7 +995,7 @@ const handleEmailSelectionSubmit = async (emails) => {
                     type="number"
                     name="noOfTowers"
                     value={formData.noOfTowers}
-                    disabled={!formData.loc}
+                    disabled
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -1007,7 +1007,7 @@ const handleEmailSelectionSubmit = async (emails) => {
                     type="number"
                     name="ProjectBuildArea"
                     value={formData.ProjectBuildArea}
-                    disabled={!formData.loc}
+                    disabled
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -1063,7 +1063,10 @@ const handleEmailSelectionSubmit = async (emails) => {
   };
 
   useEffect(() => {
-    if (selectedPlant) {
+       setStoreData([])
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    if (selectedPlant && steps.length > 0 ) {
       axios
         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
         .then((res) => {

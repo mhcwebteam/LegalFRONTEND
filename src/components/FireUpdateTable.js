@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback, useContext } from "react";
 import { Nav, Form, Button, Row, Col, Badge, Modal, OverlayTrigger, Tooltip, Card , Alert} from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -48,6 +47,10 @@ const FireUpdateTable = () => {
     feeAmount: "",
     noOfTowers: "",
     feepaidstatus: "",
+        site: "",
+        queries: "",
+        committe: "",
+        provisional: ""
   });
 
   const [immediateNextStep, setImmediateNextStep] = useState(null);
@@ -65,15 +68,12 @@ const [allStepsCompleted, setAllStepsCompleted] = useState(false);
 const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
   const [loggedInUser, setLoggedInUser] = useState(null);   //------------login user state
 
-
   const provisionalRadioLabels = {
     1: "Site Inspection Status",
     2: "Queries Received?",
     3: "Committee Approved?",
     4: "Provisional Status?",
   };
-
-
 
 
   useEffect(() => {
@@ -96,7 +96,6 @@ const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
     }
   }, [viewedStepDetails]);
 
-
  const checkRecordExists = () => {
   if (selectedPlant && immediateNextStep) {
     const exists = storeData.some(item => 
@@ -112,16 +111,11 @@ const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
   }
 };
 
-
-
     useEffect(() => {
       checkRecordExists();
     }, [storeData, selectedPlant, immediateNextStep]);
 
-
-
   const fetchStepDetails = useCallback(async (plantId, processName, stepType) => {
-
 
     // let steptype = "OCPROCESS";
     setCurrentProcess(stepType);
@@ -158,7 +152,6 @@ const checkAllStepsCompleted = useCallback((fetchedData) => {
   return allProvisionalCompleted && allOCCompleted;
 }, [steps, PROVISIONAL_NOC_STEP_INDICES]);
 
-
 const fetchPlantData = useCallback(async (plantId) => {
 
 if (!plantId || plantId.trim() === "") {
@@ -179,6 +172,10 @@ if (!plantId || plantId.trim() === "") {
       feepaidstatus: "",
       feePaid: "",
       feeAmount: "",
+          site: "",
+          queries: "",
+          committe: "",
+          provisional: ""
     }));
     setProvisionalNOCCompleted(false);
     setSelectedLogs([]);
@@ -298,6 +295,11 @@ setRecordExists(currentProcessExists);
       feepaidstatus: detailsForViewedStep?.FEE_PAID_STATUS || "",
       feePaid: detailsForViewedStep?.FEE_PAID || "",
       feeAmount: detailsForViewedStep?.FEE_AMOUNT || "",
+        site: detailsForViewedStep.SIT_INFSTIN_STATUS || "",
+         queries: detailsForViewedStep.QUERIES_RECIEVED || "",
+      committe: detailsForViewedStep.COMMITE_APRVD || "",
+        provisional: detailsForViewedStep.PROVSINL_STATUS || "",
+
     }));
 
   } catch (err) {
@@ -320,6 +322,10 @@ setRecordExists(currentProcessExists);
       feepaidstatus: "",
       feePaid: "",
       feeAmount: "",
+      site: "",
+      queries:"",
+      committe:"",
+      provisional:""
     });
     setProvisionalNOCCompleted(false);
     setSelectedLogs([]);
@@ -327,7 +333,6 @@ setRecordExists(currentProcessExists);
     setSelectedProcessDetails(null);
   }
 }, [steps, PROVISIONAL_NOC_STEP_INDICES, OC_PROCESS_CONCEPTUAL_START_INDEX, fetchStepDetails, checkAllStepsCompleted]);
-
 
       // --- 2. Check User Login ---
       useEffect(() => {
@@ -346,7 +351,6 @@ setRecordExists(currentProcessExists);
         }
       }, [token, navigate]);
 
-
   useEffect(() => {
     axios.get(`${API_BASE_URL}/fire-process`)
       .then((res) => setSteps(res.data))
@@ -364,7 +368,6 @@ setRecordExists(currentProcessExists);
   }, [selectedPlant, steps, fetchPlantData]);
 
  
-
 
   const handleEmailSubmit = () => {
   const newErrors = {};
@@ -404,8 +407,6 @@ setRecordExists(currentProcessExists);
     }
 
 
-
-
     const currentStepIsOC = immediateNextStepIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX && immediateNextStepIndex < (PROVISIONAL_NOC_STEP_INDICES.length * 2);
     // const stepType = currentStepIsOC ? "OC Process" : "Provisional NOC";
 
@@ -441,6 +442,10 @@ try {
       feepaidstatus: "",
       feePaid: "",
       feeAmount: "",
+          site: "",
+          queries: "",
+          committe: "",
+          provisional: ""
     }));
     
     // Reset other states
@@ -517,6 +522,11 @@ const handleViewNextStep = () => {
     feepaidstatus: details?.FEE_PAID_STATUS || "",
     feePaid: details?.FEE_PAID || "",
     feeAmount: details?.FEE_AMOUNT || "",
+     site: details.SIT_INFSTIN_STATUS || "",
+          queries: details.QUERIES_RECIEVED || "",
+                committe: details.COMMITE_APRVD || "",
+                provisional: details.PROVSINL_STATUS || "",
+
   }));
 }, [selectedPlant, fetchStepDetails]);
 
@@ -640,7 +650,6 @@ const renderCompletionMessage = () => {
             paddingRight: "5px" // Space for scrollbar
           }}>
             <h6 className="text-primary p-2">General Uploaded Documents</h6>
-
 
             {generalDocuments.length > 0 ? (
               <div style={{
@@ -852,7 +861,6 @@ const renderCompletionMessage = () => {
   const FeeAmount = storeData[0]?.FEE_AMOUNT;
   const NumberOfTowers = storeData[0]?.NO_OF_TOWERS;
 
-
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -930,7 +938,7 @@ const renderCompletionMessage = () => {
       </Row>
 
       <Row className="mb-3">
-        {immediateNextStepIndex === 0 && immediateNextStep?.PROCESS === "Application Submission" && (
+        {viewedStepConceptualIndex === 0 &&  (
           <>
             <Col md={4}>
               <Form.Group>
@@ -983,111 +991,85 @@ const renderCompletionMessage = () => {
         )}
       </Row>
 
-      {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
-        <Form.Group className="mb-3">
-          <Form.Label>
-            {provisionalRadioLabels[immediateNextStepIndex] || "Status for this step"}
-          </Form.Label>
-          <div>
-            {(() => {
-              const viewedStep = steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length];
-              if (!viewedStep) return null;
-
-              const stepRecord = storeData.find(
-                (item) =>
-                  item.PROCESS?.trim() === viewedStep.PROCESS?.trim() &&
-                  item.STEPTYPE === (viewedStepConceptualIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX ? "OCPROCESS" : "ProvisionalNOC")
-              );
-
-              const currentStatus = stepRecord?.LEVEL_STATUS || "";
-              const isStepCompleted = stepRecord?.UPDATED === "YES" || stepRecord?.OC_UPDATED === "YES";
-
-              const isActiveStep = viewedStepConceptualIndex === immediateNextStepIndex;
-
-              if (isStepCompleted) {
-                return (
-                  <div className="d-flex align-items-center gap-2">
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="Yes"
-                      checked={currentStatus === "YES"}
-                      disabled
-                    />
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="No"
-                      checked={currentStatus === "NO"}
-                      disabled
-                    />
-                    <Badge bg="success" className="ms-2">
-                      Completed
-                    </Badge>
-                  </div>
-                );
+   
+            {viewedStepConceptualIndex  && (
+  <>
+   
+    {viewedStepConceptualIndex   === 1 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Site Inspection Status</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.SIT_INFSTIN_STATUS || 
+                formData.site
               }
-
-              if (isActiveStep) {
-                return (
-                  <div>
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="Yes"
-                      name={`stepStatus_${viewedStepConceptualIndex}`}
-                      id={`stepYes_${viewedStepConceptualIndex}`}
-                      value="YES"
-                      checked={currentStatus === "YES"}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          [`stepStatus_${viewedStepConceptualIndex}`]: e.target.value,
-                        }))
-                      }
-                    />
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="No"
-                      name={`stepStatus_${viewedStepConceptualIndex}`}
-                      id={`stepNo_${viewedStepConceptualIndex}`}
-                      value="NO"
-                      checked={currentStatus === "NO"}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          [`stepStatus_${viewedStepConceptualIndex}`]: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                );
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}
+   {viewedStepConceptualIndex   === 2 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Queries Received?</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.QUERIES_RECIEVED || 
+                formData.queries
               }
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}
+    {viewedStepConceptualIndex  === 3 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Committee Approved?</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.COMMITE_APRVD || 
+                formData.committe
+              }
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}
 
-              return (
-                <div className="d-flex align-items-center gap-2">
-                  <Form.Check
-                    type="radio"
-                    inline
-                    label="Yes"
-                    checked={currentStatus === "YES"}
-                    disabled
-                  />
-                  <Form.Check
-                    type="radio"
-                    inline
-                    label="No"
-                    checked={currentStatus === "NO"}
-                    disabled
-                  />
-                  <span className="text-muted small">(View only)</span>
-                </div>
-              );
-            })()}
-          </div>
-        </Form.Group>
-      )}
+    {/* Step 4: Provisional Status */}
+    {viewedStepConceptualIndex  === 4 && (
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Provisional Status?</Form.Label>
+            <Form.Control
+              type="text"
+              value={
+                viewedStepDetails?.PROVSINL_STATUS || 
+                formData.provisional
+              }
+              readOnly
+              className="bg-light"
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    )}  </>
+)}
 
       <Form.Group className="mb-3">
         <Form.Label>Comments</Form.Label>
@@ -1259,113 +1241,151 @@ const renderCompletionMessage = () => {
             )}
           </>
         )}
+{viewedStepConceptualIndex === 1 && (
+    <Col md={12}>
+      <Form.Group>
+        <Form.Label>Site Inspection Status</Form.Label>
+        <div>
+          <Form.Check
+            type="radio"
+            inline
+            label="Yes"
+            name="site"
+            value="YES"
+            checked={
+              viewedStepDetails?.SIT_INFSTIN_STATUS === "YES" || 
+              formData.site === "YES"
+            }
+            disabled={true}
+            className="me-3"
+          />
+          <Form.Check
+            type="radio"
+            inline
+            label="No"
+            name="site"
+            value="NO"
+            checked={
+              viewedStepDetails?.SIT_INFSTIN_STATUS === "NO" || 
+              formData.site === "NO"
+            }
+            disabled={true}
+          />
+        </div>
+      </Form.Group>
+    </Col>
+  )}
+
+  {/* Step 2: Queries Received */}
+  {viewedStepConceptualIndex === 2 && (
+    <Col md={12}>
+      <Form.Group>
+        <Form.Label>Queries Received?</Form.Label>
+        <div>
+          <Form.Check
+            type="radio"
+            inline
+            label="Yes"
+            name="queries"
+            value="YES"
+            checked={
+              viewedStepDetails?.QUERIES_RECIEVED === "YES" || 
+              formData.queries === "YES"
+            }
+            disabled={true}
+            className="me-3"
+          />
+          <Form.Check
+            type="radio"
+            inline
+            label="No"
+            name="queries"
+            value="NO"
+            checked={
+              viewedStepDetails?.QUERIES_RECIEVED === "NO" || 
+              formData.queries === "NO"
+            }
+            disabled={true}
+          />
+        </div>
+      </Form.Group>
+    </Col>
+  )}
+
+  {/* Step 3: Committee Approved */}
+  {viewedStepConceptualIndex === 3 && (
+    <Col md={12}>
+      <Form.Group>
+        <Form.Label>Committee Approved?</Form.Label>
+        <div>
+          <Form.Check
+            type="radio"
+            inline
+            label="Yes"
+            name="committe"
+            value="YES"
+            checked={
+              viewedStepDetails?.COMMITE_APRVD === "YES" || 
+              formData.committe === "YES"
+            }
+            disabled={true}
+            className="me-3"
+          />
+          <Form.Check
+            type="radio"
+            inline
+            label="No"
+            name="committe"
+            value="NO"
+            checked={
+              viewedStepDetails?.COMMITE_APRVD === "NO" || 
+              formData.committe === "NO"
+            }
+            disabled={true}
+          />
+        </div>
+      </Form.Group>
+    </Col>
+  )}
+
+  {/* Step 4: Provisional Status */}
+  {viewedStepConceptualIndex === 4 && (
+    <Col md={12}>
+      <Form.Group>
+        <Form.Label>Provisional Status?</Form.Label>
+        <div>
+          <Form.Check
+            type="radio"
+            inline
+            label="Yes"
+            name="provisional"
+            value="YES"
+            checked={
+              viewedStepDetails?.PROVSINL_STATUS === "YES" || 
+              formData.provisional === "YES"
+            }
+            disabled={true}
+            className="me-3"
+          />
+          <Form.Check
+            type="radio"
+            inline
+            label="No"
+            name="provisional"
+            value="NO"
+            checked={
+              viewedStepDetails?.PROVSINL_STATUS === "NO" || 
+              formData.provisional === "NO"
+            }
+            disabled={true}
+          />
+        </div>
+      </Form.Group>
+    </Col>
+  )}
       </Row>
 
-      {immediateNextStepIndex > 0 && immediateNextStepIndex < 5 && (
-        <Form.Group className="mb-3">
-          <Form.Label>
-            {provisionalRadioLabels[immediateNextStepIndex] || "Status for this step"}
-          </Form.Label>
-          <div>
-            {(() => {
-              const viewedStep = steps[viewedStepConceptualIndex % PROVISIONAL_NOC_STEP_INDICES.length];
-              if (!viewedStep) return null;
-
-              const stepRecord = storeData.find(
-                (item) =>
-                  item.PROCESS?.trim() === viewedStep.PROCESS?.trim() &&
-                  item.STEPTYPE === (viewedStepConceptualIndex >= OC_PROCESS_CONCEPTUAL_START_INDEX ? "OCPROCESS" : "ProvisionalNOC")
-              );
-
-              const currentStatus = stepRecord?.LEVEL_STATUS || "";
-              const isStepCompleted = stepRecord?.UPDATED === "YES" || stepRecord?.OC_UPDATED === "YES";
-
-              const isActiveStep = viewedStepConceptualIndex === immediateNextStepIndex;
-
-              if (isStepCompleted) {
-                return (
-                  <div className="d-flex align-items-center gap-2">
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="Yes"
-                      checked={currentStatus === "YES"}
-                      disabled
-                    />
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="No"
-                      checked={currentStatus === "NO"}
-                      disabled
-                    />
-                    <Badge bg="success" className="ms-2">
-                      Completed
-                    </Badge>
-                  </div>
-                );
-              }
-
-              if (isActiveStep) {
-                return (
-                  <div>
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="Yes"
-                      name={`stepStatus_${viewedStepConceptualIndex}`}
-                      id={`stepYes_${viewedStepConceptualIndex}`}
-                      value="YES"
-                      checked={currentStatus === "YES"}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          [`stepStatus_${viewedStepConceptualIndex}`]: e.target.value,
-                        }))
-                      }
-                    />
-                    <Form.Check
-                      type="radio"
-                      inline
-                      label="No"
-                      name={`stepStatus_${viewedStepConceptualIndex}`}
-                      id={`stepNo_${viewedStepConceptualIndex}`}
-                      value="NO"
-                      checked={currentStatus === "NO"}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          [`stepStatus_${viewedStepConceptualIndex}`]: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                );
-              }
-
-              return (
-                <div className="d-flex align-items-center gap-2">
-                  <Form.Check
-                    type="radio"
-                    inline
-                    label="Yes"
-                    checked={currentStatus === "YES"}
-                    disabled
-                  />
-                  <Form.Check
-                    type="radio"
-                    inline
-                    label="No"
-                    checked={currentStatus === "NO"}
-                    disabled
-                  />
-                  <span className="text-muted small">(View only)</span>
-                </div>
-              );
-            })()}
-          </div>
-        </Form.Group>
-      )}
+   
 
       <Form.Group className="mb-3">
         <Form.Label>Comment</Form.Label>
@@ -1464,8 +1484,6 @@ const renderCompletionMessage = () => {
                   );
 
 
-
-
                 })
               ) : (
                 <p>No logs available</p>
@@ -1494,5 +1512,4 @@ const renderCompletionMessage = () => {
 };
 
 export default FireUpdateTable;
-
 

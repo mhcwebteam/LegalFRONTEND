@@ -101,52 +101,132 @@ const AirportModifyTable = () => {
   }, []);
 
   //added on 23-12-2025 by rajakumari.m--------------------------------------------------------------------------------
+  // const handleProcessClick = (e, process) => {
+  //   e.stopPropagation();
+  //   console.log("Clicked:", process);
+
+  //   // Find the process details from storeData
+  //   const processDetails = storeData.find(
+  //     (item) =>
+  //       item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+  //   );
+
+  //   setSelectedProcessDetails(processDetails || null);
+
+  //   // If process details found, also set it as the active step
+  //   if (processDetails) {
+  //     const stepIndex = steps.findIndex(
+  //       (step) =>
+  //         step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+  //     );
+  //     if (stepIndex !== -1) {
+  //       setActiveStep(stepIndex);
+  //     }
+  //   }
+  // };
+
   const handleProcessClick = (e, process) => {
-    e.stopPropagation();
-    console.log("Clicked:", process);
+  e.stopPropagation();
+  console.log("Clicked:", process);
 
-    // Find the process details from storeData
-    const processDetails = storeData.find(
-      (item) =>
-        item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+  // Find the process details from storeData
+  const processDetails = storeData.find(
+    (item) =>
+      item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+  );
+
+  setSelectedProcessDetails(processDetails || null);
+
+  // If process details found, also set it as the active step
+  if (processDetails) {
+    const stepIndex = steps.findIndex(
+      (step) =>
+        step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
     );
-
-    setSelectedProcessDetails(processDetails || null);
-
-    // If process details found, also set it as the active step
-    if (processDetails) {
-      const stepIndex = steps.findIndex(
-        (step) =>
-          step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
-      );
-      if (stepIndex !== -1) {
-        setActiveStep(stepIndex);
-      }
+    if (stepIndex !== -1) {
+      setActiveStep(stepIndex);
     }
-  };
 
-  const handleViewNextStep = () => {
-    setSelectedProcessDetails(null);
+    // ✅ ONLY set form data for the specific step we're viewing
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      applyDate: processDetails.APPLY_DT || "",
+      comments: processDetails.COMMENTS || "",
+      // Only include STATUS for NOC Received or Not step
+      STATUS: processDetails.PROCESS === "NOC Received or Not" 
+        ? (processDetails.STATUS || "YES") 
+        : prevFormData.STATUS, // Keep existing STATUS for other steps
+      // Only include project area and NOCs for Submit Application step
+      totalPrjArea: processDetails.PROCESS === "Submit Application"
+        ? (processDetails.AMEND_TOTAL_PRJ_AREA || "")
+        : prevFormData.totalPrjArea,
+      noOfNocs: processDetails.PROCESS === "Submit Application"
+        ? (processDetails.AMEND_NO_OF_NOCS || "")
+        : prevFormData.noOfNocs,
+      prjArea: processDetails.PROCESS === "Submit Application"
+        ? (processDetails.TOTAL_PRJ_AREA || "")
+        : prevFormData.prjArea,
+      nocs: processDetails.PROCESS === "Submit Application"
+        ? (processDetails.NO_OF_NOCS || "")
+        : prevFormData.nocs,
+    }));
 
-    if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
-      const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+    setFirstStep(processDetails);
+  }
+};
+const handleViewNextStep = () => {
+  // Clear selected process details
+  setSelectedProcessDetails(null);
+  
+  // Reset form STATUS when moving to next step (unless it's NOC Received or Not)
+  if (immediateNextStep && immediateNextStep.PROCESS !== "NOC Received or Not") {
+    setFormData(prev => ({
+      ...prev,
+      STATUS: "YES" // Reset to default
+    }));
+  }
 
-      if (nextStepName) {
-        axios
-          .get(
-            `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
-              selectedPlant
-            )}/${encodeURIComponent(nextStepName)}`
-          )
-          .then((res) => {
-            setNextStepDetails(res.data);
-          })
-          .catch((err) =>
-            console.error("Error fetching next step details:", err)
-          );
-      }
+  if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+    const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+
+    if (nextStepName) {
+      axios
+        .get(
+          `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+            selectedPlant
+          )}/${encodeURIComponent(nextStepName)}`
+        )
+        .then((res) => {
+          setNextStepDetails(res.data);
+        })
+        .catch((err) =>
+          console.error("Error fetching next step details:", err)
+        );
     }
-  };
+  }
+};
+  // const handleViewNextStep = () => {
+  //   setSelectedProcessDetails(null);
+
+  //   if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+  //     const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+
+  //     if (nextStepName) {
+  //       axios
+  //         .get(
+  //           `${API_BASE_URL}/airport-step-details/${encodeURIComponent(
+  //             selectedPlant
+  //           )}/${encodeURIComponent(nextStepName)}`
+  //         )
+  //         .then((res) => {
+  //           setNextStepDetails(res.data);
+  //         })
+  //         .catch((err) =>
+  //           console.error("Error fetching next step details:", err)
+  //         );
+  //     }
+  //   }
+  // };
   // Add this new useEffect to handle selectedProcessDetails
   useEffect(() => {
     if (selectedProcessDetails) {
@@ -344,9 +424,10 @@ const AirportModifyTable = () => {
         return "Appeal Date";
       case "NOC for Appeal Status":
         return "NOC for Appeal Date";
-      default:
-        return "Date";
-    }
+       default:
+      return "Application Date"; 
+  }
+    
   };
 
 
@@ -564,10 +645,11 @@ const AirportModifyTable = () => {
       noOfNocs: "",
       prjArea: "",
       nocs: "",
-      STATUS: "",
+      STATUS: "YES",
     });
     setLinkDocs([]);
     setErrors({});
+    setSelectedProcessDetails(null);
 
     if (!value || value.trim() === "") {
       return;
@@ -1237,12 +1319,17 @@ const fetchPlantData = async (plant) => {
                     </Col>
                     <Col md={6}>
                       <Form.Group>
-                        <Form.Label>
-                          {processingDt}
-                          {(isProcessAlreadySubmitted || isProcessAmended) && (
-                            <span className="text-muted ms-2">(Locked)</span>
-                          )}
-                        </Form.Label>
+                   <Form.Label>
+  {selectedProcessDetails 
+    ? getDateLabel(selectedProcessDetails.PROCESS)  // For viewing completed steps
+    : immediateNextStep 
+      ? getDateLabel(immediateNextStep.PROCESS)     // For current active step
+      : "Application Date"                           // Default
+  }
+  {(isProcessAlreadySubmitted || isProcessAmended) && (
+    <span className="text-muted ms-2">(Locked)</span>
+  )}
+</Form.Label>
                         <Form.Control
                           type="date"
                           name="applyDate"
@@ -1287,8 +1374,9 @@ const fetchPlantData = async (plant) => {
                               rows={1}
                               name="prjArea"
                               value={formData.prjArea || ""}
+                              disabled
                               onChange={handleChange}
-                              disabled={!!amendmentStatus || !formData?.plant}
+                              // disabled={!!amendmentStatus || !formData?.plant}
                             />
                           </Form.Group>
                         </Col>
@@ -1301,7 +1389,8 @@ const fetchPlantData = async (plant) => {
                               name="nocs"
                               value={formData.nocs || ""}
                               onChange={handleChange}
-                              disabled={!!amendmentStatus || !formData?.plant}
+                              disabled
+                              // disabled={!!amendmentStatus || !formData?.plant}
                             />
                           </Form.Group>
                         </Col>
@@ -1368,15 +1457,15 @@ const fetchPlantData = async (plant) => {
                     </Col>
 
                  <Row className="mt-2 align-items-end">
-  {/* ✅ Show for current OR completed "NOC Received or Not" step */}
-  {(immediateNextStep?.PROCESS == "NOC Received or Not" || 
-    (selectedProcessDetails && selectedProcessDetails.PROCESS == "NOC Received or Not")) && (
+  {/* ✅ Show ONLY for "NOC Received or Not" step - be specific about which step */}
+  {((immediateNextStep?.PROCESS === "NOC Received or Not") || 
+    (selectedProcessDetails?.PROCESS === "NOC Received or Not")) && (
     <>
       <Col md={6} className="mb-2">
         <Form.Group>
           <Form.Label>Status</Form.Label>
           
-          {/* ✅ Check if we're viewing a completed step */}
+          {/* Determine which STATUS value to show */}
           {selectedProcessDetails ? (
             // ✅ Viewing completed "NOC Received or Not" step
             <div className="d-flex align-items-center gap-3">
@@ -1403,8 +1492,8 @@ const fetchPlantData = async (plant) => {
                 className="mb-0"
               />
             </div>
-          ) : (
-            // ✅ Current "NOC Received or Not" step
+          ) : immediateNextStep?.PROCESS === "NOC Received or Not" ? (
+            // ✅ Current "NOC Received or Not" step (not viewing completed)
             <div className="d-flex align-items-center gap-3">
               <Form.Check
                 inline
@@ -1429,7 +1518,7 @@ const fetchPlantData = async (plant) => {
                 className="mb-0"
               />
             </div>
-          )}
+          ) : null}
         </Form.Group>
       </Col>
     </>
