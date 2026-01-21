@@ -1,6 +1,6 @@
 //-------------------------production link ------------------------------------
 
-// 1. Define your Remote Backend URL (The Server IP or Domain)
+// // 1. Define your Remote Backend URL (The Server IP or Domain)
 // const SERVER_URL = "http://webapp.myhomeconstructions.com"; // Or "http://webapp.myhomeconstructions.com"
 
 // // 2. Check if the app is running locally

@@ -164,10 +164,20 @@ const navigate = useNavigate();
       // Extract the latest comment with date
       const latestComment = getLatestComment(storeInfo[commentsKey]);
       
+       // 1. Check if the main process was ever updated
+    const isMainUpdated = storeInfo.UPDATED === 'YES';
+    
+    // 2. Format dates
+    const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '') || new Date().toISOString().split('T')[0];
+    const dbApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
+    
+    // 3. Logic: If main process is NOT updated, use amendment date as apply date
+    const finalApplyDate = !isMainUpdated ? formattedAmendDate : dbApplyDate;
+
       // Format dates for input fields
       const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
       // const formattedReceivedDate = formatDateForInput(storeInfo.RECEIVED_DT || '');
-      const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
+      // const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
 
       const formattedAmendReceivedDate = formatDateForInput(storeInfo[dateKey] || '');
 
@@ -178,7 +188,8 @@ const navigate = useNavigate();
         plant: plant,
         process: process,
         category: category,
-        applyDate: formattedApplyDate,
+        // applyDate: formattedApplyDate,
+         applyDate: finalApplyDate,
         amendreceivedDate: formattedAmendReceivedDate,
         amendDate: formattedAmendDate || new Date().toISOString().split('T')[0],
         commentDate: latestComment.date,
@@ -438,7 +449,7 @@ const receivedDateProcesses = [
             </Form.Group>
 
             {/* APPLY DATE - EDITABLE */}
-            <Form.Group className="mb-3">
+            {/* <Form.Group className="mb-3">
               <Form.Label>
                 Apply Date <span style={{ color: "red" }}>*</span>
               </Form.Label>
@@ -453,12 +464,22 @@ const receivedDateProcesses = [
                                }
                                readOnly
                              />
-             
+            </Form.Group> */}
 
-
-        
-             
-            </Form.Group>
+            <Form.Group className="mb-3">
+  <Form.Label>Apply Date</Form.Label>
+  <Form.Control
+    type="text"
+    value={convertDateForBackend(amendData.applyDate)}
+    readOnly
+    style={{ backgroundColor: '#e9ecef' }} // Optional: light grey to show it's auto-filled
+  />
+  {!storeInfo?.UPDATED && (
+    <small className="text-muted">
+      Setting to Amendment Date because original process is not yet updated.
+    </small>
+  )}
+</Form.Group>
 
             {/* RECEIVED DATE - EDITABLE (conditional) */}
             {receivedDateProcesses.includes(amendData.process) && (
@@ -495,12 +516,17 @@ const receivedDateProcesses = [
   type="date"
   value={amendData.amendDate || ""}
   max={new Date().toISOString().split("T")[0]}
-  onChange={(e) =>
-    setAmendData((prev) => ({
-      ...prev,
-      amendDate: e.target.value,
-    }))
-  }
+   onChange={(e) => {
+      const newDate = e.target.value;
+      const isMainUpdated = storeInfo?.UPDATED === 'YES';
+
+      setAmendData((prev) => ({
+        ...prev,
+        amendDate: newDate,
+        // SYNC APPLY DATE ONLY IF MAIN PROCESS IS NOT UPDATED
+        applyDate: !isMainUpdated ? newDate : prev.applyDate,
+      }));
+    }}
 />
 
               {errors.amendDate && (

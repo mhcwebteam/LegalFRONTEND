@@ -86,7 +86,7 @@ const Create = () => {
       hoverGradient: 'linear-gradient(135deg, #fb7185 0%, #fbbf24 100%)'
     },
     {
-      id: 'miscellaneous',
+      id: 'miscellaneous..',
       icon: TabIcons.miscellaneous,
       label: TabLabels.miscellaneous,
       route: '/create/miscellaneous',

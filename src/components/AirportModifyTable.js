@@ -11,7 +11,7 @@ import AmendmentPanel from "./AmendmentPanel";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
-import { FaCheckCircle, FaUpload } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaUpload } from "react-icons/fa";
 import EmailSelectionModal from "./EmailModal";
 import { toast } from "react-toastify";
 import WaterDocUploadModal from "./WaterDocUploadModal";
@@ -299,33 +299,68 @@ const handleViewNextStep = () => {
     setErrors(newErrors);
     return isValid;
   };
-
+ const handleBackClick = () => {
+  setSelectedPlant("");
+  setStoreData([]);
+  setHeaderData(null);
+  setSelectedProcessDetails(null);
+  setAllStepsCompleted(false);
+  setImmediateNextStep(null);
+  setImmediateNextStepIndex(-1);
+  setFormData({
+    loc: "",
+    applyDate: "",
+    comments: "",
+    noOfFlats: "",
+    KLD: "",
+    amountPaid: "",
+    feasibilityDoc: null,
+    AmountPaidDoc: null,
+    status: "",
+    reason: "",
+    Ghmc: "",
+    OldAmount: "",
+    Size: "",
+    TotalAmount: "",
+    noOfTowers: "",
+    ProjectBuildArea: "",
+    TotalProjectArea: ""
+  });
+};
   const renderCompletionMessage = () => {
-    return (
-      <div className="text-center py-5">
-        <FaCheckCircle size={64} className="text-success mb-3" />
-        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-        <h5 className="text-muted mb-4">
-          All process steps have been completed successfully!
-        </h5>
-        <Alert
-          variant="success"
-          className="mx-auto"
-          style={{ maxWidth: "500px" }}
-        >
-          <Alert.Heading>Project Completion Status</Alert.Heading>
-          <p>
-            All {steps.length} steps for <strong>{selectedPlant}</strong> have
-            been completed. You can review the completed project details.
-          </p>
-          <hr />
-          <p className="mb-0">
-            The project is now ready for the next phase or final approval.
-          </p>
-        </Alert>
-      </div>
-    );
-  };
+  return (
+    <div className="position-relative text-center py-5">
+      {/* Button in top-right corner */}
+      <button 
+        onClick={handleBackClick}
+        className="position-absolute top-0 end-0 btn btn-success mt-3 me-3"
+      >
+<FaArrowLeft className="me-1" /> Back to Start
+      </button>
+      
+      <FaCheckCircle size={64} className="text-success mb-3" />
+      <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+      <h5 className="text-muted mb-4">
+        All process steps have been completed successfully!
+      </h5>
+      <Alert
+        variant="success"
+        className="mx-auto"
+        style={{ maxWidth: "500px" }}
+      >
+        <Alert.Heading>Project Completion Status</Alert.Heading>
+        <p>
+          All {steps.length} steps for <strong>{selectedPlant}</strong> have
+          been completed. You can review the completed project details.
+        </p>
+        <hr />
+        <p className="mb-0">
+          The project is now ready for the next phase or final approval.
+        </p>
+      </Alert>
+    </div>
+  );
+};
 
   const validateForm = () => {
     const newErrors = {};

@@ -6,7 +6,7 @@ import { API_BASE_URL } from "../config/Config";
 import Swal from "sweetalert2";
 import FormHeader from "./Header";
 import WaterDocUploadModal from "./WaterDocUploadModal";
-import { FaCheckCircle, FaTrashAlt, FaUpload } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaTrashAlt, FaUpload } from "react-icons/fa";
 import { fetchWaterDataByPlant, getMasterByLoc } from "../api/Api";
 import { Context } from "../context/ContextData";
 import ReusableDialog from "./ReusableDialog";
@@ -122,9 +122,47 @@ const WaterModifyTable = () => {
   }, [steps, storeData]);
 
 
+ 
   const renderCompletionMessage = () => {
-    return (
-      <div className="text-center py-5">
+  return (
+    <div className="position-relative">
+      {/* Back Button in top right corner */}
+      <button 
+        onClick={() => {
+          // Reset everything to show fresh form
+          setSelectedPlant("");
+          setHeaderData(null);
+          setSelectedProcessDetails(null);
+          setImmediateNextStep(null);
+          setImmediateNextStepIndex(-1);
+          setFormData({
+            loc: "",
+            applyDate: "",
+            comments: "",
+            noOfFlats: "",
+            KLD: "",
+            amountPaid: "",
+            feasibilityDoc: null,
+            AmountPaidDoc: null,
+            status: "",
+            reason: "",
+            Ghmc: "",
+            OldAmount: "",
+            Size: "",
+            TotalAmount: "",
+            noOfTowers: "",
+            ProjectBuildArea: "",
+            TotalProjectArea: ""
+          });
+          setStoreData([]);
+          setAllStepsCompleted(false);
+        }}
+        className="position-absolute top-0 end-0 btn btn-success mt-3 me-3"
+      >
+        <FaArrowLeft className="me-1" /> Back to Start
+      </button>
+      
+      <div className="text-center py-5 pt-5">
         <FaCheckCircle size={64} className="text-success mb-3" />
         <h3 className="text-success mb-3">Congratulations! 🎉</h3>
         <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
@@ -140,8 +178,9 @@ const WaterModifyTable = () => {
           </p>
         </Alert>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // Open email modal
   // const handleEmailSubmit = () => {
@@ -1199,7 +1238,9 @@ const handleEmailSelectionSubmit = async (emails) => {
     payload.append("Size_Of_Connection", formData.Size || "");
     payload.append("noOfFlats", formData.noOfFlats || 0);
     payload.append("totalProjectArea", formData.TotalProjectArea || "");
-    payload.append("projectBuildArea", formData.ProjectBuildArea || "");
+    payload.append("projectBuildArea", formData.ProjectBuildArea || "");     
+   payload.append("projectName", formData.projectName || "");
+
     payload.append("noOfTowers", formData.noOfTowers || 0);
     payload.append("TotalAmount", formData.TotalAmount || "");
     payload.append("KLD", formData.KLD || "");

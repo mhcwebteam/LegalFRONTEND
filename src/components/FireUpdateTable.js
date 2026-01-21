@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback, useContext } from "re
 import { Nav, Form, Button, Row, Col, Badge, Modal, OverlayTrigger, Tooltip, Card , Alert} from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 // added on 20-12-2025 ny rajakumari.m-----------------------------------------------------------
-import {FaCheckCircle } from "react-icons/fa";
+import {FaArrowLeft, FaCheckCircle } from "react-icons/fa";
 //-----------------------------------------------------------------------------------------------
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -572,10 +572,51 @@ const handleViewNextStep = () => {
       [name]: value,
     }));
   };
+
+  const handleBackClick = () => {
+
+    setSelectedPlant("");
+    setFormData(prev => ({
+      ...prev,
+      loc: "",
+      applyDate: "",
+      comments: "",
+      prjName: "",
+      address: "",
+      noOfTowers: "",
+      feepaidstatus: "",
+      feePaid: "",
+      feeAmount: "",
+          site: "",
+          queries: "",
+          committe: "",
+          provisional: ""
+    }));
+    
+    // Reset other states
+    setViewedStepConceptualIndex(-1);
+    setViewedStepDetails(null);
+    setSelectedProcessDetails(null);
+    setSelectedLogs([]);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setProvisionalNOCCompleted(false);
+    setAllStepsCompleted(false);
+    setStoreData([]);
+
+}
+
 const renderCompletionMessage = () => {
   return (
     <div className="d-flex align-items-center justify-content-center h-100">
       <Card className="p-4 shadow-sm text-center" style={{ maxWidth: '600px' }}>
+          <button 
+             onClick={handleBackClick}
+              className="btn btn-success position-absolute"
+              style={{ top: '15px', right: '15px' }}
+            >
+                      <FaArrowLeft className="me-1" /> Back to Start
+            </button>
         <Card.Body>
           <FaCheckCircle size={64} className="text-success mb-3" />
           <h3 className="text-success mb-3">Congratulations! 🎉</h3>

@@ -4,7 +4,7 @@ import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL } from "../config/Config";
-import { FaCheckCircle, FaUpload } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaUpload } from "react-icons/fa";
 import { Context } from "../context/ContextData";
 import ReusableDialog from "./ReusableDialog";
 import ProjectInfoHeader from "./ProjectInfoHeader";
@@ -13,6 +13,7 @@ import PreviousGhmcDocs from "./PreviousGhmcDocs";
 import { getMasterByLoc } from "../api/Api";
 import EmailSelectionModal from "./EmailModal"
 import Swal from "sweetalert2";
+import FeePaidAdditionalDetails from "./FeePaidAdditionalDetails";
 
 const GhmcUpdate = () => {
   const token = localStorage.getItem("token");
@@ -51,6 +52,16 @@ const [recordExists, setRecordExists] = useState(false);
     location: "",
     status: "",
     noOfTowers: "",
+
+    BG_FromDate: "",
+  BG_ToDate: "",
+  BG_Number: "",
+  CAR_FromDate: "",
+  CAR_ToDate: "",
+  CAR_Number: "",
+  PDC_Date: "",
+  PDC_Number: "",
+  MortgageReleased: "",
   });
 
   const [feasibilityDocs, setFeasibilityDocs] = useState([]);
@@ -169,24 +180,64 @@ const [recordExists, setRecordExists] = useState(false);
   };
 
   const renderCompletionMessage = () => {
-    return (
-      <div className="text-center p-5">
-        <FaCheckCircle size={80} className="text-success mb-4" />
-        <h2 className="text-success mb-3 fw-bold">Congratulations! 🎉</h2>
-        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-        <Alert variant="success" className="mx-auto" style={{ maxWidth: '600px' }}>
-          <Alert.Heading>Project Completion Status</Alert.Heading>
-          <p className="mb-2">
-            All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed.
-          </p>
-          <hr />
-          <p className="mb-0">
-            The project is now ready for the next phase or final approval.
-          </p>
-        </Alert>
-      </div>
-    );
-  };
+  return (
+    <div className="position-relative text-center p-5">
+      {/* Back Button in top right corner - Moved down a bit */}
+      <button 
+        onClick={() => {
+          // Reset everything to show fresh form
+          setSelectedPlant("");
+          setHeaderData(null);
+          setSelectedProcessDetails(null);
+          setImmediateNextStep(null);
+          setImmediateNextStepIndex(-1);
+          setFormData({
+            loc: "",
+            applyDate: "",
+            comments: "",
+            process: "",
+            organisation: "",
+            project_name: "",
+            location: "",
+            status: "",
+            noOfTowers: "",
+            TotalProjectArea: "",
+            ProjectBuildArea: "",
+            ProjectName: "",
+            noOfFlats: "",
+            KLD: "",
+            amountPaid: "",
+            OldAmount: "",
+            TotalAmount: "",
+            Size: "",
+            Ghmc: "",
+          });
+          setStoreData([]);
+          setSteps([]);
+          setSubmitted(false);
+          setIsViewingSpecificStep(false);
+        }}
+        className="position-absolute top-0 end-0 btn btn-success mt-5 me-3"
+      >
+        <FaArrowLeft className="me-1" /> Back to Start
+      </button>
+      
+      <FaCheckCircle size={80} className="text-success mb-4" />
+      <h2 className="text-success mb-3 fw-bold">Congratulations! 🎉</h2>
+      <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+      <Alert variant="success" className="mx-auto" style={{ maxWidth: '600px' }}>
+        <Alert.Heading>Project Completion Status</Alert.Heading>
+        <p className="mb-2">
+          All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed.
+        </p>
+        <hr />
+        <p className="mb-0">
+          The project is now ready for the next phase or final approval.
+        </p>
+      </Alert>
+    </div>
+  );
+};
 
   useEffect(() => {
     axios
@@ -342,135 +393,6 @@ const [recordExists, setRecordExists] = useState(false);
     }
   }, [selectedPlant, immediateNextStepIndex, steps]);
 
-  // useEffect(() => {
-  //   if (nextStepDetails) {
-  //     console.log("🧩 Next Step Details Fetched:", nextStepDetails);
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       applyDate: nextStepDetails.applyDate || "",
-  //       status: nextStepDetails.STATUS || "",
-  //       reason: nextStepDetails.REASON || "",
-  //       comments: nextStepDetails.Comments || nextStepDetails.COMMENTS || "",
-  //       noOfFlats:
-  //         nextStepDetails.NUMBER_OF_FLATS || nextStepDetails.noOfFlats || "",
-  //       KLD: nextStepDetails.feas_doc_name || "",
-  //       amountPaid: nextStepDetails.AMOUNT_PAID || "",
-  //       Ghmc: nextStepDetails.GHMC || "",
-  //       OldAmount:
-  //         nextStepDetails.OLD_AMOUNT || nextStepDetails.OldAmount || "",
-  //       Size: nextStepDetails.SIZE_OF_CONNECTION || nextStepDetails.Size || "",
-  //       TotalAmount: nextStepDetails.TOTAL_AMOUNT || "",
-  //       TotalProjectArea: nextStepDetails.TOTAL_PROJECT_AREA || "",
-  //       noOfTowers: nextStepDetails.noOfTowers || "",
-  //       ProjectBuildArea: nextStepDetails.PROJECT_BUILD_AREA || "",
-  //     }));
-  //   } else {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       applyDate: "",
-  //       comments: "",
-  //       process: "",
-  //       reason: "",
-  //       status: "",
-  //       noOfFlats: "",
-  //       KLD: "",
-  //       amountPaid: "",
-  //       Ghmc: "",
-  //       OldAmount: "",
-  //       Size: "",
-  //       TotalAmount: "",
-  //       TotalProjectArea: "",
-  //       noOfTowers: "",
-  //       ProjectBuildArea: "",
-  //     }));
-
-  //     setFeasibilityDocs([]);
-  //     setAmountPaidDocs([]);
-  //     setLinkDocs([]);
-  //     setLandDocs([]);
-  //     setOthDocs([]);
-  //   }
-  // }, [nextStepDetails]);
-
-  // const handleChange = async (e) => {
-  //   const { name, value } = e.target;
-
-  //   if (name === "noOfFlats") {
-  //     const nocs = Math.ceil(Number(value) / 2);
-  //     setLinkDocs([]);
-  //     setLandDocs([]);
-  //     setOthDocs([]);
-  //     setFeasibilityDocs([]);
-  //     setAmountPaidDocs([]);
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       noOfFlats: value,
-  //       KLD: value ? nocs : "",
-  //     }));
-     
-  //   } else if (name === "OldAmount") {
-  //     const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
-  //     const total = amountPaid + Number(value);
-  //     console.log(total, "total", amountPaid, value);
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       OldAmount: value,
-  //       TotalAmount: value ? total : "",
-  //     }));
-  //   } else if (name === "loc") {
-  //     setFormData((prev) => ({ ...prev, loc: value }));
-  //     setSelectedPlant(value);
-  //     setSubmitted(false);
-  //     setIsViewingSpecificStep(false); // 👈 Reset when plant changes
-  //     setViewedStepDetails(null);
-  //     setViewedStep(null);
-  //     setCurrentProcess("");
-  //     setShowEmailModal(false);
-  //      setRecordExists(false);
-
-  //     try {
-  //       const res = await getMasterByLoc(value);
-  //       if (res) {
-  //         setHeaderData(res);
-  //         setFormData((prev) => ({
-  //           ...prev,
-  //           applyDate: res.APPLICATION_DATE || "",
-  //           noOfTowers: res.NUMBER_OF_TOWERS || "",
-  //           TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
-  //           ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
-  //           ProjectName: res.PROJECT_NAME || "",
-  //         }));
-  //       } else {
-  //         setHeaderData(null);
-  //         setFormData((prev) => ({
-  //           ...prev,
-  //           applyDate: "",
-  //           noOfTowers: "",
-  //           TotalProjectArea: "",
-  //           ProjectBuildArea: "",
-  //           ProjectName: "",
-  //         }));
-  //       }
-  //     } catch (err) {
-  //       console.error("Error fetching master by loc:", err);
-  //       setHeaderData(null);
-  //       setFormData((prev) => ({
-  //         ...prev,
-  //         applyDate: "",
-  //         noOfTowers: "",
-  //         TotalProjectArea: "",
-  //         ProjectBuildArea: "",
-  //         ProjectName: "",
-  //       }));
-  //     }
-  //   } else {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       [name]: value,
-  //     }));
-  //   }
-  // };
-
    const handleChange = async (e) => {
     const { name, value } = e.target;
   
@@ -509,6 +431,16 @@ const [recordExists, setRecordExists] = useState(false);
         TotalAmount: "", 
         Size: "",
         Ghmc: "",
+
+        BG_FromDate: "",
+        BG_ToDate: "",
+        BG_Number: "",
+        CAR_FromDate: "",
+        CAR_ToDate: "",
+        CAR_Number: "",
+        PDC_Date: "",
+        PDC_Number: "",
+        MortgageReleased: "",
       };
   
       setFormData(emptyFormData);
@@ -558,6 +490,17 @@ const [recordExists, setRecordExists] = useState(false);
     let currentUserName = loggedInUser.username;
 
     const payload = new FormData();
+
+    // NEW: Add Fee Paid Additional Details to the payload
+    payload.append("BG_FromDate", formData.BG_FromDate || "");
+    payload.append("BG_ToDate", formData.BG_ToDate || "");
+    payload.append("BG_Number", formData.BG_Number || "");
+    payload.append("CAR_FromDate", formData.CAR_FromDate || "");
+    payload.append("CAR_ToDate", formData.CAR_ToDate || "");
+    payload.append("CAR_Number", formData.CAR_Number || "");
+    payload.append("PDC_Date", formData.PDC_Date || "");
+    payload.append("PDC_Number", formData.PDC_Number || "");
+    payload.append("MortgageReleased", formData.MortgageReleased || "");
 
     payload.append("Organization", formData.organisation || "");
     payload.append("project_name", formData.project_name || "");
@@ -719,6 +662,17 @@ const [recordExists, setRecordExists] = useState(false);
         TotalProjectArea: parsed.TOTAL_PROJECT_AREA || "",
         noOfTowers: parsed.noOfTowers || "",
         ProjectBuildArea: parsed.PROJECT_BUILD_AREA || "",
+
+        // NEW: Mapping for Fee Paid Additional Details
+        BG_FromDate: parsed.BG_FromDate || "",
+        BG_ToDate: parsed.BG_ToDate || "",
+        BG_Number: parsed.BG_Number || "",
+        CAR_FromDate: parsed.CAR_FromDate || "",
+        CAR_ToDate: parsed.CAR_ToDate || "",
+        CAR_Number: parsed.CAR_Number || "",
+        PDC_Date: parsed.PDC_Date || "",
+        PDC_Number: parsed.PDC_Number || "",
+        MortgageReleased: parsed.MortgageReleased || "",
       }));
 
       setViewedStepDetails(parsed);
@@ -809,8 +763,7 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
             </div>
           ) : (
             <Form className="p-3 border rounded bg-light">
-              <h4 className="mb-3 text-warning fw-bold">
-
+              {/* <h4 className="mb-3 text-warning fw-bold">
                     {immediateNextStep && (
                   <h4 className="mb-3  fw-bold">
                     {immediateNextStep.PROCESS}
@@ -818,9 +771,29 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
                   
                   </h4>
                 )}
-       
-             
-              </h4>
+              </h4> */}
+              {/* ADD THIS INSTEAD */}
+<h4 className="mb-3 fw-bold">
+  {/* Priority 1: The step the user just clicked (currentProcess) */}
+  {/* Priority 2: The next pending step (immediateNextStep) */}
+  <span className={isViewingSpecificStep && !isViewingNextStep() ? "text-info" : "text-warning"}>
+    {currentProcess || immediateNextStep?.PROCESS}
+  </span>
+
+  {/* Display Tower count if available */}
+  {NumberOfTowers && (
+    <span className="text-muted ms-2" style={{ fontSize: '0.8em' }}>
+      | Towers Count: <span className="text-dark">{NumberOfTowers}</span>
+    </span>
+  )}
+</h4>
+
+{/* Optional: Add a "Viewing Mode" badge if it's a completed step */}
+{!isViewingNextStep() && isViewingSpecificStep && (
+  <div className="mb-2">
+    <span className="badge bg-info text-dark">Viewing Completed Step</span>
+  </div>
+)}
 
               <Row className="mb-2">
                 <Col md={6}>
@@ -847,7 +820,7 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
 
         <Col md={6}>
   <Form.Group>
-    <Form.Label>Apply Date</Form.Label>
+    <Form.Label>Fee Paid Date</Form.Label>
     <Form.Control
       type="date"
       name="applyDate"
@@ -870,6 +843,16 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
   </Form.Group>
 </Col>
               </Row>
+
+{/* NEW: Conditional Rendering for Fee Paid Details Step (READONLY) */}
+{(currentProcess === "Fee Paid Details" || immediateNextStep?.PROCESS === "Fee Paid Details") && (
+  <FeePaidAdditionalDetails
+    formData={formData}
+    handleChange={handleChange}
+    isDisabled={!!selectedProcessDetails}
+    // isDisabled={true} // Forces all fields to be read-only/disabled
+  />
+)}
 
               <Row className="mb-2">
                 <Col md={12}>

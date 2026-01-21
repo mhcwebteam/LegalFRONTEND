@@ -9,7 +9,7 @@ import Swal from "sweetalert2";
 import FormHeader from "./Header";
 import PreviousUploadedDocsModal from "./PreviousUploadedDocsPanel";
 import WaterDocUploadModal from "./WaterDocUploadModal";
-import { FaCheckCircle, FaTrashAlt, FaUpload } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaTrashAlt, FaUpload } from "react-icons/fa";
 import { fetchWaterDataByPlant, getMasterByLoc } from "../api/Api";
 import { Context } from "../context/ContextData";
 import ReusableDialog from "./ReusableDialog";
@@ -282,13 +282,13 @@ const WaterUpdateTable = () => {
   useEffect(() => {
 
       setStoreData([])
-    setImmediateNextStep(null);
-    setImmediateNextStepIndex(-1);
+    // setImmediateNextStep(null);
+    // setImmediateNextStepIndex(-1);
     // setViewedStep(null);
   
 
 
-    if (selectedPlant && steps.length > 0) {
+    if (selectedPlant ) {
       axios
         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
         .then((res) => {
@@ -1223,60 +1223,110 @@ setAllStepsCompleted(false);
           style={{ height: '400px', overflowY: 'auto' }}
         >
           <Form className="p-3 border rounded bg-light">
-            {selectedProcessDetails ? (
-              <div className="mb-3">
-                <h4 className="mb-2 text-info fw-bold">
-                  Viewing: {selectedProcessDetails.PROCESS} (Completed)
-                </h4>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={handleViewNextStep}
-                  disabled={!immediateNextStep}
-                >
-                  View Next Step
-                </Button>
-              </div>
-            ) : immediateNextStep ? (
-              <h4 className="mb-3 text-warning fw-bold">
-                Next Step: {immediateNextStep.PROCESS}
-              </h4>
-            ) : allStepsCompleted ? (
-              <h4 className="mb-3 text-success fw-bold">
-                🎉 All Steps Completed!
-              </h4>
-            ) : null}
+    {selectedProcessDetails ? (
+      <div className="mb-3">
+        <h4 className="mb-2 text-info fw-bold">
+          Viewing: {selectedProcessDetails.PROCESS} (Completed)
+        </h4>
+        <Button
+          variant="outline-primary"
+          size="sm"
+          onClick={handleViewNextStep}
+          disabled={!immediateNextStep}
+        >
+          View Next Step
+        </Button>
+      </div>
+    ) : immediateNextStep ? (
+      <h4 className="mb-3 text-warning fw-bold">
+        Next Step: {immediateNextStep.PROCESS}
+      </h4>
+    ) : allStepsCompleted ? (
+      <div className="p-4 shadow-sm text-center border-0 bg-light position-relative">
+        {/* Back Button in top right corner */}
+        <button 
+          onClick={() => {
+            // Reset everything to show fresh form
+            setSelectedPlant("");
+            setHeaderData(null);
+            setSelectedProcessDetails(null);
+            setImmediateNextStep(null);
+            setImmediateNextStepIndex(-1);
+            setFormData({
+              loc: "",
+              applyDate: "",
+              comments: "",
+              noOfFlats: "",
+              KLD: "",
+              amountPaid: "",
+              feasibilityDoc: null,
+              AmountPaidDoc: null,
+              status: "",
+              reason: "",
+              Ghmc: "",
+              OldAmount: "",
+              Size: "",
+              TotalAmount: "",
+              noOfTowers: "",
+              ProjectBuildArea: "",
+              TotalProjectArea: ""
+            });
+            setStoreData([]);
+            setAllStepsCompleted(false);
+          }}
+          className="position-absolute top-0 end-0 btn btn-success mt-0 me-0"
+        >
+          <FaArrowLeft className="me-1" /> Back to Start
+        </button>
+        
+        <FaCheckCircle size={64} className="text-success mb-3" />
+        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+        <h5 className="text-muted mb-4">
+          All process steps have been completed successfully!
+        </h5>
+        <Alert variant="success">
+          <Alert.Heading>All Steps Completed!</Alert.Heading>
+          <p>
+            All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
+          </p>
+          <hr />
+          <p className="mb-0">
+            Click on any completed step above to view its details or click Back button to start fresh.
+          </p>
+        </Alert>
+      </div>
+    ) : null}
 
-            {renderFormFields()}
+    {renderFormFields()}
 
-            <div className="d-grid">
-              {selectedProcessDetails ? (
-                <div className="alert alert-info d-flex align-items-center">
-                  <i className="fas fa-info-circle me-2"></i>
-                  You are viewing historical data. To make changes, select the current step.
-                </div>
-              ) : !allStepsCompleted ? (
-                <>
-                  {/* Show different messages based on state */}
-                  {!formData.loc ? (
-                ""
-                  ) : !recordExists ? (
-                 ""
-                  ) : null}
-                  
-                  <Button
-                    variant={submitted ? "success" : "primary"}
-                    size="md"
-                    onClick={handleEmailSubmit}
-                    className="w-100 fw-semibold"
-                    disabled={!formData.loc || isSubmitting || submitted || !recordExists}
-                  >
-                    {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
-                  </Button>
-                </>
-              ) : null}
-            </div>
-          </Form>
+    <div className="d-grid">
+      {selectedProcessDetails ? (
+        <div className="alert alert-info d-flex align-items-center">
+          <i className="fas fa-info-circle me-2"></i>
+          You are viewing historical data. To make changes, select the current step.
+        </div>
+      ) : !allStepsCompleted ? (
+        <>
+          {/* Show different messages based on state */}
+          {!formData.loc ? (
+            ""
+          ) : !recordExists ? (
+            ""
+          ) : null}
+          
+          <Button
+            variant={submitted ? "success" : "primary"}
+            size="md"
+            onClick={handleEmailSubmit}
+            className="w-100 fw-semibold"
+            disabled={!formData.loc || isSubmitting || submitted || !recordExists}
+          >
+            {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
+          </Button>
+        </>
+      ) : null}
+    </div>
+  </Form>
         </Col>
 
         <Col md={3} className="d-flex">

@@ -933,6 +933,36 @@ const [recordExists, setRecordExists] = useState(false);
     }
   }
 };
+
+const handleBackClick = () => {
+  setSelectedPlant("");
+  setStoreData([]);
+  setHeaderData(null);
+  setSelectedProcessDetails(null);
+  setAllStepsCompleted(false);
+  setImmediateNextStep(null);
+  setImmediateNextStepIndex(-1);
+  setFormData({
+    loc: "",
+    applyDate: "",
+    comments: "",
+    noOfFlats: "",
+    KLD: "",
+    amountPaid: "",
+    feasibilityDoc: null,
+    AmountPaidDoc: null,
+    status: "",
+    reason: "",
+    Ghmc: "",
+    OldAmount: "",
+    Size: "",
+    TotalAmount: "",
+    noOfTowers: "",
+    ProjectBuildArea: "",
+    TotalProjectArea: ""
+  });
+};
+
   // const handleViewNextStep = () => {
   //   setSelectedProcessDetails(null);
 
@@ -1025,7 +1055,7 @@ const [recordExists, setRecordExists] = useState(false);
   className="d-flex flex-column"
   style={{ height: '400px', overflowY: 'auto' }}
 >
-  <Form className="p-3 border rounded bg-light">
+ <Form className="p-3 border rounded bg-light">
     {/* Form header showing current view */}
     {selectedProcessDetails ? (
       <div className="mb-3">
@@ -1053,9 +1083,17 @@ const [recordExists, setRecordExists] = useState(false);
         </h6>
       </h4>
     ) : allStepsCompleted ? (
-      <h4 className="mb-3 text-success fw-bold">
-        🎉 All Steps Completed!
-      </h4>
+<div className="d-flex justify-content-between align-items-center mb-3">
+  <h4 className="text-success fw-bold mb-0">
+    🎉 All Steps Completed!
+  </h4>
+  <button 
+  onClick={handleBackClick}
+    className="btn btn-success"
+  >
+    Back to Start
+  </button>
+</div>
     ) : null}
 
     {renderFormFields()}

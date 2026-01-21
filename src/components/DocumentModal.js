@@ -3,6 +3,7 @@ import { Modal, Button, Table } from 'react-bootstrap';
 import { API_BASE_URL, API_DOC_URL, API_DOC_URL1 } from '../config/Config';
 
 const DocumentModal = ({ show, onClose, title, docs }) => {
+   let globalIndex = 0; 
   return (
     <Modal show={show} onHide={onClose} centered size="lg">
       <Modal.Header closeButton>
@@ -13,7 +14,7 @@ const DocumentModal = ({ show, onClose, title, docs }) => {
           <Table bordered hover size="sm">
             <thead>
               <tr>
-                <th>#</th>
+                <th>SNO</th>
                 <th>Document Name</th>
                 <th>Open</th>
               </tr>
@@ -22,13 +23,14 @@ const DocumentModal = ({ show, onClose, title, docs }) => {
               {docs?.flatMap((doc, docIndex) => {
                 const names = doc.DOC_NAME.split(',');
                 const paths = doc.DOC_PATH.split(',');
+                globalIndex++;
                 return names.map((name, i) => {
                     const cleanedName = name.replace(/[\[\]"'%]/g, '').trim(); // keep slashes
                     const cleanedPath = paths[i].replace(/[\[\]"'%]/g, '').trim(); // keep slashes
 
                     return (
                         <tr key={`${docIndex}-${i}`}>
-                        <td>{i + 1}</td>
+                        <td>{globalIndex}</td>
                         <td>{cleanedName}</td>
                         <td>
                             <a

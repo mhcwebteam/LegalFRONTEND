@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useEffect, useContext } from "react";
 import { Container, Modal, Button, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -127,7 +124,8 @@ const PcbModifyTable = () => {
   const [emailAmendRecipients, setEmailAmendRecipients] = useState([]);
   const [selectedAmendEmails, setSelectedAmendEmails] = useState([]);
   const [showAmendEmailModal, setShowAmendEmailModal] = useState(false);
-
+// Near your existing const fileInputRef = useRef(null);
+  const editCommentsRef = useRef(null);  //--------------added this state on 08012026 by vineeth
 
   //         useEffect(() => {
   //   setHeaderData(null); // Reset header data when component loads
@@ -162,7 +160,23 @@ const PcbModifyTable = () => {
   };
   const handleEmailSubmit = async () => {
 
-    if (!validateForm()) return;
+    // if (!validateForm()) return;
+//-------------updated this validation() by vineeth on 08012026-------------
+    if (!validateForm()) {
+    // If validation fails, check if comments are empty and scroll
+    if (!modalData.comments || !modalData.comments.trim()) {
+      setTimeout(() => {
+        if (editCommentsRef.current) {
+          editCommentsRef.current.focus(); // Set cursor focus
+          editCommentsRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center", // Puts the element in the middle of the modal view
+          });
+        }
+      }, 100);
+    }
+    return;
+  }
 
     try {
       const response = await axios.get(`${API_BASE_URL}/pcb-emails`);
@@ -1496,71 +1510,71 @@ const PcbModifyTable = () => {
             </div>
             {/*  20/11/2025--------------/// */}
           <Form.Group className="mb-3">
-  <Form.Label>Upload Document (PDF Only)</Form.Label>
-  <Form.Control
-    type="file"
-    multiple
-    accept="application/pdf"
-    ref={fileInputRef}
-    onChange={(e) => {
-      const files = Array.from(e.target.files);
-      const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
-      
-      // Check file types
-      const invalidFiles = files.filter(
-        (file) => file.type !== "application/pdf"
-      );
+            <Form.Label>Upload Document (PDF Only)</Form.Label>
+            <Form.Control
+              type="file"
+              multiple
+              accept="application/pdf"
+              ref={fileInputRef}
+              onChange={(e) => {
+                const files = Array.from(e.target.files);
+                const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+                
+                // Check file types
+                const invalidFiles = files.filter(
+                  (file) => file.type !== "application/pdf"
+                );
 
-      if (invalidFiles.length > 0) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Invalid File Type',
-          text: 'File size should not be Larger!',
-      
-        });
-        
-        // Clear input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = null;
-        }
-        return;
-      }
+                if (invalidFiles.length > 0) {
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    text: 'File size should not be Larger!',
+                
+                  });
+                  
+                  // Clear input
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = null;
+                  }
+                  return;
+                }
 
-      // Validate file size
-      const invalidSizeFiles = files.filter(
-        (file) => file.size > MAX_FILE_SIZE
-      );
+                // Validate file size
+                const invalidSizeFiles = files.filter(
+                  (file) => file.size > MAX_FILE_SIZE
+                );
 
-      if (invalidSizeFiles.length > 0) {
-        Swal.fire({
-          icon: 'error',
-         title: 'Invalid File Type',
-        text: 'File size should not be Larger!',
-          confirmButtonColor: '#3085d6',
-        });
+                if (invalidSizeFiles.length > 0) {
+                  Swal.fire({
+                    icon: 'error',
+                  title: 'Invalid File Type',
+                  text: 'File size should not be Larger!',
+                    confirmButtonColor: '#3085d6',
+                  });
 
-        if (fileInputRef.current) {
-          fileInputRef.current.value = null;
-        }
-        return;
-      }
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = null;
+                  }
+                  return;
+                }
 
-      // Add valid PDF files
-      setModalData((prev) => ({
-        ...prev,
-        selectedFiles: [...prev.selectedFiles, ...files],
-      }));
+                // Add valid PDF files
+                setModalData((prev) => ({
+                  ...prev,
+                  selectedFiles: [...prev.selectedFiles, ...files],
+                }));
 
-      // Show success message if files were added
-      
+                // Show success message if files were added
+                
 
-      // Clear the input after selection
-      if (fileInputRef.current) {
-        fileInputRef.current.value = null;
-      }
-    }}
-  />
-</Form.Group>
+                // Clear the input after selection
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = null;
+                }
+              }}
+            />
+          </Form.Group>
             {/*  20/11/2025--------------/// */}
 
             {modalData.selectedFiles.length > 0 && (
@@ -1623,6 +1637,7 @@ const PcbModifyTable = () => {
               <Form.Control
                 as="textarea"
                 rows={3}
+                 ref={editCommentsRef} // <--- Add this line on 08012026 by vineeth
                 value={modalData.comments}
                 onChange={(e) =>
                   setModalData((prev) => ({

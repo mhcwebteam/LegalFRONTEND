@@ -17,7 +17,7 @@ import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import ReraDocUploadModal from "./ReraDocUploadModal";
-import { FaCheckCircle, FaFileAlt } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaFileAlt } from "react-icons/fa";
 
 import { Context } from "../context/ContextData";
 import ProjectInfoHeader from "./ProjectInfoHeader";
@@ -123,30 +123,60 @@ const ReraModifyTable = () => {
 
   const renderCompletionMessage = () => {
     return (
-      <div className="text-center py-5">
-        <FaCheckCircle size={64} className="text-success mb-3" />
-        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-        <h5 className="text-muted mb-4">
-          All process steps have been completed successfully!
-        </h5>
-        <Alert
-          variant="success"
-          className="mx-auto"
-          style={{ maxWidth: "500px" }}
-        >
-          <Alert.Heading>Project Completion Status</Alert.Heading>
-          <p>
-            All {steps.length} steps for <strong>{selectedPlant}</strong> have
-            been completed. You can review the completed project details.
-          </p>
-          <hr />
-          <p className="mb-0">
-            The project is now ready for the next phase or final approval.
-          </p>
-        </Alert>
-      </div>
-    );
-  };
+     <Card className="p-4 shadow-sm" style={{ maxWidth: '600px', margin: '0 auto' }}>
+  <Card.Body className="position-relative">
+    {/* Back Button in top right corner - Updated to green background */}
+    <div className="position-absolute top-0 end-0 p-3">
+      <Button 
+        variant="success" // Changed from outline-primary to success
+        size="sm"
+        onClick={() => {
+          // Reset everything to show fresh form
+          setSelectedPlant("");
+          setHeaderData(null);
+          setSelectedProcessDetails(null);
+          setImmediateNextStep(null);
+          setImmediateNextStepIndex(-1);
+          setFormData({
+            loc: "",
+            applyDate: "",
+            fromDate: "",
+            toDate: "",
+            comments: "",
+            prjName: "",
+            address: "",
+            subLevelStatus: "Yes",
+          });
+          setStoreData([]);
+          setAllStepsCompleted(false);
+        }}
+        className="d-flex align-items-center gap-1 text-white" // Added text-white for white text
+      >
+        <FaArrowLeft /> Back to start
+      </Button>
+    </div>
+    
+    {/* Content */}
+    <div className="text-center pt-4">
+      <FaCheckCircle size={64} className="text-success mb-3" />
+      <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+      <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+      <Alert variant="success">
+        <Alert.Heading>Project Completion Status</Alert.Heading>
+        <p>
+          All {steps.length} steps for <strong>{selectedPlant}</strong> have
+          been completed successfully.
+        </p>
+        <hr />
+        <p className="mb-0">
+          Click on any completed step above to view its details or click Back button to start fresh.
+        </p>
+      </Alert>
+    </div>
+  </Card.Body>
+</Card>
+  );
+};
 
   const handleEmailSubmit = () => {
     // First validate the form

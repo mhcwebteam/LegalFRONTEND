@@ -8,6 +8,7 @@ import {
   Badge,
   Modal,
   Card,
+  Alert,
 } from "react-bootstrap";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +16,7 @@ import Swal from "sweetalert2";
 import { API_BASE_URL, API_DOC_URL } from "../config/Config";
 import FormHeader from "./Header";
 import ReraDocUploadModal from "./ReraDocUploadModal";
-import { FaFileAlt } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaFileAlt } from "react-icons/fa";
 import ProjectInfoHeader from "./ProjectInfoHeader";
 import { Context } from "../context/ContextData";
 import { getMasterByLoc } from "../api/Api";
@@ -1280,6 +1281,77 @@ payload.append("committe", formData.committe || "");
   const FeeAmount = storeData[0]?.FEE_AMOUNT;
   const NumberOfTowers = storeData[0]?.NO_OF_TOWERS;
 
+    const handleBackClick = () => {
+ setSelectedPlant("");
+
+      // 2. Reset Context Data (Clears Left Side Colors and Header)
+      setStoreData([]);
+      setHeaderData(null);
+
+      // 3. Reset Step Tracking (Clears Right Side Docs and Middle Form)
+      setImmediateNextStep(null);
+      setImmediateNextStepIndex(-1);
+      setNextStepDetails(null);
+      setLatestLogs([]);
+      setCurrentProcess("");
+      setProvisionalNOCCompleted(false);
+
+      // 4. Reset View Modes (Exit any "View Mode")
+      setViewedStepConceptualIndex(-1);
+      setViewedStepDetails(null);
+      setIsViewingCompletedStep(false);
+      setIsAllStepsCompleted(false);
+
+      // 5. Reset Files and Errors
+      setNewDocs([]);
+      setAcknowledgeDocs([]);
+      setErrors({});
+
+      // 6. Reset Form Data to Initial State
+      setFormData({
+        loc: "",
+        applyDate: "",
+        document: null,
+        comments: "",
+        prjName: "",
+        address: "",
+        feePaid: "",
+        feeAmount: "",
+        acknowledgeName: "",
+        noOfTowers: "",
+        feepaidstatus: "",
+        site: "",
+        queries: "",
+        committe: "",
+        provisional: "",
+        stepStatus_1: "YES",
+        stepStatus_2: "YES",
+        stepStatus_3: "YES",
+        stepStatus_4: "YES",
+        stepStatus_6: "YES",
+        stepStatus_7: "YES",
+        stepStatus_8: "YES",
+        stepStatus_9: "YES",
+      });
+
+      // --- END OF RESET LOGIC ---
+      // setFormData((prev) => ({
+      //   ...prev,
+      //   loc: "",
+      //   applyDate: "",
+      //   comments: "",
+      //   feePaid: "",
+      //   feeAmount: "",
+      //   acknowledgeName: "",
+     //   noOfTowers: "",
+      //   feepaidstatus: "",
+      // }));
+      setNewDocs([]);
+      setAcknowledgeDocs([]);
+   
+};
+
+
   return (
     <>
       <ProjectInfoHeader data={headerData} />
@@ -1293,27 +1365,42 @@ payload.append("committe", formData.committe || "");
             </Row>
           </div>
         </Col>
-
-        <Col md={5} className="d-flex flex-column">
+<Col md={5} className="d-flex flex-column">
           <Form className="p-3 border rounded bg-light">
-            {/* Sadded on 23-12-2025 by rajakumari.m */}
+        
             {isAllStepsCompleted && viewedStepConceptualIndex === -1 ? (
-              <div className="text-center py-5 my-3">
-                <div className="display-1 text-success mb-4">🎉</div>
-                <h2 className="text-success fw-bold mb-3">Congratulations!</h2>
-                <h4 className="text-dark mb-3">
-                  All Process Steps Completed Successfully
-                </h4>
-                <p className="text-muted">
-                  Provisional NOC and OC Process have been fully completed for{" "}
-                  {formData.loc}
-                </p>
-                <p className="mt-4">
-                  <small className="text-muted">
-                    Click on any step in the left panel to view its details
-                  </small>
-                </p>
-              </div>
+           <div className="d-flex align-items-center justify-content-center h-100">
+  <Card className="p-4 shadow-sm text-center position-relative" style={{ maxWidth: '600px' }}>
+    
+    {/* Button in top-right corner of card */}
+    <button 
+    onClick={handleBackClick}
+      className="btn btn-success position-absolute"
+      style={{ top: '15px', right: '15px' }}
+    >
+              <FaArrowLeft className="me-1" /> Back to Start
+    </button>
+    
+    <Card.Body>
+      <FaCheckCircle size={64} className="text-success mb-3" />
+      <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+      <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+      <Alert variant="success">
+        <Alert.Heading>Project Completion Status</Alert.Heading>
+        <p>
+          All <strong>{PROVISIONAL_NOC_STEP_INDICES.length * 2}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
+        </p>
+        <p>
+          Both <strong>Provisional NOC</strong> and <strong>OC Process</strong> are fully completed.
+        </p>
+        <hr />
+        <p className="mb-0">
+          Click on any completed step above to view its details.
+        </p>
+      </Alert>
+    </Card.Body>
+  </Card>
+</div>
             ) : viewedStepConceptualIndex !== -1 && isViewingCompletedStep ? (
               // Show this when viewing a completed step
               // <div className="mb-4">
