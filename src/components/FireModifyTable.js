@@ -53,7 +53,7 @@ const FireModifyTable = () => {
     feeAmount: "",
     acknowledgeName: "",
     noOfTowers: "",
-    feepaidstatus: "",
+    feepaidstatus: "YES",
     stepStatus_1: "YES",
     site: "",
     queries: "",
@@ -161,7 +161,7 @@ const FireModifyTable = () => {
       feeAmount: "",
       acknowledgeName: "",
       noOfTowers: "",
-      feepaidstatus: "",
+      feepaidstatus: "YES",
       stepStatus_1: "YES", // Site Inspection Status
       stepStatus_2: "YES", // Queries Received?
       stepStatus_3: "YES", // Committee Approved?
@@ -341,11 +341,11 @@ const FireModifyTable = () => {
               feeAmount: details.FEE_AMOUNT || "",
               acknowledgeName: details.ACKNOWLEDGE_NAME || "",
               noOfTowers: details.NO_OF_TOWERS || "",
-              feepaidstatus: details.FEE_PAID_STATUS || "",
-              site: details.SIT_INFSTIN_STATUS || "",
-              queries: details.QUERIES_RECIEVED || "",
-              committe: details.COMMITE_APRVD || "",
-              provisional: details.PROVSINL_STATUS || "",
+              feepaidstatus: details.FEE_PAID_STATUS || "YES",
+              site: details.SIT_INFSTIN_STATUS || "YES",
+              queries: details.QUERIES_RECIEVED || "YES",
+              committe: details.COMMITE_APRVD || "YES",
+              provisional: details.PROVSINL_STATUS || "YES",
 
               // [`stepStatus_${immediateNextStepIndex}`]:
               //   currentStepRecord?.LEVEL_STATUS || "", // Load feepaidstatus from backend
@@ -1573,7 +1573,7 @@ payload.append("committe", formData.committe || "");
               value={
                 viewedStepDetails?.SIT_INFSTIN_STATUS || 
                 formData.site || 
-                "Not Available"
+                "YES"
               }
               readOnly
               className="bg-light"

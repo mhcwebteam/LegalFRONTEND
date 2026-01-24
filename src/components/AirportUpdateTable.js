@@ -1,6 +1,3 @@
-
-
-
 // import React, { useEffect, useState, useRef, useContext } from "react";
 // import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
 // import { useNavigate } from "react-router-dom";
@@ -496,7 +493,7 @@
 //   //   }
 //   // };
 
- 
+
 //  const handleConfirmSubmit = async (emails) => {
 //     if (!immediateNextStep) {
 //       Swal.fire({ icon: "info", title: "All steps are complete!" });
@@ -581,7 +578,7 @@
 //       setIsSubmitting(false);
 //     }
 //   };
- 
+
 //   const handleProcessClick = (e, process) => {
 //     e.stopPropagation();
 //     console.log("Clicked:", process);
@@ -1183,7 +1180,7 @@ const AirportUpdateTable = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [linkDocs, setLinkDocs] = useState([]);
-  const [landDocs, setLandDocs] = useState([]);
+ const [landDocs, setLandDocs] = useState([]);
   const [othDocs, setOthDocs] = useState([]);
   const [storeData, setStoreData] = useState([]);
   const [nextStepDetails, setNextStepDetails] = useState(null);
@@ -1687,7 +1684,7 @@ const [recordExists, setRecordExists] = useState(false);
   //   }
   // };
 
- 
+
  const handleConfirmSubmit = async (emails) => {
     if (!immediateNextStep) {
       Swal.fire({ icon: "info", title: "All steps are complete!" });
@@ -1772,7 +1769,7 @@ const [recordExists, setRecordExists] = useState(false);
       setIsSubmitting(false);
     }
   };
- 
+
   const handleProcessClick = (e, process) => {
     e.stopPropagation();
     console.log("Clicked:", process);
@@ -1855,6 +1852,8 @@ const [recordExists, setRecordExists] = useState(false);
           {immediateNextStep?.PROCESS === 'NOC Received or Not' &&
             <>
               <Col md={6} className="mb-2">
+
+              
                 <Form.Check
                   inline
                   label="Yes"
@@ -1863,8 +1862,8 @@ const [recordExists, setRecordExists] = useState(false);
                   id="status-yes"
                   value="YES"
                   checked={formData.STATUS === "YES"}
-                  onChange={handleChange}
-                  disabled={!!selectedProcessDetails}
+                
+                disabled
                 />
                 <Form.Check
                   inline
@@ -1874,8 +1873,8 @@ const [recordExists, setRecordExists] = useState(false);
                   id="status-no"
                   value="NO"
                   checked={formData.STATUS === "NO"}
-                  onChange={handleChange}
-                  disabled={!!selectedProcessDetails}
+                
+                 disabled
                 />
               </Col>
             </>
@@ -1914,7 +1913,7 @@ const [recordExists, setRecordExists] = useState(false);
                     className={selectedProcessDetails ? "bg-light" : ""}
                   />
                 </Form.Group>
-              </Col>
+             </Col>
             </Row>
           </>
         )}
@@ -1995,7 +1994,7 @@ const [recordExists, setRecordExists] = useState(false);
             {hasFieldData(process.TOTAL_PRJ_AREA) && (
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label>Number of Flats</Form.Label>
+                  <Form.Label>Total Project Area</Form.Label>
                   <Form.Control
                     type="number"
                     value={process.TOTAL_PRJ_AREA || ""}
@@ -2257,4 +2256,3 @@ const [recordExists, setRecordExists] = useState(false);
 };
 
 export default AirportUpdateTable;
-

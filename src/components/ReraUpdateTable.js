@@ -238,24 +238,28 @@ const handleViewNextStep = () => {
 };
 
   // ✅ NEW: This function is now the single point for fetching and displaying step details.
-  const handleStepClick = async (step, plant, isCompletedStep = false) => {
+const handleStepClick = async (step, plant, isCompletedStep = false) => {
   if (!plant) return;
   
-  // If clicking a completed step, mark it as selected for viewing
-  if (isCompletedStep) {
-    setSelectedProcessDetails(step);
-  } else {
-    setSelectedProcessDetails(null);
-  }
-  
+  setSelectedProcessDetails(isCompletedStep ? step : null);
   setViewedStep(step);
   
   try {
     const apiUrl = `${API_BASE_URL}/rera-step-details/${encodeURIComponent(plant)}/${encodeURIComponent(step.PROCESS)}`;
     const detailsRes = await axios.get(apiUrl);
     console.log("Fetched step details:", detailsRes.data);
+    
     if (detailsRes && detailsRes.data) {
-      setViewedStepDetails(detailsRes.data);
+      // ✅ FIX: Preserve edited dates if they exist in local state
+      const updatedDetails = { ...detailsRes.data };
+      
+      // If we have locally edited dates, keep them
+      if (viewedStepDetails?.FRM_DT && viewedStepDetails?.TO_DT) {
+        updatedDetails.FRM_DT = viewedStepDetails.FRM_DT;
+        updatedDetails.TO_DT = viewedStepDetails.TO_DT;
+      }
+      
+      setViewedStepDetails(updatedDetails);
     } else {
       setViewedStepDetails({});
     }
@@ -703,29 +707,37 @@ useEffect(() => {
   </Form.Group>
 </Col>
   {viewedStep?.PROCESS === "Validity of the Certificate" ? (
-    <>
-      <Col md={3}>
-        <Form.Group>
-          <Form.Label>From Date</Form.Label>
-          <Form.Control
-            type="date"
-            value={viewedStepDetails?.FRM_DT || ""}
-            disabled
-          />
-        </Form.Group>
-      </Col>
+  <>
+    <Col md={3}>
+      <Form.Group>
+        <Form.Label>From Date</Form.Label>
+        <Form.Control
+          type="date"
+          value={viewedStepDetails?.FRM_DT || ""}
+          onChange={(e) => setViewedStepDetails(prev => ({ 
+            ...prev, 
+            FRM_DT: e.target.value 
+          }))}
+          max={new Date().toISOString().split("T")[0]}
+        />
+      </Form.Group>
+    </Col>
 
-      <Col md={3}>
-        <Form.Group>
-          <Form.Label>To Date</Form.Label>
-          <Form.Control
-            type="date"
-            value={viewedStepDetails?.TO_DT || ""}
-            disabled
-          />
-        </Form.Group>
-      </Col>
-    </>
+    <Col md={3}>
+      <Form.Group>
+        <Form.Label>To Date</Form.Label>
+        <Form.Control
+          type="date"
+          value={viewedStepDetails?.TO_DT || ""}
+          onChange={(e) => setViewedStepDetails(prev => ({ 
+            ...prev, 
+            TO_DT: e.target.value 
+          }))}
+          min={viewedStepDetails?.FRM_DT || ""} // Optional: To Date should be after From Date
+        />
+      </Form.Group>
+    </Col>
+  </>
   ) : (
     <>
       {/* Application Date */}

@@ -465,7 +465,6 @@ const handleViewNextStep = () => {
     
   };
 
-
   useEffect(() => {
   // Clear everything when plant is cleared
   if (!selectedPlant) {
@@ -820,7 +819,6 @@ const handleViewNextStep = () => {
   //     [name]: value,
   //   }));
   // };
-
 
   const handleConfirmSubmit = async (emails) => {
   if (!formData.plant || !formData.applyDate) {
@@ -1493,11 +1491,22 @@ const fetchPlantData = async (plant) => {
 
 <Row className="mt-2 align-items-end">
   {(() => {
-    // Get current process name (from immediateNextStep if available)
-    const currentProcessName = selectedProcessDetails?.PROCESS?.toLowerCase();
+    // Get current process name - check both immediateNextStep and selectedProcessDetails
+    let currentProcessName = "";
     
-  
-    if (currentProcessName === "noc received or not") {
+    if (selectedProcessDetails) {
+      // When viewing a completed step
+      currentProcessName = selectedProcessDetails.PROCESS || "";
+    } else if (immediateNextStep) {
+      // When working on current step
+      currentProcessName = immediateNextStep.PROCESS || "";
+    }
+    
+    // Convert to lowercase for comparison
+    const normalizedProcessName = currentProcessName.toLowerCase();
+    
+    // Check if this is the NOC Received or Not step
+    if (normalizedProcessName === "noc received or not") {
       return (
         <Col md={6} className="mb-2">
           <Form.Group>
@@ -1511,8 +1520,13 @@ const fetchPlantData = async (plant) => {
                 id="status-yes"
                 value="YES"
                 checked={formData.STATUS === "YES"}
-                disabled
-                // onChange={handleChange}
+                onChange={(e) => setFormData(prev => ({ ...prev, STATUS: e.target.value }))}
+                disabled={selectedProcessDetails}
+                style={{
+                  backgroundColor: selectedProcessDetails ? '#e9ecef' : '',
+                  color: selectedProcessDetails ? '#6c757d' : '',
+                  cursor: selectedProcessDetails ? 'not-allowed' : ''
+                }}
               />
               <Form.Check
                 inline
@@ -1522,8 +1536,13 @@ const fetchPlantData = async (plant) => {
                 id="status-no"
                 value="NO"
                 checked={formData.STATUS === "NO"}
-                   disabled
-                // onChange={handleChange}
+                onChange={(e) => setFormData(prev => ({ ...prev, STATUS: e.target.value }))}
+                disabled={selectedProcessDetails}
+                style={{
+                  backgroundColor: selectedProcessDetails ? '#e9ecef' : '',
+                  color: selectedProcessDetails ? '#6c757d' : '',
+                  cursor: selectedProcessDetails ? 'not-allowed' : ''
+                }}
               />
             </div>
           </Form.Group>

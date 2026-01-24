@@ -1,3 +1,1500 @@
+// import React, { useEffect, useState, useRef, useContext } from "react";
+// import { Nav, Form, Button, Row, Col, Alert } from "react-bootstrap";
+// import { useNavigate } from "react-router-dom";
+// import axios from "axios";
+// import { API_BASE_URL } from "../config/Config";
+// import Swal from "sweetalert2";
+// import FormHeader from "./Header";
+// import PreviousUploadedDocsModal from "./PreviousUploadedDocsPanel";
+// import WaterDocUploadModal from "./WaterDocUploadModal";
+// import { FaArrowLeft, FaCheckCircle, FaTrashAlt, FaUpload } from "react-icons/fa";
+// import { fetchWaterDataByPlant, getMasterByLoc } from "../api/Api";
+// import { Context } from "../context/ContextData";
+// import ReusableDialog from "./ReusableDialog";
+// import { toast } from "react-toastify";
+// import { Home } from "lucide-react";
+// import ProjectInfoHeader from "./ProjectInfoHeader";
+// import { Send } from "react-bootstrap-icons";
+// import EmailSelectionModal from "./EmailModal";
+// import PreviousUploadedDocsPanel1 from "./PreviousUploadedDocsPanel1";
+
+// const WaterUpdateTable = () => {
+//   const token = localStorage.getItem("token");
+//   const navigate = useNavigate();
+//   const { storeData, setStoreData, plants, totalMasterData, headerData, setHeaderData } = useContext(Context);
+
+//   const [steps, setSteps] = useState([]);
+//   const [activeStep, setActiveStep] = useState(0);
+//   const [showFeasibilityModal, setShowFeasibilityModal] = useState(false);
+//   const [amountPaidDocModal, setAmountPaidDocModal] = useState(false);
+//   const [confirmOpen, setConfirmOpen] = useState(false);
+//   const [isSubmitting, setIsSubmitting] = useState(false);
+//   const [errors, setErrors] = useState({});
+//   const [submitted, setSubmitted] = useState(false);
+//   const [loc, setLoc] = useState([]);
+//   const [selectedEmails, setSelectedEmails] = useState([]);
+//   const [showEmailModal, setShowEmailModal] = useState(false);
+//   const [loggedInUser, setLoggedInUser] = useState(null);
+//   const [recordExists, setRecordExists] = useState(false); 
+
+//   const [dialogConfig, setDialogConfig] = useState({
+//     title: '',
+//     message: '',
+//     confirmText: 'OK',
+//     showCancel: false,
+//     open: false
+//   });
+//   const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
+
+//   const [formData, setFormData] = useState({
+//     loc: "",
+//     applyDate: "",
+//     comments: "",
+//     noOfFlats: "",
+//     KLD: "",
+//     amountPaid: "",
+//     feasibilityDoc: null,
+//     AmountPaidDoc: null,
+//     status: "",
+//     reason: "",
+//     Ghmc: "",
+//     OldAmount: "",
+//     Size: "",
+//     TotalAmount: "",
+//     noOfTowers: "",
+//     ProjectBuildArea: "",
+//     TotalProjectArea: ""
+//   });
+
+//   const [feasibilityDocs, setFeasibilityDocs] = useState([]);
+//   const [AmountPaidDocs, setAmountPaidDocs] = useState([]);
+//   const [selectedFiles, setSelectedFiles] = useState([]);
+//   const [selectedPlant, setSelectedPlant] = useState("");
+//   const [firstStep, setFirstStep] = useState(null);
+//   const [showUploadModal, setShowUploadModal] = useState(false);
+//   const [linkDocs, setLinkDocs] = useState([]);
+//   const [landDocs, setLandDocs] = useState([]);
+//   const [othDocs, setOthDocs] = useState([]);
+//   const fileInputRef = useRef(null);
+//   const [nextStepDetails, setNextStepDetails] = useState(null);
+//   const [immediateNextStep, setImmediateNextStep] = useState(null);
+//   const [immediateNextStepIndex, setImmediateNextStepIndex] = useState(-1);
+//   const [isFirstProcess, setIsFirstProcess] = useState(true);
+//   const [allStepsCompleted, setAllStepsCompleted] = useState(false);
+
+//   // --- 2. Check User Login ---
+//   useEffect(() => {
+//     if (!token) {
+//       navigate("/");
+//       return;
+//     }
+//     const userString = localStorage.getItem("user");
+//     if (userString) {
+//       try {
+//         const userObj = JSON.parse(userString);
+//         setLoggedInUser(userObj);
+//       } catch (error) {
+//         console.error("Error parsing user data:", error);
+//       }
+//     }
+//   }, [token, navigate]);
+
+//   useEffect(() => {
+//     setHeaderData(null);
+//   }, []);
+
+//   // ✅ NEW: Function to check if record exists in database
+//   const checkRecordExists = () => {
+//     if (selectedPlant && immediateNextStep) {
+//       const exists = storeData.some(item => 
+//         item.PROCESS?.toLowerCase().trim() === immediateNextStep.PROCESS?.toLowerCase().trim() &&
+//         item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+//       );
+//       setRecordExists(exists);
+//       console.log("Record exists check:", exists, "for process:", immediateNextStep?.PROCESS, "plant:", selectedPlant);
+//     } else {
+//       setRecordExists(false);
+//     }
+//   };
+
+//     useEffect(() => {
+//       checkRecordExists();
+//     }, [storeData, selectedPlant, immediateNextStep]);
+
+//   const handleEmailSubmit = () => {
+//     // ✅ Check if record exists in database
+//     if (!recordExists) {
+//       Swal.fire({
+//         icon: "warning",
+//         title: "Process Not Initialized",
+//         text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+//         confirmButtonText: "OK"
+//       });
+//       return;
+//     }
+
+//     const newErrors = {};
+//     if (!formData.loc) newErrors.loc = "Plant selection is required";
+//     if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+    
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setErrors({});
+//     setShowEmailModal(true);
+//   };
+
+//   // Handle email selection and form submission
+//   const handleEmailSelectionSubmit = async (emails) => {
+//     setSelectedEmails(emails);
+//     setShowEmailModal(false);
+    
+//     // Proceed with form submission
+//     await handleConfirmSubmit(emails);
+//   };
+
+//   // Fetch locations
+//   useEffect(() => {
+//     axios
+//       .get(`${API_BASE_URL}/water-plants`)
+//       .then((res) => {
+//         setLoc(res.data);
+//       })
+//       .catch((err) => console.error("Error fetching locations:", err));
+//   }, []);
+
+//   // Check if it's the first process
+//   useEffect(() => {
+//     if (immediateNextStepIndex === 0) {
+//       setIsFirstProcess(true);
+//     } else {
+//       setIsFirstProcess(false);
+//     }
+//   }, [immediateNextStepIndex]);
+
+//   // Fetch steps
+//   useEffect(() => {
+//     axios
+//       .get(`${API_BASE_URL}/water-process`)
+//       .then((res) => {
+//         setSteps(res.data);
+//         if (res.data.length > 0) setActiveStep(0);
+//       })
+//       .catch((err) => console.error("Error fetching processes", err));
+//   }, []);
+
+//   useEffect(() => {
+//     if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+//       const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+
+//       if (nextStepName) {
+//         axios
+//           .get(
+//             `${API_BASE_URL}/water-step-details/${encodeURIComponent(
+//               selectedPlant
+//             )}/${encodeURIComponent(nextStepName)}`
+//           )
+//           .then((res) => {
+//             setNextStepDetails(res.data);
+//           })
+//           .catch((err) =>
+//             console.error("Error fetching next step details:", err)
+//           );
+//       }
+//     }
+//   }, [selectedPlant, immediateNextStepIndex, steps]);
+
+//   useEffect(() => {
+//     if (steps.length > 0 && storeData.length > 0) {
+//       const completedProcesses = storeData
+//         .filter((item) => item.UPDATED === "YES")
+//         .map((item) => item.PROCESS);
+
+//       const nextStep = steps.find(
+//         (step) => !completedProcesses.includes(step.PROCESS)
+//       );
+
+//       const allCompleted = steps.every(step =>
+//         completedProcesses.includes(step.PROCESS?.trim())
+//       );
+//       setAllStepsCompleted(allCompleted);
+      
+//       if (nextStep) {
+//         setImmediateNextStep(nextStep);
+//         setImmediateNextStepIndex(steps.indexOf(nextStep));
+//       } else {
+//         setImmediateNextStep(null);
+//         setImmediateNextStepIndex(-1);
+//       }
+//     }
+//   }, [steps, storeData]);
+
+//   // ✅ Update record existence check when storeData changes
+ 
+
+//   useEffect(() => {
+//     if (nextStepDetails && !selectedProcessDetails) {
+//       let details = nextStepDetails;
+    
+//       setFormData((prevFormData) => ({
+//         ...prevFormData,
+//         applyDate: details.APPLY_DT,
+//         status: details.STATUS || "",
+//         reason: details.REASON || "",
+//         comments: details.COMMENTS || "",
+//         noOfFlats: details?.NUMBER_OF_FLATS || "",
+//         KLD: details?.KLD || "",
+//         amountPaid: details?.AMOUNT_PAID || "",
+//         Ghmc: details?.GHMC || "",
+//         OldAmount: details?.OLD_AMOUNT || "",
+//         Size: details?.SIZE_OF_CONNECTION || "",
+//         TotalAmount: details?.TOTAL_AMOUNT || "",
+//         TotalProjectArea: details?.TOTAL_PROJECT_AREA || '',
+//         noOfTowers: details?.NUMBER_OF_TOWERS || '',
+//         ProjectBuildArea: details?.PROJECT_BUILD_AREA || ''
+//       }));
+//       setFirstStep(details);
+//     } else if (!selectedProcessDetails) {
+//       setFormData((prevFormData) => ({
+//         ...prevFormData,
+//         applyDate: "",
+//         status: "",
+//         reason: "",
+//         comments: "",
+//         noOfFlats: "",
+//         KLD: "",
+//         amountPaid: "",
+//         Ghmc: "",
+//         OldAmount: "",
+//         Size: "",
+//         TotalAmount: "",
+//         ProjectBuildArea: "",
+//         noOfTowers: ""
+//       }));
+//       setFirstStep(null);
+//     }
+//   }, [nextStepDetails, selectedProcessDetails]);
+
+//   useEffect(() => {
+
+//       setStoreData([])
+//     // setImmediateNextStep(null);
+//     // setImmediateNextStepIndex(-1);
+//     // setViewedStep(null);
+  
+
+//     if (selectedPlant ) {
+//       axios
+//         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
+//         .then((res) => {
+//           setStoreData(res.data);
+          
+//           // ✅ Check if current process exists for this plant
+//           const currentProcessExists = res.data.some(item => 
+//             item.PROCESS?.toLowerCase().trim() === immediateNextStep?.PROCESS?.toLowerCase().trim() &&
+//             item.LOC?.toLowerCase().trim() === selectedPlant.toLowerCase().trim()
+//           );
+          
+//           setRecordExists(currentProcessExists);
+          
+//           if (res.data.length > 0) {
+//             setFormData((prev) => ({
+//               ...prev,
+//               loc: selectedPlant
+//             }));
+//             setSubmitted(false);
+//           }
+//         })
+//         .catch((err) => console.error("Error fetching step data", err));
+//     } else {
+//       setRecordExists(false);
+//     }
+//   }, [selectedPlant, immediateNextStep]);
+
+//   const handleProcessClick = (e, process) => {
+//     e.stopPropagation();
+//     const processDetails = storeData.find(
+//       (item) => item.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+//     );
+
+//     setSelectedProcessDetails(processDetails || null);
+
+//     if (processDetails) {
+//       const stepIndex = steps.findIndex(step =>
+//         step.PROCESS?.toLowerCase().trim() === process.toLowerCase().trim()
+//       );
+//       if (stepIndex !== -1) {
+//         setActiveStep(stepIndex);
+//       }
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (selectedProcessDetails) {
+//       setFormData((prevFormData) => ({
+//         ...prevFormData,
+//         loc: selectedPlant,
+//         applyDate: selectedProcessDetails.APPLY_DT || "",
+//         status: selectedProcessDetails.STATUS || "",
+//         reason: selectedProcessDetails.REASON || "",
+//         comments: selectedProcessDetails.COMMENTS || "",
+//         noOfFlats: selectedProcessDetails.NUMBER_OF_FLATS || "",
+//         KLD: selectedProcessDetails.KLD || "",
+//         amountPaid: selectedProcessDetails.AMOUNT_PAID || "",
+//         Ghmc: selectedProcessDetails.GHMC || "",
+//         OldAmount: selectedProcessDetails.OLD_AMOUNT || "",
+//         Size: selectedProcessDetails.SIZE_OF_CONNECTION || "",
+//         TotalAmount: selectedProcessDetails.TOTAL_AMOUNT || "",
+//         TotalProjectArea: selectedProcessDetails?.TOTAL_PROJECT_AREA || '',
+//         noOfTowers: selectedProcessDetails?.NUMBER_OF_TOWERS || '',
+//         ProjectBuildArea: selectedProcessDetails?.PROJECT_BUILD_AREA || ''
+//       }));
+
+//       setFirstStep(selectedProcessDetails);
+//       setSubmitted(false);
+//     }
+//   }, [selectedProcessDetails, selectedPlant]);
+
+//   const hasFieldData = (fieldValue) => {
+//     return fieldValue !== null && fieldValue !== undefined && fieldValue !== "" && fieldValue !== 0;
+//   };
+
+// const renderFormFields = () => {
+//   if (allStepsCompleted && !selectedProcessDetails) {
+//     return (
+//       <div className="position-relative">
+//         {/* Back to Start button in top-right corner */}
+//         <button 
+//           onClick={() => {
+//             // Reset everything to show fresh form
+//             setSelectedPlant("");
+//             setHeaderData(null);
+//             setSelectedProcessDetails(null);
+//             setImmediateNextStep(null);
+//             setImmediateNextStepIndex(-1);
+//             setFormData({
+//               loc: "",
+//               applyDate: "",
+//               comments: "",
+//               noOfFlats: "",
+//               KLD: "",
+//               amountPaid: "",
+//               feasibilityDoc: null,
+//               AmountPaidDoc: null,
+//               status: "",
+//               reason: "",
+//               Ghmc: "",
+//               OldAmount: "",
+//               Size: "",
+//               TotalAmount: "",
+//               noOfTowers: "",
+//               ProjectBuildArea: "",
+//               TotalProjectArea: ""
+//             });
+//             setStoreData([]);
+//             setAllStepsCompleted(false);
+//           }}
+//           className="position-absolute top-0 end-0 btn btn-success mt-3 me-3"
+//           style={{ zIndex: 1 }}
+//         >
+//           <FaArrowLeft className="me-1" /> Back to Start
+//         </button>
+        
+//         <Alert variant="success" className="text-center pt-5">
+//           <FaCheckCircle size={48} className="text-success mb-3" />
+//           <Alert.Heading>All Steps Completed! 🎉</Alert.Heading>
+//           <p>All process steps for <strong>{selectedPlant}</strong> have been completed successfully.</p>
+//           <hr />
+//           <p className="mb-0">Select any completed step from the left panel to view its details.</p>
+//         </Alert>
+//       </div>
+//     );
+//   }
+  
+//   if (!selectedProcessDetails) {
+//     return renderNextStepForm();
+//   }
+
+//   const fields = [];
+//   const process = selectedProcessDetails;
+//   const processName = process.PROCESS?.toLowerCase()?.trim();
+//   const isSecondStep = processName === "applied for water release";
+//   const shouldHideComments = isSecondStep && process.STATUS === "NO";
+  
+//   fields.push(
+//     <Row key="basic" className="mb-2">
+//       <Col md={6}>
+//         <Form.Group>
+//           <Form.Label>Plant</Form.Label>
+//           <Form.Control
+//             type="text"
+//             value={formData.loc || ""}
+//             readOnly
+//           />
+//         </Form.Group>
+//       </Col>
+//       <Col md={6}>
+//         <Form.Group>
+//           <Form.Label>Apply Date</Form.Label>
+//           <Form.Control
+//             type="date"
+//             disabled
+//             value={formData.applyDate || ""}
+//             readOnly
+//           />
+//         </Form.Group>
+//       </Col>
+//     </Row>
+//   );
+
+//   // ✅ Show STATUS for ALL steps if it exists
+//   // if (hasFieldData(process.STATUS)) {
+//   //   fields.push(
+//   //     <Row key="status" className="mb-2">
+//   //       <Col md={12}>
+//   //         <Form.Group>
+//   //           <Form.Label>STATUS3333333</Form.Label>
+//   //           <div>
+//   //             <Form.Check
+//   //               inline
+//   //               label="Yes"
+//   //               name="status"
+//   //               type="radio"
+//   //               value="YES"
+//   //               checked={formData.status === "YES"}
+//   //               disabled
+//   //               readOnly
+//   //             />
+//   //             <Form.Check
+//   //               inline
+//   //               label="No"
+//   //               name="status"
+//   //               type="radio"
+//   //               value="NO"
+//   //               checked={formData.status === "NO"}
+//   //               disabled
+//   //               readOnly
+//   //             />
+//   //           </div>
+//   //         </Form.Group>
+//   //       </Col>
+//   //     </Row>
+//   //   );
+//   // }
+
+//   // ✅ Show Number of Flats, KLD, Amount Paid fields for FIRST step ("Application Filing")
+//   // Check if any of these fields exist in the data
+//   const hasFirstStepFields = hasFieldData(process.NUMBER_OF_FLATS) || 
+//                             hasFieldData(process.KLD) || 
+//                             hasFieldData(process.AMOUNT_PAID) ||
+//                             hasFieldData(process.TOTAL_PROJECT_AREA) ||
+//                             hasFieldData(process.NUMBER_OF_TOWERS) ||
+//                             hasFieldData(process.PROJECT_BUILD_AREA);
+
+//   if (hasFirstStepFields) {
+//     fields.push(
+//       <Row key="first-step-fields" className="mb-3">
+//         {hasFieldData(process.NUMBER_OF_FLATS) && (
+//           <Col md={4}>
+//             <Form.Group>
+//               <Form.Label>Number of Flats</Form.Label>
+//               <Form.Control
+//                 type="number"
+//                 value={formData.noOfFlats || ""}
+//                 readOnly
+//                 disabled
+//               />
+//             </Form.Group>
+//           </Col>
+//         )}
+        
+//         {hasFieldData(process.KLD) && (
+//           <Col md={4}>
+//             <Form.Group>
+//               <Form.Label>KLD</Form.Label>
+//               <Form.Control
+//                 type="text"
+//                 value={formData.KLD || ""}
+//                 readOnly
+//                 disabled
+//               />
+//             </Form.Group>
+//           </Col>
+//         )}
+        
+//         {hasFieldData(process.AMOUNT_PAID) && (
+//           <Col md={4}>
+//             <Form.Group>
+//               <Form.Label>Amount Paid</Form.Label>
+//               <Form.Control
+//                 type="number"
+//                 value={formData.amountPaid || ""}
+//                 readOnly
+//                 disabled
+//               />
+//             </Form.Group>
+//           </Col>
+//         )}
+        
+//         {hasFieldData(process.TOTAL_PROJECT_AREA) && (
+//           <Col md={4} className="mt-3">
+//             <Form.Group>
+//               <Form.Label>Total Project Area</Form.Label>
+//               <Form.Control
+//                 type="number"
+//                 value={formData.TotalProjectArea || ""}
+//                 readOnly
+//                 disabled
+//               />
+//             </Form.Group>
+//           </Col>
+//         )}
+        
+//         {hasFieldData(process.NUMBER_OF_TOWERS) && (
+//           <Col md={4} className="mt-3">
+//             <Form.Group>
+//               <Form.Label>Number Of Towers</Form.Label>
+//               <Form.Control
+//                 type="number"
+//                 value={formData.noOfTowers || ""}
+//                 readOnly
+//                 disabled
+//               />
+//             </Form.Group>
+//           </Col>
+//         )}
+        
+//         {hasFieldData(process.PROJECT_BUILD_AREA) && (
+//           <Col md={4} className="mt-3">
+//             <Form.Group>
+//               <Form.Label>Project Build Area</Form.Label>
+//               <Form.Control
+//                 type="number"
+//                 value={formData.ProjectBuildArea || ""}
+//                 readOnly
+//                 disabled
+//               />
+//             </Form.Group>
+//           </Col>
+//         )}
+//       </Row>
+//     );
+//   }
+
+//   // ✅ Show Remaining Paid and Total Amount for "Applied For Water Release" if they exist
+//   if (processName === "applied for water release") {
+//     const hasAmountFields = hasFieldData(process.OLD_AMOUNT) || hasFieldData(process.TOTAL_AMOUNT);
+    
+//     if (hasAmountFields) {
+//       fields.push(
+//         <Row key="amounts" className="mb-2">
+//           {hasFieldData(process.OLD_AMOUNT) && (
+//             <Col md={6}>
+//               <Form.Group>
+//                 <Form.Label>Remaining Paid</Form.Label>
+//                 <Form.Control
+//                   type="number"
+//                   value={formData.OldAmount || ""}
+//                   readOnly
+//                   disabled
+//                 />
+//               </Form.Group>
+//             </Col>
+//           )}
+          
+//           {hasFieldData(process.TOTAL_AMOUNT) && (
+//             <Col md={6}>
+//               <Form.Group>
+//                 <Form.Label>Total Amount</Form.Label>
+//                 <Form.Control
+//                   type="number"
+//                   value={formData.TotalAmount || ""}
+//                   readOnly
+//                   disabled
+//                 />
+//               </Form.Group>
+//             </Col>
+//           )}
+//         </Row>
+//       );
+//     }
+//   }
+
+//   // ✅ Show Size of Connection if it exists (for any step)
+//   if (hasFieldData(process.SIZE_OF_CONNECTION)) {
+//     fields.push(
+//       <Row key="size" className="mb-2">
+//         <Col md={12}>
+//           <Form.Group>
+//             <Form.Label>Size Of Connection</Form.Label>
+//             <Form.Control
+//               type="number"
+//               value={formData.Size || ""}
+//               readOnly
+//               disabled
+//             />
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   // Show comments if not hidden
+//   if (!shouldHideComments && hasFieldData(process.COMMENTS)) {
+//     fields.push(
+//       <Row key="comments" className="mb-3">
+//         <Col md={12}>
+//           <Form.Group>
+//             <Form.Label>Comments</Form.Label>
+//             <Form.Control
+//               as="textarea"
+//               rows={2}
+//               value={formData.comments || ""}
+//               readOnly
+//               disabled
+//             />
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   // Show reason if status is NO
+//   if (formData.status === "NO" && hasFieldData(process.REASON)) {
+//     fields.push(
+//       <Row key="reason" className="mb-2">
+//         <Col md={12}>
+//           <Form.Group>
+//             <Form.Label>Reason</Form.Label>
+//             <Form.Control
+//               as="textarea"
+//               rows={2}
+//               value={formData.reason || ""}
+//               readOnly
+//               disabled
+//             />
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   return fields;
+// };
+
+// console.log(immediateNextStepIndex,"index::::::::::::::::::::::::::::");
+
+// const renderNextStepForm = () => {
+//   const fields = [];
+
+//   fields.push(
+//     <Row key="basic" className="mb-2">
+//       <Col md={6}>
+//         <Form.Group>
+//           <Form.Label>Plant</Form.Label>
+//           <Form.Select
+//             name="loc"
+//             value={formData.loc || ""}
+//             onChange={handleChange}
+//             isInvalid={!!errors.loc}
+//           >
+//             <option value="">Select Plant</option>
+//             {loc.map((ele, index) => (
+//               <option key={index} value={ele.loc}>
+//                 {ele.loc}
+//               </option>
+//             ))}
+//           </Form.Select>
+//           <Form.Control.Feedback type="invalid">
+//             {errors.loc}
+//           </Form.Control.Feedback>
+//         </Form.Group>
+//       </Col>
+//       <Col md={6}>
+//         <Form.Group>
+//           <Form.Label>Apply Date</Form.Label>
+//           <Form.Control
+//             type="date"
+//             name="applyDate"
+//             value={formData.applyDate || ""}
+//             onChange={handleChange}
+//             max={new Date().toISOString().split("T")[0]}
+//             isInvalid={!!errors.applyDate}
+//           />
+//           <Form.Control.Feedback type="invalid">
+//             {errors.applyDate}
+//           </Form.Control.Feedback>
+//         </Form.Group>
+//       </Col>
+//     </Row>
+//   );
+
+//   if (!isFirstProcess) {
+//     if (immediateNextStepIndex === 1) {
+//       fields.push(
+//         <Row key="amounts" className="mb-2">
+//           <Col md={6}>
+//             <Form.Group>
+//               <Form.Label>Remaining Paid</Form.Label>
+//               <Form.Control
+//                 type="number"
+//                 name="OldAmount"
+//                 value={formData.OldAmount || ""}
+            
+//                 disabled
+//                 // onChange={handleChange}
+//                 // isInvalid={!!errors.OldAmount}
+//               />
+//               <Form.Control.Feedback type="invalid">
+//                 {errors.OldAmount}
+//               </Form.Control.Feedback>
+//             </Form.Group>
+//           </Col>
+//           <Col md={6}>
+//             <Form.Group>
+//               <Form.Label>Total Amount</Form.Label>
+//               <Form.Control
+//                 type="number"
+//                 name="TotalAmount"
+//                 value={formData.TotalAmount || ""}
+//                 disabled
+//                 // onChange={handleChange}
+//                 // isInvalid={!!errors.TotalAmount}
+//               />
+//               <Form.Control.Feedback type="invalid">
+//                 {errors.TotalAmount}
+//               </Form.Control.Feedback>
+//             </Form.Group>
+//           </Col>
+//         </Row>
+//       );
+//     }
+//   }
+
+//   // ✅ ONLY show Status for steps that need it
+//   if (immediateNextStepIndex !== 0) {
+//     fields.push(
+//       <Row key="status" className="mb-2">
+//         <Col md={12}>
+//           <Form.Group>
+//             <Form.Label>STATUS</Form.Label>
+//             <div>
+//               <Form.Check
+//                 inline
+//                 label="Yes"
+//                 name="status"
+//                 type="radio"
+//                 value="YES"
+//                 checked={formData.status === "YES"}
+//                 disabled
+//                 isInvalid={!!errors.status}
+//               />
+//               <Form.Check
+//                 inline
+//                 label="No"
+//                 name="status"
+//                 type="radio"
+//                 value="NO"
+//                 checked={formData.status === "NO"}
+//               disabled
+//                 isInvalid={!!errors.status}
+//               />
+//             </div>
+//             {errors.status && (
+//               <div className="text-danger small mt-1">
+//                 {errors.status}
+//               </div>
+//             )}
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   // ✅ ONLY show Size of Connection for Contractor Work Status (index 3)
+//   if (immediateNextStepIndex === 3) {
+//     fields.push(
+//       <Row key="size" className="mb-2">
+//         <Col md={12}>
+//           <Form.Group>
+//             <Form.Label>Size Of Connection</Form.Label>
+//             <Form.Control
+//               type="number"
+//               name="Size"
+//               value={formData.Size || ""}
+//               onChange={handleChange}
+//             disabled
+//               isInvalid={!!errors.Size}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.Size}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   // ✅ REMOVE THIS DUPLICATE BLOCK - IT'S CAUSING THE FIELD TO SHOW TWICE
+//   // {immediateNextStepIndex === 3 && (
+//   //   <Row key="size" className="mb-2">
+//   //     <Col md={12}>
+//   //       <Form.Group>
+//   //         <Form.Label>Size Of Connectionajith</Form.Label>
+//   //         <Form.Control
+//   //           type="number"
+//   //           value={formData.Size || ""}
+//   //           readOnly
+//   //           disabled
+//   //         />
+//   //       </Form.Group>
+//   //     </Col>
+//   //   </Row>
+//   // )}
+
+//   // ✅ Show Comments/Reason based on Status
+//   if (formData.status === "YES") {
+//     fields.push(
+//       <Row key="comments" className="mb-3">
+//         <Col md={12}>
+//           <Form.Group>
+//             <Form.Label>Comments</Form.Label>
+//             <Form.Control
+//               as="textarea"
+//               rows={2}
+//               name="comments"
+//               value={formData.comments || ""}
+//              disabled
+             
+//               isInvalid={!!errors.comments}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.comments}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   if (formData.status === "NO") {
+//     fields.push(
+//       <Row key="reason" className="mb-2">
+//         <Col md={12}>
+//           <Form.Group>
+//             <Form.Label>Reason</Form.Label>
+//             <Form.Control
+//               as="textarea"
+//               rows={2}
+//               name="reason"
+//               value={formData.reason || ""}
+//              disabled
+//               isInvalid={!!errors.reason}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.reason}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   if (isFirstProcess) {
+//     fields.push(
+//       <Row key="flats-info" className="mb-3">
+//         <Col md={4}>
+//           <Form.Group>
+//             <Form.Label>Number of Flats</Form.Label>
+//             <Form.Control
+//               type="number"
+//               name="noOfFlats"
+//               value={formData.noOfFlats || ""}
+//               // onChange={handleChange}
+//               // placeholder="Enter number of flats"
+//               disabled
+//               isInvalid={!!errors.noOfFlats}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.noOfFlats}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//         <Col md={4}>
+//           <Form.Group>
+//             <Form.Label>KLD</Form.Label>
+//             <Form.Control
+//               type="text"
+//               name="KLD"
+//               value={formData.KLD || ""}
+//               disabled
+//               // onChange={handleChange}
+//               // placeholder="Auto-calculated"
+//               readOnly
+//             />
+//           </Form.Group>
+//         </Col>
+//         <Col md={4}>
+//           <Form.Group>
+//             <Form.Label>Amount Paid</Form.Label>
+//             <Form.Control
+//               type="number"
+//               name="amountPaid"
+//               value={formData.amountPaid || ""}
+//               // onChange={handleChange}
+//               // placeholder="Enter amount paid"
+//               disabled
+//               isInvalid={!!errors.amountPaid}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.amountPaid}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//         <Col md={4} className="mt-3">
+//           <Form.Group>
+//             <Form.Label>Total Project Area</Form.Label>
+//             <Form.Control
+//               type="number"
+//               name="TotalProjectArea"
+//               value={formData.TotalProjectArea || ""}
+//               // onChange={handleChange}
+//               // placeholder="Enter total project area"
+//               disabled
+//               isInvalid={!!errors.TotalProjectArea}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.TotalProjectArea}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//         <Col md={4} className="mt-3">
+//           <Form.Group>
+//             <Form.Label>Number Of Towers</Form.Label>
+//             <Form.Control
+//               type="number"
+//               name="noOfTowers"
+//               value={formData.noOfTowers || ""}
+//               disabled
+//               // onChange={handleChange}
+//               // placeholder="Enter number of towers"
+//               isInvalid={!!errors.noOfTowers}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.noOfTowers}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//         <Col md={4} className="mt-3">
+//           <Form.Group>
+//             <Form.Label>Project Build Area</Form.Label>
+//             <Form.Control
+//               type="number"
+//               name="ProjectBuildArea"
+//               value={formData.ProjectBuildArea || ""}
+//               disabled
+//               // onChange={handleChange}
+//               // placeholder="Enter project build area"
+//               isInvalid={!!errors.ProjectBuildArea}
+//             />
+//             <Form.Control.Feedback type="invalid">
+//               {errors.ProjectBuildArea}
+//             </Form.Control.Feedback>
+//           </Form.Group>
+//         </Col>
+//       </Row>
+//     );
+//   }
+
+//   return fields;
+// };
+
+//   const handleChange = async (e) => {
+//     const { name, value } = e.target;
+
+//     if (name === "noOfFlats") {
+//       const nocs = Math.ceil(Number(value) / 2);
+//       setLinkDocs([]);
+//       setLandDocs([]);
+//       setOthDocs([]);
+//       setFeasibilityDocs([]);
+//       setAmountPaidDocs([]);
+//       setFormData((prev) => ({
+//         ...prev,
+//         noOfFlats: value,
+//         KLD: value ? nocs : "",
+//       }));
+//     } else if (name === "OldAmount") {
+//       const amountPaid = storeData?.[0]?.AMOUNT_PAID || 0;
+//       const total = amountPaid + Number(value);
+//       setFormData((prev) => ({
+//         ...prev,
+//         OldAmount: value,
+//         TotalAmount: value ? total : "",
+//       }));
+//     } else if (name === "loc") {
+//       setFormData(prev => ({ ...prev, loc: value }));
+//       setSelectedPlant(value);
+//       setSubmitted(false);
+//       setRecordExists(false); // ✅ Reset when plant changes
+
+//       try {
+//         const res = await getMasterByLoc(value);
+//         if (res) {
+//           setHeaderData(res);
+//           setFormData((prev) => ({
+//             ...prev,
+//             applyDate: res.APPLICATION_DATE || '',
+//             noOfTowers: res.NUMBER_OF_TOWERS || '',
+//             TotalProjectArea: res.TOTAL_PROJECT_AREA || '',
+//             ProjectBuildArea: res.PROJECT_BUILD_AREA || '',
+//             ProjectName: res.PROJECT_NAME || '',
+//           }));
+//         } else {
+//           setHeaderData(null);
+//           setFormData((prev) => ({
+//             ...prev,
+//             applyDate: '',
+//             noOfTowers: '',
+//             TotalProjectArea: '',
+//             ProjectBuildArea: '',
+//             ProjectName: '',
+//           }));
+//         }
+//       } catch (err) {
+//         console.error("Error fetching master by loc:", err);
+//         setHeaderData(null);
+//         setFormData((prev) => ({
+//           ...prev,
+//           applyDate: '',
+//           noOfTowers: '',
+//           TotalProjectArea: '',
+//           ProjectBuildArea: '',
+//           ProjectName: '',
+//         }));
+//       }
+//     } else {
+//       setFormData((prev) => ({
+//         ...prev,
+//         [name]: value,
+//       }));
+//     }
+//   };
+
+//   const handleConfirmSubmit = async (emails) => {
+//     setIsSubmitting(true);
+
+//     let currentUserName = loggedInUser.username;
+
+//     const payload = new FormData();
+//     payload.append("loc", formData.loc);
+//     payload.append("applyDate", formData.applyDate);
+//     payload.append("STATUS", formData.status);
+//     payload.append("REASON", formData.reason || "");
+//     payload.append("process", immediateNextStep.PROCESS);
+//     payload.append("comments", formData.comments || "");
+//     payload.append("GHMC", formData.Ghmc || "");
+//     payload.append("OldAmount", formData.OldAmount || "");
+//     payload.append("Size_Of_Connection", formData.Size || "");
+//     payload.append("TotalAmount", formData.TotalAmount || "");
+//     payload.append("username", currentUserName || "");
+    
+//     linkDocs.forEach(f => payload.append("Plan_Doc[]", f));
+//     landDocs.forEach(f => payload.append("Title_Doc[]", f));
+//     othDocs.forEach(f => payload.append("Oth_Doc[]", f));
+    
+//     emails.forEach((email, i) => {
+//       payload.append(`emails[${i}]`, email);
+//     });
+
+//     if (isFirstProcess) {
+//       payload.append("noOfFlats", formData.noOfFlats || "");
+//       payload.append("KLD", formData.KLD || "");
+//       payload.append("amountPaid", formData.amountPaid || "");
+//       payload.append('FeasibilityDoc', formData.feasibilityDoc);
+//       payload.append('AmountPaidDoc', formData.AmountPaidDoc);
+//       feasibilityDocs.forEach(f => payload.append('FEAS_DOC[]', f));
+//       AmountPaidDocs.forEach(f => payload.append('AMOUNT_PAID_DOC[]', f));
+//     }
+
+//     try {
+//       const result = await axios.post(`${API_BASE_URL}/water-update`, payload, {
+//         headers: { "Content-Type": "multipart/form-data" },
+//       });
+//   setSelectedPlant(""); 
+
+//    // ✅ Clear everything after submission
+//     setStoreData([]);       // Clear sidebar history
+//     setHeaderData(null);    // Clear header project info
+//     setSelectedPlant("");   // This will hide the process steps
+//          // ADD THIS LINE to clear the steps array
+
+//       // const res = await axios.get(
+//       //   `${API_BASE_URL}/water-data?plant=${selectedPlant}`
+//       // );
+//       // setStoreData(res.data);
+
+//       setFormData({
+//         loc: "",
+//         applyDate: "",
+//         comments: "",
+//         noOfFlats: "",
+//         KLD: "",
+//         amountPaid: "",
+//         feasibilityDoc: null,
+//         AmountPaidDoc: null,
+//         status: "",
+//         reason: "",
+//         Ghmc: "",
+//         OldAmount: "",
+//         Size: "",
+//         TotalAmount: "",
+//         noOfTowers: "",
+//         ProjectBuildArea: "",
+//         TotalProjectArea: ""
+//       });
+      
+//       setHeaderData(null);
+//    // Optional: keep response data if needed, or set to null
+
+//       // 3. Clear Local State (Navigation & Process Tracking)
+//       setImmediateNextStep(null);
+//       setImmediateNextStepIndex(-1);
+//       setNextStepDetails(null);
+//       setAllStepsCompleted(false);
+//       setActiveStep(0);
+//       setSelectedProcessDetails(null); // Exit "View History" mode if active
+// setAllStepsCompleted(false);
+//       // 4. Clear Documents (Right Side & Pending Uploads)
+//       setFirstStep(null); 
+
+//       setLinkDocs([]);
+//       setLandDocs([]);
+//       setOthDocs([]);
+//       setFeasibilityDocs([]);
+//       setAmountPaidDocs([]);
+//       setSelectedEmails([]);
+
+//       setSubmitted(true);
+
+//       // setDialogConfig({
+//       //   title: 'Success',
+//       //   message: result.data.emailSent 
+//       //     ? `Form submitted successfully.!`
+//       //     : 'Form submitted successfully!',
+//       //   confirmText: 'OK',
+//       //   showCancel: false,
+//       //   open: true
+//       // });
+
+//           await Swal.fire({
+//             icon: "success",
+//             title:  "Updated!",
+//             text: "Your data has been saved successfully.",
+//             timer: 1500,
+//             showConfirmButton: false,
+//           });
+
+//     } catch (err) {
+//       console.error("❌ Submission failed:", err);
+//       setDialogConfig({
+//         title: 'Error',
+//         message: err.response?.data?.message || 'Submission failed. Please try again.',
+//         confirmText: 'OK',
+//         showCancel: false,
+//         open: true
+//       });
+//     } finally {
+//       setIsSubmitting(false);
+//       setConfirmOpen(false);
+//     }
+//   };
+
+//   const handleViewNextStep = () => {
+//     setSelectedProcessDetails(null);
+
+//     if (selectedPlant && immediateNextStepIndex !== -1 && steps.length > 0) {
+//       const nextStepName = steps[immediateNextStepIndex]?.PROCESS;
+//       if (nextStepName) {
+//         axios
+//           .get(
+//             `${API_BASE_URL}/water-step-details/${encodeURIComponent(
+//               selectedPlant
+//             )}/${encodeURIComponent(nextStepName)}`
+//           )
+//           .then((res) => {
+//             setNextStepDetails(res.data);
+//           })
+//           .catch((err) =>
+//             console.error("Error fetching next step details:", err)
+//           );
+//       }
+//     }
+//   };
+
+
+  
+
+//   return (
+//     <>
+//       <ProjectInfoHeader data={headerData} />
+//       <Row className="align-items-stretch">
+//         <Col md={3} className="d-flex">
+//           <div className="border rounded p-3 bg-light flex-fill">
+//             <h6 className="text-center mb-3">Process Steps</h6>
+//         {/* ADD THIS CONDITION */}
+
+//       <Nav variant="pills" className="flex-column">
+//         {steps.map((step, idx) => {
+//           let variant = "secondary";
+//           let clickable = false;
+//           let statusIcon = "⏸️";
+
+//           // Check if this step is completed
+//           const isCompleted = storeData.some(
+//             (item) => item.PROCESS?.toLowerCase().trim() === step.PROCESS?.toLowerCase().trim() &&
+//               item.UPDATED === "YES"
+//           );
+
+//           if (isCompleted) {
+//             variant = "success";
+//             clickable = true;
+//             statusIcon = "✅";
+//           } else if (idx === immediateNextStepIndex) {
+//             variant = "warning";
+//             clickable = true;
+//             statusIcon = "⚠️";
+//           }
+
+//           return (
+//             <Nav.Item key={idx} className="mb-2">
+//               <Nav.Link
+//                 eventKey={idx}
+//                 disabled={!clickable}
+//                 onClick={() => {
+//                   if (!clickable) return;
+//                   setActiveStep(idx);
+//                 }}
+//                 className={`text-dark border border-${variant} bg-${variant} bg-opacity-25 rounded d-flex align-items-center gap-2`}
+//                 style={{
+//                   cursor: clickable ? "pointer" : "not-allowed"
+//                 }}
+//               >
+//                 {statusIcon}
+//                 <span
+//                   onClick={(e) => {
+//                     if (isCompleted) {
+//                       handleProcessClick(e, step.PROCESS);
+//                     }
+//                   }}
+//                   style={{
+//                     cursor: isCompleted ? "pointer" : "default",
+//                     textDecoration: isCompleted ? "underline" : "none"
+//                   }}
+//                 >
+//                   {step.PROCESS}
+//                 </span>
+//               </Nav.Link>
+//             </Nav.Item>
+//           );
+//         })}
+//       </Nav>
+  
+//           </div>
+//         </Col>
+//         <Col
+//           md={6}
+//           className="d-flex flex-column"
+//           style={{ height: '400px', overflowY: 'auto' }}
+//         >
+//           <Form className="p-3 border rounded bg-light">
+//     {selectedProcessDetails ? (
+//       <div className="mb-3">
+//         <h4 className="mb-2 text-info fw-bold">
+//           Viewing: {selectedProcessDetails.PROCESS} (Completed)
+//         </h4>
+//         <Button
+//           variant="outline-primary"
+//           size="sm"
+//           onClick={handleViewNextStep}
+//           disabled={!immediateNextStep}
+//         >
+//           View Next Step
+//         </Button>
+//       </div>
+//     ) : immediateNextStep ? (
+//       <h4 className="mb-3 text-warning fw-bold">
+//         Next Step: {immediateNextStep.PROCESS}
+//       </h4>
+//     ) : allStepsCompleted ? (
+//       ""
+//       // <div className="p-4 shadow-sm text-center border-0 bg-light position-relative">
+//       //   {/* Back Button in top right corner */}
+//       //   <button 
+//       //     onClick={() => {
+//       //       // Reset everything to show fresh form
+//       //       setSelectedPlant("");
+//       //       setHeaderData(null);
+//       //       setSelectedProcessDetails(null);
+//       //       setImmediateNextStep(null);
+//       //       setImmediateNextStepIndex(-1);
+//       //       setFormData({
+//       //         loc: "",
+//       //         applyDate: "",
+//       //         comments: "",
+//       //         noOfFlats: "",
+//       //         KLD: "",
+//       //         amountPaid: "",
+//       //         feasibilityDoc: null,
+//       //         AmountPaidDoc: null,
+//       //         status: "",
+//       //         reason: "",
+//       //         Ghmc: "",
+//       //         OldAmount: "",
+//       //         Size: "",
+//       //         TotalAmount: "",
+//       //         noOfTowers: "",
+//       //         ProjectBuildArea: "",
+//       //         TotalProjectArea: ""
+//       //       });
+//       //       setStoreData([]);
+//       //       setAllStepsCompleted(false);
+//       //     }}
+//       //     className="position-absolute top-0 end-0 btn btn-success mt-0 me-0"
+//       //   >
+//       //     <FaArrowLeft className="me-1" /> Back to Start
+//       //   </button>
+        
+//       //   <FaCheckCircle size={64} className="text-success mb-3" />
+//       //   <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+//       //   <h5 className="text-muted mb-4">
+//       //     All process steps have been completed successfully!
+//       //   </h5>
+//       //   <Alert variant="success">
+//       //     <Alert.Heading>All Steps Completed!</Alert.Heading>
+//       //     <p>
+//       //       All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
+//       //     </p>
+//       //     <hr />
+//       //     <p className="mb-0">
+//       //       Click on any completed step above to view its details or click Back button to start fresh.
+//       //     </p>
+//       //   </Alert>
+//       // </div>
+//     ) : null}
+
+//     {renderFormFields()}
+
+//     <div className="d-grid">
+//       {selectedProcessDetails ? (
+//         <div className="alert alert-info d-flex align-items-center">
+//           <i className="fas fa-info-circle me-2"></i>
+//           You are viewing historical data. To make changes, select the current step.
+//         </div>
+//       ) : !allStepsCompleted ? (
+//         <>
+//           {/* Show different messages based on state */}
+//           {!formData.loc ? (
+//             ""
+//           ) : !recordExists ? (
+//             ""
+//           ) : null}
+          
+//           <Button
+//             variant={submitted ? "success" : "primary"}
+//             size="md"
+//             onClick={handleEmailSubmit}
+//             className="w-100 fw-semibold"
+//             disabled={!formData.loc || isSubmitting || submitted || !recordExists}
+//           >
+//             {isSubmitting ? "Submitting..." : submitted ? "Submitted" : "Submit"}
+//           </Button>
+//         </>
+//       ) : null}
+//     </div>
+//   </Form>
+//         </Col>
+
+//         <Col md={3} className="d-flex">
+//           <div className="border rounded p-3 bg-white flex-fill w-50">
+//             <PreviousUploadedDocsPanel1 firstStep={firstStep} />
+//           </div>
+//         </Col>
+//       </Row>
+
+//       {/* Email Selection Modal */}
+//       <EmailSelectionModal
+//         show={showEmailModal}
+//         onHide={() => setShowEmailModal(false)}
+//         onSubmit={handleEmailSelectionSubmit}
+//         processName={immediateNextStep?.PROCESS}
+//         plantName={formData.loc}
+//         applyDate={formData.applyDate}
+//         comments={formData.comments}
+//         reason={formData.reason}
+//         status={formData.status} 
+//       />
+
+//       {/* Confirmation Dialog */}
+//       <ReusableDialog
+//         open={confirmOpen}
+//         title="Confirm Submission"
+//         message={`Are you sure you want to submit this form and send emails to ${selectedEmails.length} recipient(s)? This action cannot be undone.`}
+//         onClose={() => setConfirmOpen(false)}
+//         onConfirm={handleConfirmSubmit}
+//         confirmText="Submit"
+//         isLoading={isSubmitting}
+//       />
+
+//       {/* Success/Error Dialog */}
+//       <ReusableDialog
+//         open={dialogConfig.open}
+//         title={dialogConfig.title}
+//         message={dialogConfig.message}
+//         onClose={() => setDialogConfig({ ...dialogConfig, open: false })}
+//         onConfirm={() => setDialogConfig({ ...dialogConfig, open: false })}
+//         confirmText={dialogConfig.confirmText}
+//         showCancel={dialogConfig.showCancel}
+//       />
+
+//       {/* Document Upload Modals */}
+//       <WaterDocUploadModal
+//         show={showFeasibilityModal}
+//         onClose={() => setShowFeasibilityModal(false)}
+//         linkDocs={feasibilityDocs}
+//         setLinkDocs={setFeasibilityDocs}
+//         title="Upload Feasibility Certificate"
+//         showLandDocs={false}
+//         showOthDocs={false}
+//       />
+
+//       <WaterDocUploadModal
+//         show={amountPaidDocModal}
+//         onClose={() => setAmountPaidDocModal(false)}
+//         linkDocs={AmountPaidDocs}
+//         setLinkDocs={setAmountPaidDocs}
+//         title="Upload Paid Document Certificate"
+//         showLandDocs={false}
+//         showOthDocs={false}
+//       />
+
+//       <WaterDocUploadModal
+//         show={showUploadModal}
+//         onClose={() => setShowUploadModal(false)}
+//         linkDocs={linkDocs}
+//         setLinkDocs={setLinkDocs}
+//         landDocs={landDocs}
+//         setLandDocs={setLandDocs}
+//         othDocs={othDocs}
+//         setOthDocs={setOthDocs}
+//       />
+//     </>
+//   );
+// };
+
+// export default WaterUpdateTable;
 
 
 import React, { useEffect, useState, useRef, useContext } from "react";
@@ -287,7 +1784,6 @@ const WaterUpdateTable = () => {
     // setViewedStep(null);
   
 
-
     if (selectedPlant ) {
       axios
         .get(`${API_BASE_URL}/water-data?plant=${selectedPlant}`)
@@ -414,8 +1910,8 @@ const renderFormFields = () => {
         </Alert>
       </div>
     );
-  
   }
+  
   if (!selectedProcessDetails) {
     return renderNextStepForm();
   }
@@ -452,256 +1948,196 @@ const renderFormFields = () => {
     </Row>
   );
 
-  // ✅ NEW: Add status display for Contractor Work Status
-  if (processName === "contractor work status") {
-    if (hasFieldData(process.STATUS)) {
-      fields.push(
-        <Row key="contractor-status" className="mb-2">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>STATUS</Form.Label>
-              <div>
-                <Form.Check
-                  inline
-                  label="Yes"
-                  name="status"
-                  type="radio"
-                  value="YES"
-                  checked={formData.status === "YES"}
-                  disabled
-                />
-                <Form.Check
-                  inline
-                  label="No"
-                  name="status"
-                  type="radio"
-                  value="NO"
-                  checked={formData.status === "NO"}
-                  disabled
-                />
-              </div>
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
-  }
-  
-  // ✅ NEW: Add status display for Water Released
-  else if (processName === "water released") {
-    if (hasFieldData(process.STATUS)) {
-      fields.push(
-        <Row key="water-released-status" className="mb-2">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>STATUS</Form.Label>
-              <div>
-                <Form.Check
-                  inline
-                  label="Yes"
-                  name="status"
-                  type="radio"
-                  value="YES"
-                  checked={formData.status === "YES"}
-                  disabled
-                />
-                <Form.Check
-                  inline
-                  label="No"
-                  name="status"
-                  type="radio"
-                  value="NO"
-                  checked={formData.status === "NO"}
-                  disabled
-                />
-              </div>
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
-  }
-  // ✅ NEW: Add status display for Applied For Water Release
-  else if (processName === "applied for water release") {
-    if (hasFieldData(process.STATUS)) {
-      fields.push(
-        <Row key="water-release-status" className="mb-2">
+  // ✅ Show STATUS for ALL steps if it exists
+  // if (hasFieldData(process.STATUS)) {
+  //   fields.push(
+  //     <Row key="status" className="mb-2">
+  //       <Col md={12}>
+  //         <Form.Group>
+  //           <Form.Label>STATUS3333333</Form.Label>
+  //           <div>
+  //             <Form.Check
+  //               inline
+  //               label="Yes"
+  //               name="status"
+  //               type="radio"
+  //               value="YES"
+  //               checked={formData.status === "YES"}
+  //               disabled
+  //               readOnly
+  //             />
+  //             <Form.Check
+  //               inline
+  //               label="No"
+  //               name="status"
+  //               type="radio"
+  //               value="NO"
+  //               checked={formData.status === "NO"}
+  //               disabled
+  //               readOnly
+  //             />
+  //           </div>
+  //         </Form.Group>
+  //       </Col>
+  //     </Row>
+  //   );
+  // }
+
+  // ✅ Show Number of Flats, KLD, Amount Paid fields for FIRST step ("Application Filing")
+  // Check if any of these fields exist in the data
+  const hasFirstStepFields = hasFieldData(process.NUMBER_OF_FLATS) || 
+                            hasFieldData(process.KLD) || 
+                            hasFieldData(process.AMOUNT_PAID) ||
+                            hasFieldData(process.TOTAL_PROJECT_AREA) ||
+                            hasFieldData(process.NUMBER_OF_TOWERS) ||
+                            hasFieldData(process.PROJECT_BUILD_AREA);
+
+  if (hasFirstStepFields) {
+    fields.push(
+      <Row key="first-step-fields" className="mb-3">
+        {hasFieldData(process.NUMBER_OF_FLATS) && (
           <Col md={4}>
             <Form.Group>
-              <Form.Label>STATUS</Form.Label>
-              <div>
-                <Form.Check
-                  inline
-                  label="Yes"
-                  name="status"
-                  type="radio"
-                  value="YES"
-                  checked={formData.status === "YES"}
-                  disabled
-                />
-                <Form.Check
-                  inline
-                  label="No"
-                  name="status"
-                  type="radio"
-                  value="NO"
-                  checked={formData.status === "NO"}
-                  disabled
-                />
-              </div>
+              <Form.Label>Number of Flats</Form.Label>
+              <Form.Control
+                type="number"
+                value={formData.noOfFlats || ""}
+                readOnly
+                disabled
+              />
             </Form.Group>
-
-            
           </Col>
-      <Col md={4}>
+        )}
+        
+        {hasFieldData(process.KLD) && (
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>KLD</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.KLD || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        )}
+        
+        {hasFieldData(process.AMOUNT_PAID) && (
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Amount Paid</Form.Label>
+              <Form.Control
+                type="number"
+                value={formData.amountPaid || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        )}
+        
+        {hasFieldData(process.TOTAL_PROJECT_AREA) && (
+          <Col md={4} className="mt-3">
+            <Form.Group>
+              <Form.Label>Total Project Area</Form.Label>
+              <Form.Control
+                type="number"
+                value={formData.TotalProjectArea || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        )}
+        
+        {hasFieldData(process.NUMBER_OF_TOWERS) && (
+          <Col md={4} className="mt-3">
+            <Form.Group>
+              <Form.Label>Number Of Towers</Form.Label>
+              <Form.Control
+                type="number"
+                value={formData.noOfTowers || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        )}
+        
+        {hasFieldData(process.PROJECT_BUILD_AREA) && (
+          <Col md={4} className="mt-3">
+            <Form.Group>
+              <Form.Label>Project Build Area</Form.Label>
+              <Form.Control
+                type="number"
+                value={formData.ProjectBuildArea || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        )}
+      </Row>
+    );
+  }
 
-          <Form.Group>
-                <Form.Label>Remaining Paid33333</Form.Label>
+  // ✅ Show Remaining Paid and Total Amount for "Applied For Water Release" if they exist
+  if (processName === "applied for water release") {
+    const hasAmountFields = hasFieldData(process.OLD_AMOUNT) || hasFieldData(process.TOTAL_AMOUNT);
+    
+    if (hasAmountFields) {
+      fields.push(
+        <Row key="amounts" className="mb-2">
+          {hasFieldData(process.OLD_AMOUNT) && (
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>Remaining Paid</Form.Label>
                 <Form.Control
                   type="number"
-                  name="OldAmount"
                   value={formData.OldAmount || ""}
-                  // onChange={handleChange}
-                  // isInvalid={!!errors.loc}
-                  disabled
                   readOnly
+                  disabled
                 />
-                <Form.Control.Feedback type="invalid">
-                  {errors.OldAmount}
-                </Form.Control.Feedback>
               </Form.Group>
-      </Col>
-
-     <Col md={4}>
+            </Col>
+          )}
+          
+          {hasFieldData(process.TOTAL_AMOUNT) && (
+            <Col md={6}>
               <Form.Group>
                 <Form.Label>Total Amount</Form.Label>
                 <Form.Control
                   type="number"
-                  name="TotalAmount"
                   value={formData.TotalAmount || ""}
-                  // onChange={handleChange}
                   readOnly
                   disabled
-                  isInvalid={!!errors.loc}
                 />
-                <Form.Control.Feedback type="invalid">
-                  {errors.TotalAmount}
-                </Form.Control.Feedback>
               </Form.Group>
             </Col>
-
-           
-        </Row>
-      );
-    }
-
-
-  }
-  // ✅ NEW: Add status display for Community Inspection
-  else if (processName === "community inspection") {
-    if (hasFieldData(process.STATUS)) {
-      fields.push(
-        <Row key="community-status" className="mb-2">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>STATUS</Form.Label>
-              <div>
-                <Form.Check
-                  inline
-                  label="Yes"
-                  name="status"
-                  type="radio"
-                  value="YES"
-                  checked={formData.status === "YES"}
-                  disabled
-                />
-                <Form.Check
-                  inline
-                  label="No"
-                  name="status"
-                  type="radio"
-                  value="NO"
-                  checked={formData.status === "NO"}
-                  disabled
-                />
-              </div>
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
-    
-    // Size of Connection
-    if (hasFieldData(process.SIZE_OF_CONNECTION)) {
-      fields.push(
-        <Row key="size" className="mb-2">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>Size Of Connectionajith</Form.Label>
-              <Form.Control
-                type="number"
-                value={process.SIZE_OF_CONNECTION || ""}
-                readOnly
-                disabled
-              />
-            </Form.Group>
-          </Col>
+          )}
         </Row>
       );
     }
   }
-  // ✅ NEW: Add status display for other processes
-  else {
-    if (hasFieldData(process.STATUS)) {
-      fields.push(
-        <Row key="generic-status" className="mb-2">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>STATUS</Form.Label>
-              <div>
-                <Form.Check
-                  inline
-                  label="Yes"
-                  name="status"
-                  type="radio"
-                  value="YES"
-                  checked={formData.status === "YES"}
-                  disabled
-                />
-                <Form.Check
-                  inline
-                  label="No"
-                  name="status"
-                  type="radio"
-                  value="NO"
-                  checked={formData.status === "NO"}
-                  disabled
-                />
-              </div>
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
 
-
-    if (hasFieldData(process.SIZE_OF_CONNECTION)) {
-      fields.push(
-        <Row key="size" className="mb-2">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>Size Of Connection</Form.Label>
-              <Form.Control
-                type="number"
-                value={process.SIZE_OF_CONNECTION || ""}
-                readOnly
-                disabled
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
+  // ✅ Show Size of Connection if it exists (for any step)
+  if (hasFieldData(process.SIZE_OF_CONNECTION)) {
+    fields.push(
+      <Row key="size" className="mb-2">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Size Of Connection</Form.Label>
+            <Form.Control
+              type="number"
+              value={formData.Size || ""}
+              readOnly
+              disabled
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    );
   }
 
   // Show comments if not hidden
@@ -714,7 +2150,7 @@ const renderFormFields = () => {
             <Form.Control
               as="textarea"
               rows={2}
-              value={process.COMMENTS || ""}
+              value={formData.comments || ""}
               readOnly
               disabled
             />
@@ -975,8 +2411,9 @@ const renderNextStepForm = () => {
               type="number"
               name="noOfFlats"
               value={formData.noOfFlats || ""}
-              onChange={handleChange}
-              placeholder="Enter number of flats"
+              // onChange={handleChange}
+              // placeholder="Enter number of flats"
+              disabled
               isInvalid={!!errors.noOfFlats}
             />
             <Form.Control.Feedback type="invalid">
@@ -991,8 +2428,9 @@ const renderNextStepForm = () => {
               type="text"
               name="KLD"
               value={formData.KLD || ""}
-              onChange={handleChange}
-              placeholder="Auto-calculated"
+              disabled
+              // onChange={handleChange}
+              // placeholder="Auto-calculated"
               readOnly
             />
           </Form.Group>
@@ -1004,8 +2442,9 @@ const renderNextStepForm = () => {
               type="number"
               name="amountPaid"
               value={formData.amountPaid || ""}
-              onChange={handleChange}
-              placeholder="Enter amount paid"
+              // onChange={handleChange}
+              // placeholder="Enter amount paid"
+              disabled
               isInvalid={!!errors.amountPaid}
             />
             <Form.Control.Feedback type="invalid">
@@ -1020,8 +2459,9 @@ const renderNextStepForm = () => {
               type="number"
               name="TotalProjectArea"
               value={formData.TotalProjectArea || ""}
-              onChange={handleChange}
-              placeholder="Enter total project area"
+              // onChange={handleChange}
+              // placeholder="Enter total project area"
+              disabled
               isInvalid={!!errors.TotalProjectArea}
             />
             <Form.Control.Feedback type="invalid">
@@ -1036,8 +2476,9 @@ const renderNextStepForm = () => {
               type="number"
               name="noOfTowers"
               value={formData.noOfTowers || ""}
-              onChange={handleChange}
-              placeholder="Enter number of towers"
+              disabled
+              // onChange={handleChange}
+              // placeholder="Enter number of towers"
               isInvalid={!!errors.noOfTowers}
             />
             <Form.Control.Feedback type="invalid">
@@ -1052,8 +2493,9 @@ const renderNextStepForm = () => {
               type="number"
               name="ProjectBuildArea"
               value={formData.ProjectBuildArea || ""}
-              onChange={handleChange}
-              placeholder="Enter project build area"
+              disabled
+              // onChange={handleChange}
+              // placeholder="Enter project build area"
               isInvalid={!!errors.ProjectBuildArea}
             />
             <Form.Control.Feedback type="invalid">
@@ -1245,7 +2687,6 @@ setAllStepsCompleted(false);
       //   showCancel: false,
       //   open: true
       // });
-
 
           await Swal.fire({
             icon: "success",
@@ -1550,4 +2991,5 @@ setAllStepsCompleted(false);
 };
 
 export default WaterUpdateTable;
+
 

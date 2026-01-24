@@ -801,34 +801,47 @@ return { process: '-', date: '', comments: '' };
   };
 
   const downloadFirstTableAsExcel = () => {
-    let csvContent = '';
+  let csvContent = '';
 
-    const headers = ['S.No', 'PLANTS', ...processes.map(p => `${p} (Status)`), ...processes.map(p => `${p} (Date)`), ...processes.map(p => `${p} (Comments)`)];
-    csvContent += headers.join(',') + '\n';
+  // Combine status, date, and comments into one column per process
+  const headers = ['S.No', 'PLANTS', ...processes];
+  csvContent += headers.join(',') + '\n';
 
-    filteredPlants1.forEach((plant, rowIndex) => {
-      const row = [rowIndex + 1, `"${plant.plant_name || 'Unknown Plant'}"`];
+  filteredPlants1.forEach((plant, rowIndex) => {
+    const row = [rowIndex + 1, `"${plant.plant_name || 'Unknown Plant'}"`];
 
-      processes.forEach(process => {
-        const cellData = getCellData(plant.plant_name, process);
-        row.push(`"${cellData.process}"`);
-        row.push(`"${formatDate(cellData.date)}"`);
-        row.push(`"${cellData.comments}"`);
-      });
-
-      csvContent += row.join(',') + '\n';
+    processes.forEach(process => {
+      const cellData = getCellData(plant.plant_name, process);
+      
+      // Format the cell content exactly like in the table view
+      let cellContent = cellData.process || '';
+      
+      if (cellData.date && cellData.date.trim() !== '') {
+        cellContent += `\n ${formatDate(cellData.date)}`;
+      }
+      
+      if (cellData.comments && cellData.comments.trim() !== '') {
+        cellContent += `\n ${cellData.comments}`;
+      }
+      
+      // Wrap in quotes to preserve the content structure
+      row.push(`"${cellContent.replace(/"/g, '""')}"`);
     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Work_In_Progress_Plants_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    csvContent += row.join(',') + '\n';
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Work_In_Progress_Plants_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 
   const downloadSecondTableAsExcel = () => {
     let csvContent = '';
