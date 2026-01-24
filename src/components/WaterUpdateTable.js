@@ -364,162 +364,100 @@ const WaterUpdateTable = () => {
     return fieldValue !== null && fieldValue !== undefined && fieldValue !== "" && fieldValue !== 0;
   };
 
-  const renderFormFields = () => {
-    if (allStepsCompleted && !selectedProcessDetails) {
-      return (
-        <Alert variant="success" className="text-center">
+const renderFormFields = () => {
+  if (allStepsCompleted && !selectedProcessDetails) {
+    return (
+      <div className="position-relative">
+        {/* Back to Start button in top-right corner */}
+        <button 
+          onClick={() => {
+            // Reset everything to show fresh form
+            setSelectedPlant("");
+            setHeaderData(null);
+            setSelectedProcessDetails(null);
+            setImmediateNextStep(null);
+            setImmediateNextStepIndex(-1);
+            setFormData({
+              loc: "",
+              applyDate: "",
+              comments: "",
+              noOfFlats: "",
+              KLD: "",
+              amountPaid: "",
+              feasibilityDoc: null,
+              AmountPaidDoc: null,
+              status: "",
+              reason: "",
+              Ghmc: "",
+              OldAmount: "",
+              Size: "",
+              TotalAmount: "",
+              noOfTowers: "",
+              ProjectBuildArea: "",
+              TotalProjectArea: ""
+            });
+            setStoreData([]);
+            setAllStepsCompleted(false);
+          }}
+          className="position-absolute top-0 end-0 btn btn-success mt-3 me-3"
+          style={{ zIndex: 1 }}
+        >
+          <FaArrowLeft className="me-1" /> Back to Start
+        </button>
+        
+        <Alert variant="success" className="text-center pt-5">
           <FaCheckCircle size={48} className="text-success mb-3" />
           <Alert.Heading>All Steps Completed! 🎉</Alert.Heading>
           <p>All process steps for <strong>{selectedPlant}</strong> have been completed successfully.</p>
           <hr />
           <p className="mb-0">Select any completed step from the left panel to view its details.</p>
         </Alert>
-      );
-    }
-    if (!selectedProcessDetails) {
-      return renderNextStepForm();
-    }
-
-    const fields = [];
-    const process = selectedProcessDetails;
-    const processName = process.PROCESS?.toLowerCase()?.trim();
-    const isSecondStep = processName === "applied for water release";
-    const shouldHideComments = isSecondStep && process.STATUS === "NO";
-    
-    fields.push(
-      <Row key="basic" className="mb-2">
-        <Col md={6}>
-          <Form.Group>
-            <Form.Label>Plant</Form.Label>
-            <Form.Control
-              type="text"
-              value={formData.loc || ""}
-              readOnly
-            />
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group>
-            <Form.Label>Apply Date</Form.Label>
-            <Form.Control
-              type="date"
-              disabled
-              value={formData.applyDate || ""}
-              readOnly
-            />
-          </Form.Group>
-        </Col>
-      </Row>
+      </div>
     );
+  
+  }
+  if (!selectedProcessDetails) {
+    return renderNextStepForm();
+  }
 
-    if (!shouldHideComments && hasFieldData(process.COMMENTS)) {
+  const fields = [];
+  const process = selectedProcessDetails;
+  const processName = process.PROCESS?.toLowerCase()?.trim();
+  const isSecondStep = processName === "applied for water release";
+  const shouldHideComments = isSecondStep && process.STATUS === "NO";
+  
+  fields.push(
+    <Row key="basic" className="mb-2">
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label>Plant</Form.Label>
+          <Form.Control
+            type="text"
+            value={formData.loc || ""}
+            readOnly
+          />
+        </Form.Group>
+      </Col>
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label>Apply Date</Form.Label>
+          <Form.Control
+            type="date"
+            disabled
+            value={formData.applyDate || ""}
+            readOnly
+          />
+        </Form.Group>
+      </Col>
+    </Row>
+  );
+
+  // ✅ NEW: Add status display for Contractor Work Status
+  if (processName === "contractor work status") {
+    if (hasFieldData(process.STATUS)) {
       fields.push(
-        <Row key="comments" className="mb-3">
+        <Row key="contractor-status" className="mb-2">
           <Col md={12}>
-            <Form.Group>
-              <Form.Label>Comments</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                value={process.COMMENTS || ""}
-                readOnly
-                disabled
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
-
-    if (processName === "application filling") {
-      if (hasFieldData(process.NO_OF_FLATS) || hasFieldData(process.KLD) || hasFieldData(process.AMOUNT_PAID)) {
-        fields.push(
-          <Row key="application-fields" className="mb-3">
-            {hasFieldData(process.NO_OF_FLATS) && (
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Number of Flats</Form.Label>
-                  <Form.Control
-                    type="number"
-                    disabled
-                    value={process.NO_OF_FLATS || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            )}
-            {hasFieldData(process.KLD) && (
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>KLD</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={process.KLD || ""}
-                    readOnly
-                    disabled
-                  />
-                </Form.Group>
-              </Col>
-            )}
-            {hasFieldData(process.AMOUNT_PAID) && (
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Remaning Paid</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={process.AMOUNT_PAID || ""}
-                    readOnly
-                    disabled
-                  />
-                </Form.Group>
-              </Col>
-            )}
-            {hasFieldData(process.TOTAL_PROJECT_AREA) && (
-              <Col className="m-6" md={4}>
-                <Form.Group>
-                  <Form.Label>Total Project Area</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={process.TOTAL_PROJECT_AREA || ""}
-                    readOnly
-                    disabled
-                  />
-                </Form.Group>
-              </Col>
-            )}
-            {hasFieldData(process.NUMBER_OF_TOWERS) && (
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Number Of Towers</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={process.NUMBER_OF_TOWERS || ""}
-                    readOnly
-                    disabled
-                  />
-                </Form.Group>
-              </Col>
-            )}
-            {hasFieldData(process.PROJECT_BUILD_AREA) && (
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Project Build Area</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={process.PROJECT_BUILD_AREA || ""}
-                    readOnly
-                    disabled
-                  />
-                </Form.Group>
-              </Col>
-            )}
-          </Row>
-        );
-      }
-    } else if (processName === "applied for water release") {
-      if(hasFieldData(process.STATUS)) {
-        fields.push(
-          <Row key="size" className="mb-2">
             <Form.Group>
               <Form.Label>STATUS</Form.Label>
               <div>
@@ -543,193 +481,105 @@ const WaterUpdateTable = () => {
                 />
               </div>
             </Form.Group>
-          </Row>
-        )
-      }
-
-      if (hasFieldData(process.OLD_AMOUNT) || hasFieldData(process.TOTAL_AMOUNT)) {
-        fields.push(
-          <Row key="payment-fields" className="mb-2">
-            {hasFieldData(process.OLD_AMOUNT) && (
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Remaining Paid</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={process.OLD_AMOUNT || ""}
-                    readOnly
-                    disabled
-                  />
-                </Form.Group>
-              </Col>
-            )}
-            {hasFieldData(process.TOTAL_AMOUNT) && (
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Total Amount</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={process.TOTAL_AMOUNT || ""}
-                    readOnly
-                    disabled
-                  />
-                </Form.Group>
-              </Col>
-            )}
-          </Row>
-        );
-      }
-    } else if (processName === "community inspection") {
-      if (hasFieldData(process.SIZE_OF_CONNECTION)) {
-        fields.push(
-          <Row key="size" className="mb-2">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>Size Of Connection</Form.Label>
-                <Form.Control
-                  type="number"
-                  value={process.SIZE_OF_CONNECTION || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        );
-      }
-    } else {
-      if (hasFieldData(process.GHMC)) {
-        fields.push(
-          <Row key="ghmc" className="mb-2">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>GHMC</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={process.GHMC || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        );
-      }
-
-      if (hasFieldData(process.SIZE_OF_CONNECTION)) {
-        fields.push(
-          <Row key="size" className="mb-2">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>Size Of Connection</Form.Label>
-                <Form.Control
-                  type="number"
-                  value={process.SIZE_OF_CONNECTION || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        );
-      }
+          </Col>
+        </Row>
+      );
     }
-
-    if (formData.status === "NO" && hasFieldData(process.REASON)) {
+  }
+  
+  // ✅ NEW: Add status display for Water Released
+  else if (processName === "water released") {
+    if (hasFieldData(process.STATUS)) {
       fields.push(
-        <Row key="reason" className="mb-2">
+        <Row key="water-released-status" className="mb-2">
           <Col md={12}>
             <Form.Group>
-              <Form.Label>Reason</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                value={formData.reason || ""}
-                readOnly
-                disabled
-              />
+              <Form.Label>STATUS</Form.Label>
+              <div>
+                <Form.Check
+                  inline
+                  label="Yes"
+                  name="status"
+                  type="radio"
+                  value="YES"
+                  checked={formData.status === "YES"}
+                  disabled
+                />
+                <Form.Check
+                  inline
+                  label="No"
+                  name="status"
+                  type="radio"
+                  value="NO"
+                  checked={formData.status === "NO"}
+                  disabled
+                />
+              </div>
             </Form.Group>
           </Col>
         </Row>
       );
     }
+  }
+  // ✅ NEW: Add status display for Applied For Water Release
+  else if (processName === "applied for water release") {
+    if (hasFieldData(process.STATUS)) {
+      fields.push(
+        <Row key="water-release-status" className="mb-2">
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>STATUS</Form.Label>
+              <div>
+                <Form.Check
+                  inline
+                  label="Yes"
+                  name="status"
+                  type="radio"
+                  value="YES"
+                  checked={formData.status === "YES"}
+                  disabled
+                />
+                <Form.Check
+                  inline
+                  label="No"
+                  name="status"
+                  type="radio"
+                  value="NO"
+                  checked={formData.status === "NO"}
+                  disabled
+                />
+              </div>
+            </Form.Group>
 
-    return fields;
-  };
+            
+          </Col>
+      <Col md={4}>
 
-  const renderNextStepForm = () => {
-    const fields = [];
-
-    fields.push(
-      <Row key="basic" className="mb-2">
-        <Col md={6}>
           <Form.Group>
-            <Form.Label>Plant</Form.Label>
-            <Form.Select
-              name="loc"
-              value={formData.loc || ""}
-              onChange={handleChange}
-              isInvalid={!!errors.loc}
-            >
-              <option value="">Select Plant</option>
-              {loc.map((ele, index) => (
-                <option key={index} value={ele.loc}>
-                  {ele.loc}
-                </option>
-              ))}
-            </Form.Select>
-            <Form.Control.Feedback type="invalid">
-              {errors.loc}
-            </Form.Control.Feedback>
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group>
-            <Form.Label>Apply Date</Form.Label>
-            <Form.Control
-              type="date"
-              name="applyDate"
-              value={formData.applyDate || ""}
-              onChange={handleChange}
-              max={new Date().toISOString().split("T")[0]}
-              isInvalid={!!errors.applyDate}
-            />
-            <Form.Control.Feedback type="invalid">
-              {errors.applyDate}
-            </Form.Control.Feedback>
-          </Form.Group>
-        </Col>
-      </Row>
-    );
-
-    if (!isFirstProcess) {
-      if (immediateNextStepIndex === 1) {
-        fields.push(
-          <Row key="amounts" className="mb-2">
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label>Remaining Paid</Form.Label>
+                <Form.Label>Remaining Paid33333</Form.Label>
                 <Form.Control
                   type="number"
                   name="OldAmount"
                   value={formData.OldAmount || ""}
-                  onChange={handleChange}
-                  isInvalid={!!errors.loc}
+                  // onChange={handleChange}
+                  // isInvalid={!!errors.loc}
                   disabled
+                  readOnly
                 />
                 <Form.Control.Feedback type="invalid">
                   {errors.OldAmount}
                 </Form.Control.Feedback>
               </Form.Group>
-            </Col>
-            <Col md={6}>
+      </Col>
+
+     <Col md={4}>
               <Form.Group>
                 <Form.Label>Total Amount</Form.Label>
                 <Form.Control
                   type="number"
                   name="TotalAmount"
                   value={formData.TotalAmount || ""}
-                  onChange={handleChange}
+                  // onChange={handleChange}
                   readOnly
                   disabled
                   isInvalid={!!errors.loc}
@@ -739,35 +589,258 @@ const WaterUpdateTable = () => {
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
-          </Row>
-        );
-      }
 
-      if (immediateNextStepIndex === 3) {
-        fields.push(
-          <Row key="size" className="mb-2">
+           
+        </Row>
+      );
+    }
+
+
+  }
+  // ✅ NEW: Add status display for Community Inspection
+  else if (processName === "community inspection") {
+    if (hasFieldData(process.STATUS)) {
+      fields.push(
+        <Row key="community-status" className="mb-2">
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>STATUS</Form.Label>
+              <div>
+                <Form.Check
+                  inline
+                  label="Yes"
+                  name="status"
+                  type="radio"
+                  value="YES"
+                  checked={formData.status === "YES"}
+                  disabled
+                />
+                <Form.Check
+                  inline
+                  label="No"
+                  name="status"
+                  type="radio"
+                  value="NO"
+                  checked={formData.status === "NO"}
+                  disabled
+                />
+              </div>
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
+    
+    // Size of Connection
+    if (hasFieldData(process.SIZE_OF_CONNECTION)) {
+      fields.push(
+        <Row key="size" className="mb-2">
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>Size Of Connectionajith</Form.Label>
+              <Form.Control
+                type="number"
+                value={process.SIZE_OF_CONNECTION || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
+  }
+  // ✅ NEW: Add status display for other processes
+  else {
+    if (hasFieldData(process.STATUS)) {
+      fields.push(
+        <Row key="generic-status" className="mb-2">
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>STATUS</Form.Label>
+              <div>
+                <Form.Check
+                  inline
+                  label="Yes"
+                  name="status"
+                  type="radio"
+                  value="YES"
+                  checked={formData.status === "YES"}
+                  disabled
+                />
+                <Form.Check
+                  inline
+                  label="No"
+                  name="status"
+                  type="radio"
+                  value="NO"
+                  checked={formData.status === "NO"}
+                  disabled
+                />
+              </div>
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
+
+
+    if (hasFieldData(process.SIZE_OF_CONNECTION)) {
+      fields.push(
+        <Row key="size" className="mb-2">
+          <Col md={12}>
             <Form.Group>
               <Form.Label>Size Of Connection</Form.Label>
               <Form.Control
                 type="number"
-                name="Size"
-                value={formData.Size || ""}
-                onChange={handleChange}
+                value={process.SIZE_OF_CONNECTION || ""}
+                readOnly
                 disabled
-                isInvalid={!!errors.loc}
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+      );
+    }
+  }
+
+  // Show comments if not hidden
+  if (!shouldHideComments && hasFieldData(process.COMMENTS)) {
+    fields.push(
+      <Row key="comments" className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Comments</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={process.COMMENTS || ""}
+              readOnly
+              disabled
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    );
+  }
+
+  // Show reason if status is NO
+  if (formData.status === "NO" && hasFieldData(process.REASON)) {
+    fields.push(
+      <Row key="reason" className="mb-2">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Reason</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={formData.reason || ""}
+              readOnly
+              disabled
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    );
+  }
+
+  return fields;
+};
+
+console.log(immediateNextStepIndex,"index::::::::::::::::::::::::::::");
+
+const renderNextStepForm = () => {
+  const fields = [];
+
+  fields.push(
+    <Row key="basic" className="mb-2">
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label>Plant</Form.Label>
+          <Form.Select
+            name="loc"
+            value={formData.loc || ""}
+            onChange={handleChange}
+            isInvalid={!!errors.loc}
+          >
+            <option value="">Select Plant</option>
+            {loc.map((ele, index) => (
+              <option key={index} value={ele.loc}>
+                {ele.loc}
+              </option>
+            ))}
+          </Form.Select>
+          <Form.Control.Feedback type="invalid">
+            {errors.loc}
+          </Form.Control.Feedback>
+        </Form.Group>
+      </Col>
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label>Apply Date</Form.Label>
+          <Form.Control
+            type="date"
+            name="applyDate"
+            value={formData.applyDate || ""}
+            onChange={handleChange}
+            max={new Date().toISOString().split("T")[0]}
+            isInvalid={!!errors.applyDate}
+          />
+          <Form.Control.Feedback type="invalid">
+            {errors.applyDate}
+          </Form.Control.Feedback>
+        </Form.Group>
+      </Col>
+    </Row>
+  );
+
+  if (!isFirstProcess) {
+    if (immediateNextStepIndex === 1) {
+      fields.push(
+        <Row key="amounts" className="mb-2">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Remaining Paid</Form.Label>
+              <Form.Control
+                type="number"
+                name="OldAmount"
+                value={formData.OldAmount || ""}
+            
+                disabled
+                // onChange={handleChange}
+                // isInvalid={!!errors.OldAmount}
               />
               <Form.Control.Feedback type="invalid">
-                {errors.Size}
+                {errors.OldAmount}
               </Form.Control.Feedback>
             </Form.Group>
-          </Row>
-        );
-      }
+          </Col>
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Total Amount</Form.Label>
+              <Form.Control
+                type="number"
+                name="TotalAmount"
+                value={formData.TotalAmount || ""}
+                disabled
+                // onChange={handleChange}
+                // isInvalid={!!errors.TotalAmount}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.TotalAmount}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+        </Row>
+      );
     }
+  }
 
-    if(immediateNextStepIndex === 1) {
-      fields.push(
-        <Row key="size" className="mb-2">
+  // ✅ ONLY show Status for steps that need it
+  if (immediateNextStepIndex !== 0) {
+    fields.push(
+      <Row key="status" className="mb-2">
+        <Col md={12}>
           <Form.Group>
             <Form.Label>STATUS</Form.Label>
             <div>
@@ -779,6 +852,7 @@ const WaterUpdateTable = () => {
                 value="YES"
                 checked={formData.status === "YES"}
                 disabled
+                isInvalid={!!errors.status}
               />
               <Form.Check
                 inline
@@ -787,144 +861,212 @@ const WaterUpdateTable = () => {
                 type="radio"
                 value="NO"
                 checked={formData.status === "NO"}
-                disabled
+              disabled
+                isInvalid={!!errors.status}
               />
             </div>
+            {errors.status && (
+              <div className="text-danger small mt-1">
+                {errors.status}
+              </div>
+            )}
           </Form.Group>
-        </Row>
-      )
-    }
+        </Col>
+      </Row>
+    );
+  }
 
-    if (formData.status === "YES") {
-      fields.push(
-        <Row key="comments" className="mb-3">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>Comments</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                name="comments"
-                value={formData.comments || ""}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
+  // ✅ ONLY show Size of Connection for Contractor Work Status (index 3)
+  if (immediateNextStepIndex === 3) {
+    fields.push(
+      <Row key="size" className="mb-2">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Size Of Connection</Form.Label>
+            <Form.Control
+              type="number"
+              name="Size"
+              value={formData.Size || ""}
+              onChange={handleChange}
+            disabled
+              isInvalid={!!errors.Size}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.Size}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+      </Row>
+    );
+  }
 
-    if (formData.status === "NO") {
-      fields.push(
-        <Row key="reason" className="mb-2">
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>Reason</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                name="reason"
-                value={formData.reason || ""}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
+  // ✅ REMOVE THIS DUPLICATE BLOCK - IT'S CAUSING THE FIELD TO SHOW TWICE
+  // {immediateNextStepIndex === 3 && (
+  //   <Row key="size" className="mb-2">
+  //     <Col md={12}>
+  //       <Form.Group>
+  //         <Form.Label>Size Of Connectionajith</Form.Label>
+  //         <Form.Control
+  //           type="number"
+  //           value={formData.Size || ""}
+  //           readOnly
+  //           disabled
+  //         />
+  //       </Form.Group>
+  //     </Col>
+  //   </Row>
+  // )}
 
-    if (isFirstProcess) {
-      fields.push(
-        <Row key="flats-info" className="mb-3">
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>Number of Flats</Form.Label>
-              <Form.Control
-                type="number"
-                name="noOfFlats"
-                value={formData.noOfFlats || ""}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>KLD</Form.Label>
-              <Form.Control
-                type="text"
-                name="KLD"
-                readOnly
-                value={formData.KLD || ""}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>Remaining Paid</Form.Label>
-              <Form.Control
-                type="number"
-                name="amountPaid"
-                value={formData.amountPaid || ""}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4} className="mt-3">
-            <Form.Group>
-              <Form.Label>Total Project Area</Form.Label>
-              <Form.Control
-                type="number"
-                name="TotalProjectArea"
-                value={formData.TotalProjectArea || ""}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4} className="mt-3">
-            <Form.Group>
-              <Form.Label>Number Of Towers</Form.Label>
-              <Form.Control
-                type="number"
-                name="noOfTowers"
-                value={formData.noOfTowers}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4} className="mt-3">
-            <Form.Group>
-              <Form.Label>Project Build Area</Form.Label>
-              <Form.Control
-                type="number"
-                name="ProjectBuildArea"
-                value={formData.ProjectBuildArea}
-                disabled
-                isInvalid={!!errors.loc}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-      );
-    }
+  // ✅ Show Comments/Reason based on Status
+  if (formData.status === "YES") {
+    fields.push(
+      <Row key="comments" className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Comments</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              name="comments"
+              value={formData.comments || ""}
+             disabled
+             
+              isInvalid={!!errors.comments}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.comments}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+      </Row>
+    );
+  }
 
-    return fields;
-  };
+  if (formData.status === "NO") {
+    fields.push(
+      <Row key="reason" className="mb-2">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label>Reason</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              name="reason"
+              value={formData.reason || ""}
+             disabled
+              isInvalid={!!errors.reason}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.reason}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+      </Row>
+    );
+  }
+
+  if (isFirstProcess) {
+    fields.push(
+      <Row key="flats-info" className="mb-3">
+        <Col md={4}>
+          <Form.Group>
+            <Form.Label>Number of Flats</Form.Label>
+            <Form.Control
+              type="number"
+              name="noOfFlats"
+              value={formData.noOfFlats || ""}
+              onChange={handleChange}
+              placeholder="Enter number of flats"
+              isInvalid={!!errors.noOfFlats}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.noOfFlats}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+        <Col md={4}>
+          <Form.Group>
+            <Form.Label>KLD</Form.Label>
+            <Form.Control
+              type="text"
+              name="KLD"
+              value={formData.KLD || ""}
+              onChange={handleChange}
+              placeholder="Auto-calculated"
+              readOnly
+            />
+          </Form.Group>
+        </Col>
+        <Col md={4}>
+          <Form.Group>
+            <Form.Label>Amount Paid</Form.Label>
+            <Form.Control
+              type="number"
+              name="amountPaid"
+              value={formData.amountPaid || ""}
+              onChange={handleChange}
+              placeholder="Enter amount paid"
+              isInvalid={!!errors.amountPaid}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.amountPaid}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+        <Col md={4} className="mt-3">
+          <Form.Group>
+            <Form.Label>Total Project Area</Form.Label>
+            <Form.Control
+              type="number"
+              name="TotalProjectArea"
+              value={formData.TotalProjectArea || ""}
+              onChange={handleChange}
+              placeholder="Enter total project area"
+              isInvalid={!!errors.TotalProjectArea}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.TotalProjectArea}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+        <Col md={4} className="mt-3">
+          <Form.Group>
+            <Form.Label>Number Of Towers</Form.Label>
+            <Form.Control
+              type="number"
+              name="noOfTowers"
+              value={formData.noOfTowers || ""}
+              onChange={handleChange}
+              placeholder="Enter number of towers"
+              isInvalid={!!errors.noOfTowers}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.noOfTowers}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+        <Col md={4} className="mt-3">
+          <Form.Group>
+            <Form.Label>Project Build Area</Form.Label>
+            <Form.Control
+              type="number"
+              name="ProjectBuildArea"
+              value={formData.ProjectBuildArea || ""}
+              onChange={handleChange}
+              placeholder="Enter project build area"
+              isInvalid={!!errors.ProjectBuildArea}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors.ProjectBuildArea}
+            </Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+      </Row>
+    );
+  }
+
+  return fields;
+};
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
@@ -1242,59 +1384,60 @@ setAllStepsCompleted(false);
         Next Step: {immediateNextStep.PROCESS}
       </h4>
     ) : allStepsCompleted ? (
-      <div className="p-4 shadow-sm text-center border-0 bg-light position-relative">
-        {/* Back Button in top right corner */}
-        <button 
-          onClick={() => {
-            // Reset everything to show fresh form
-            setSelectedPlant("");
-            setHeaderData(null);
-            setSelectedProcessDetails(null);
-            setImmediateNextStep(null);
-            setImmediateNextStepIndex(-1);
-            setFormData({
-              loc: "",
-              applyDate: "",
-              comments: "",
-              noOfFlats: "",
-              KLD: "",
-              amountPaid: "",
-              feasibilityDoc: null,
-              AmountPaidDoc: null,
-              status: "",
-              reason: "",
-              Ghmc: "",
-              OldAmount: "",
-              Size: "",
-              TotalAmount: "",
-              noOfTowers: "",
-              ProjectBuildArea: "",
-              TotalProjectArea: ""
-            });
-            setStoreData([]);
-            setAllStepsCompleted(false);
-          }}
-          className="position-absolute top-0 end-0 btn btn-success mt-0 me-0"
-        >
-          <FaArrowLeft className="me-1" /> Back to Start
-        </button>
+      ""
+      // <div className="p-4 shadow-sm text-center border-0 bg-light position-relative">
+      //   {/* Back Button in top right corner */}
+      //   <button 
+      //     onClick={() => {
+      //       // Reset everything to show fresh form
+      //       setSelectedPlant("");
+      //       setHeaderData(null);
+      //       setSelectedProcessDetails(null);
+      //       setImmediateNextStep(null);
+      //       setImmediateNextStepIndex(-1);
+      //       setFormData({
+      //         loc: "",
+      //         applyDate: "",
+      //         comments: "",
+      //         noOfFlats: "",
+      //         KLD: "",
+      //         amountPaid: "",
+      //         feasibilityDoc: null,
+      //         AmountPaidDoc: null,
+      //         status: "",
+      //         reason: "",
+      //         Ghmc: "",
+      //         OldAmount: "",
+      //         Size: "",
+      //         TotalAmount: "",
+      //         noOfTowers: "",
+      //         ProjectBuildArea: "",
+      //         TotalProjectArea: ""
+      //       });
+      //       setStoreData([]);
+      //       setAllStepsCompleted(false);
+      //     }}
+      //     className="position-absolute top-0 end-0 btn btn-success mt-0 me-0"
+      //   >
+      //     <FaArrowLeft className="me-1" /> Back to Start
+      //   </button>
         
-        <FaCheckCircle size={64} className="text-success mb-3" />
-        <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-        <h5 className="text-muted mb-4">
-          All process steps have been completed successfully!
-        </h5>
-        <Alert variant="success">
-          <Alert.Heading>All Steps Completed!</Alert.Heading>
-          <p>
-            All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
-          </p>
-          <hr />
-          <p className="mb-0">
-            Click on any completed step above to view its details or click Back button to start fresh.
-          </p>
-        </Alert>
-      </div>
+      //   <FaCheckCircle size={64} className="text-success mb-3" />
+      //   <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+      //   <h5 className="text-muted mb-4">
+      //     All process steps have been completed successfully!
+      //   </h5>
+      //   <Alert variant="success">
+      //     <Alert.Heading>All Steps Completed!</Alert.Heading>
+      //     <p>
+      //       All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
+      //     </p>
+      //     <hr />
+      //     <p className="mb-0">
+      //       Click on any completed step above to view its details or click Back button to start fresh.
+      //     </p>
+      //   </Alert>
+      // </div>
     ) : null}
 
     {renderFormFields()}

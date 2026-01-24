@@ -1288,14 +1288,14 @@ const fetchPlantData = async (plant) => {
                     )} (Completed)
                     </h4>
 
-                       {selectedProcessDetails.PROCESS === "NOC Received or Not" && (
+                       {/* {selectedProcessDetails.PROCESS === "NOC Received or Not" && (
       <div className="mb-2">
         <strong>Status: </strong>
         <span className={selectedProcessDetails.STATUS === "YES" ? "text-success" : "text-danger"}>
           {selectedProcessDetails.STATUS === "YES" ? "✅ Yes" : "❌ No"}
         </span>
       </div>
-    )}
+    )} */}
                     <Button
                       variant="outline-primary"
                       size="sm"
@@ -1491,73 +1491,47 @@ const fetchPlantData = async (plant) => {
                       </p>
                     </Col>
 
-                 <Row className="mt-2 align-items-end">
-  {/* ✅ Show ONLY for "NOC Received or Not" step - be specific about which step */}
-  {((immediateNextStep?.PROCESS === "NOC Received or Not") || 
-    (selectedProcessDetails?.PROCESS === "NOC Received or Not")) && (
-    <>
-      <Col md={6} className="mb-2">
-        <Form.Group>
-          <Form.Label>Status</Form.Label>
-          
-          {/* Determine which STATUS value to show */}
-          {selectedProcessDetails ? (
-            // ✅ Viewing completed "NOC Received or Not" step
+<Row className="mt-2 align-items-end">
+  {(() => {
+    // Get current process name (from immediateNextStep if available)
+    const currentProcessName = selectedProcessDetails?.PROCESS?.toLowerCase();
+    
+  
+    if (currentProcessName === "noc received or not") {
+      return (
+        <Col md={6} className="mb-2">
+          <Form.Group>
+            <Form.Label>Status</Form.Label>
             <div className="d-flex align-items-center gap-3">
               <Form.Check
                 inline
                 label="Yes"
                 name="STATUS"
                 type="radio"
-                value="YES"
-                checked={selectedProcessDetails.STATUS === "YES"}
-                disabled
-                readOnly
-                className="mb-0"
-              />
-              <Form.Check
-                inline
-                label="No"
-                name="STATUS"
-                type="radio"
-                value="NO"
-                checked={selectedProcessDetails.STATUS === "NO"}
-                disabled
-                readOnly
-                className="mb-0"
-              />
-            </div>
-          ) : immediateNextStep?.PROCESS === "NOC Received or Not" ? (
-            // ✅ Current "NOC Received or Not" step (not viewing completed)
-            <div className="d-flex align-items-center gap-3">
-              <Form.Check
-                inline
-                label="Yes"
-                name="STATUS"
-                type="radio"
+                id="status-yes"
                 value="YES"
                 checked={formData.STATUS === "YES"}
-                disabled={!formData.plant}
-                onChange={handleChange}
-                className="mb-0"
+                disabled
+                // onChange={handleChange}
               />
               <Form.Check
                 inline
                 label="No"
                 name="STATUS"
                 type="radio"
+                id="status-no"
                 value="NO"
                 checked={formData.STATUS === "NO"}
-                disabled={!formData.plant}
-                onChange={handleChange}
-                className="mb-0"
+                   disabled
+                // onChange={handleChange}
               />
             </div>
-          ) : null}
-        </Form.Group>
-      </Col>
-    </>
-  )}
+          </Form.Group>
+        </Col>
+      );
+    }
+    return null;
+  })()}
 </Row>
                   </Row>
                 </div>

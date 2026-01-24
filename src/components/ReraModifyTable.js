@@ -1616,6 +1616,9 @@ const renderCompletedProcessFields = () => {
 
 // Function to render fields for next step (original renderNextStepForm logic)
 const renderNextStepFields = () => {
+   const hasProcess3Data = storeData.some(
+    item => immediateNextStepIndex === 2 && item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim()
+  );
   return (
     <>
       <Row className="mb-3">
@@ -1637,7 +1640,7 @@ const renderNextStepFields = () => {
           </Form.Group>
         </Col>
         
-        {immediateNextStepIndex === 2 ? (
+      {immediateNextStepIndex === 2 ? (
           <>
             <Col md={3}>
               <Form.Group>
@@ -1651,10 +1654,18 @@ const renderNextStepFields = () => {
                   onChange={handleChange}
                   isInvalid={!!errors.fromDate}
                   max={new Date().toISOString().split("T")[0]}
+                  disabled={hasProcess3Data}
+                  style={{
+                    backgroundColor: hasProcess3Data ? "#e9ecef" : "white",
+                    cursor: hasProcess3Data ? "not-allowed" : "text"
+                  }}
                 />
                 <Form.Control.Feedback type="invalid">
                   {errors.fromDate}
                 </Form.Control.Feedback>
+                {hasProcess3Data && (
+                 ""
+                )}
               </Form.Group>
             </Col>
             <Col md={3}>
@@ -1668,6 +1679,11 @@ const renderNextStepFields = () => {
                   value={formData.toDate || ""}
                   onChange={handleChange}
                   isInvalid={!!errors.toDate}
+                  disabled={hasProcess3Data}
+                  style={{
+                    backgroundColor: hasProcess3Data ? "#e9ecef" : "white",
+                    cursor: hasProcess3Data ? "not-allowed" : "text"
+                  }}
                 />
                 <Form.Control.Feedback type="invalid">
                   {errors.toDate}

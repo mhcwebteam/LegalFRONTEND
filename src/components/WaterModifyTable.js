@@ -73,7 +73,7 @@ const WaterModifyTable = () => {
   const [isFirstProcess, setIsFirstProcess] = useState(true);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState([]);
-  
+
   // Added on 24-12-2025 by rajakumari.m - State to store selected process details for viewing historical data
   const [selectedProcessDetails, setSelectedProcessDetails] = useState(null);
 
@@ -182,41 +182,25 @@ const WaterModifyTable = () => {
   );
 };
 
-  // Open email modal
-  // const handleEmailSubmit = () => {
-  //   const newErrors = {};
-  //   if (!formData.loc) newErrors.loc = "Plant selection is required";
-  //   if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+  
 
-  //   if (formData.status === "YES" && !formData.comments) {
-  //     newErrors.comments = "Comments are required";
-  //   }
-
-  //   // Reason is required when status is "NO"
-  //   if (formData.status === "NO" && !formData.reason) {
-  //     newErrors.reason = "Reason is required";
-  //   }
-
-  //   if (!validateDocuments()) {
-  //     // Errors already set in validateDocuments function
-  //     return false;
-  //   }
-
-
-  //   if (Object.keys(newErrors).length > 0) {
-  //     setErrors(newErrors);
-  //     return;
-  //   }
-
-  //   setErrors({});
-  //   setShowEmailModal(true);
-  // };
-  // added on 4-1-2026 by rajakumari.m----------------------------------------------------
-  // Open email modal
 const handleEmailSubmit = () => {
   const newErrors = {};
   if (!formData.loc) newErrors.loc = "Plant selection is required";
   if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+
+  if (immediateNextStepIndex === 1) {
+    if (!formData.OldAmount) newErrors.OldAmount = "Remaining paid amount is required";
+  }
+
+    if (immediateNextStepIndex === 3) {
+    if (!formData.Size) newErrors.Size = " size of connection required";
+  }
+
+
+    
+
+  // if(!formData.amountPaid) 
 
   if (formData.status === "YES" && !formData.comments) {
     newErrors.comments = "Comments are required";
@@ -433,7 +417,7 @@ const handleEmailSelectionSubmit = async (emails) => {
         noOfFlats: details?.NUMBER_OF_FLATS || "",
         KLD: details?.KLD || "",
         amountPaid: details?.AMOUNT_PAID || "",
-        Ghmc: details?.GHMC || "",
+        Ghmc: details?.GHMC || "YES",
         OldAmount: details?.OLD_AMOUNT || "",
         Size: details?.SIZE_OF_CONNECTION || "",
         TotalAmount: details?.TOTAL_AMOUNT || "",
@@ -452,7 +436,7 @@ const handleEmailSelectionSubmit = async (emails) => {
         noOfFlats: "",
         KLD: "",
         amountPaid: "",
-        Ghmc: "",
+        Ghmc: formData.Ghmc || "YES",
         OldAmount: "",
         Size: "",
         TotalAmount: "",
@@ -473,15 +457,55 @@ const handleEmailSelectionSubmit = async (emails) => {
   const renderFormFields = () => {
     // Show completion message if all steps are done and no specific process is selected
     if (allStepsCompleted && !selectedProcessDetails) {
-      return (
-        <Alert variant="success" className="text-center">
+        return (
+      <div className="position-relative">
+        {/* Back to Start button in top-right corner */}
+        <button 
+          onClick={() => {
+            // Reset everything to show fresh form
+            setSelectedPlant("");
+            setHeaderData(null);
+            setSelectedProcessDetails(null);
+            setImmediateNextStep(null);
+            setImmediateNextStepIndex(-1);
+            setFormData({
+              loc: "",
+              applyDate: "",
+              comments: "",
+              noOfFlats: "",
+              KLD: "",
+              amountPaid: "",
+              feasibilityDoc: null,
+              AmountPaidDoc: null,
+              status: "",
+              reason: "",
+              Ghmc: "",
+              OldAmount: "",
+              Size: "",
+              TotalAmount: "",
+              noOfTowers: "",
+              ProjectBuildArea: "",
+              TotalProjectArea: ""
+            });
+            setStoreData([]);
+            setAllStepsCompleted(false);
+          }}
+          className="position-absolute top-0 end-0 btn btn-success mt-3 me-3"
+          style={{ zIndex: 1 }}
+        >
+          <FaArrowLeft className="me-1" /> Back to Start
+        </button>
+        
+        <Alert variant="success" className="text-center pt-5">
           <FaCheckCircle size={48} className="text-success mb-3" />
           <Alert.Heading>All Steps Completed! 🎉</Alert.Heading>
           <p>All process steps for <strong>{selectedPlant}</strong> have been completed successfully.</p>
           <hr />
           <p className="mb-0">Select any completed step from the left panel to view its details.</p>
         </Alert>
-      );
+      </div>
+    );
+  
     }
 
     // If no process is selected, render the next step form
@@ -524,8 +548,10 @@ const handleEmailSelectionSubmit = async (emails) => {
     // Determine which fields to show based on the specific process
     const processName = process.PROCESS?.toLowerCase()?.trim();
 
+    console.log(processName,"nameeeeeeeeeeee");
+
     // Application Filling process fields
-    if (processName === "application filling") {
+    if (processName === "application filing") {
       if (hasFieldData(process.NO_OF_FLATS) || hasFieldData(process.KLD) || hasFieldData(process.AMOUNT_PAID)) {
         fields.push(
           <Row key="application-fields" className="mb-3">
@@ -607,48 +633,67 @@ const handleEmailSelectionSubmit = async (emails) => {
                 </Form.Group>
               </Col>
             )}
+
+
+             {hasFieldData(process.COMMENTS) && (
+              <Col md={4} className="mt-3">
+           <Form.Group>
+              <Form.Label>Comments</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={process.COMMENTS || ""}
+                readOnly
+                disabled
+              />
+            </Form.Group>
+              </Col>
+            )}
           </Row>
         );
       }
-
-      // if (hasFieldData(process.COMMENTS)) {
-      //   fields.push(
-      //     <Row key="application-comments" className="mb-3">
-      //       <Col md={12}>
-      //         <Form.Group>
-      //           <Form.Label>Comments</Form.Label>
-      //           <Form.Control
-      //             as="textarea"
-      //             rows={2}
-      //             value={process.COMMENTS || ""}
-      //             readOnly
-      //             disabled
-      //           />
-      //         </Form.Group>
-      //       </Col>
-      //     </Row>
-      //   );
-      // }
     }
     // Applied For Water Release process fields  
-    else if (processName === "applied for water release") {
-      if (hasFieldData(process.GHMC)) {
+    else if (processName === "applied for water release" || "community inspection" || "contractor work status" || "" ) {
+  
         fields.push(
           <Row key="ghmc" className="mb-2">
             <Col md={6}>
-              <Form.Group>
-                <Form.Label>GHMC</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={process.GHMC || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
+       <Form.Group>
+                    <Form.Label>STATUS</Form.Label>
+                     <div>
+                      <Form.Check
+                        inline
+                        label="Yes"
+                        name="status"
+                        type="radio"
+                        value="YES"
+                        checked={formData.status === "YES"}
+                        disabled
+                    
+                      />
+                      <Form.Check
+                        inline
+                        label="No"
+                        name="status"
+                        type="radio"
+                        value="NO"
+                        checked={formData.status === "NO"}
+                        disabled
+                
+                      />
+                    </div>
+                  </Form.Group>
             </Col>
+            
           </Row>
         );
-      }
+
+
+    
+
+     
+      
 
       if (hasFieldData(process.OLD_AMOUNT) || hasFieldData(process.TOTAL_AMOUNT)) {
         fields.push(
@@ -684,25 +729,7 @@ const handleEmailSelectionSubmit = async (emails) => {
       }
     }
     // Community Inspection process fields
-    else if (processName === "community inspection") {
-      if (hasFieldData(process.SIZE_OF_CONNECTION)) {
-        fields.push(
-          <Row key="size" className="mb-2">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>Size Of Connection</Form.Label>
-                <Form.Control
-                  type="number"
-                  value={process.SIZE_OF_CONNECTION || ""}
-                  readOnly
-                  disabled
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        );
-      }
-    }
+
     // Other processes
     else {
       if (hasFieldData(process.GHMC)) {
@@ -780,6 +807,27 @@ const handleEmailSelectionSubmit = async (emails) => {
           </Col>
         </Row>
       );
+    }
+
+
+        else if (processName === "contractor allocation") {
+    
+        fields.push(
+          <Row key="size" className="mb-2">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label>Size Of Connection</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={process.SIZE_OF_CONNECTION || ""}
+                  readOnly
+                  disabled
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        );
+      
     }
 
     return fields;
@@ -902,7 +950,7 @@ const handleEmailSelectionSubmit = async (emails) => {
                           value={formData.OldAmount || ""}
                           disabled={!formData.loc}
                           onChange={handleChange}
-                          isInvalid={!!errors.loc}
+                         isInvalid={!!errors.OldAmount}
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors.OldAmount}

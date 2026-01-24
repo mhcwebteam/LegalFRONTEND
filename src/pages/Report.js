@@ -73,6 +73,38 @@ const Report = () => {
     'Water': 'water_steps',
     'RERA': 'rera_steps'
   };
+  const getLatestComment = (commentsField) => {
+    if (!commentsField) return '';
+
+    // If it's already a simple string (not JSON), return it
+    if (typeof commentsField === 'string' && !commentsField.startsWith('[')) {
+      return commentsField;
+    }
+
+    try {
+      // Try to parse as JSON array
+      const commentsArray = typeof commentsField === 'string'
+        ? JSON.parse(commentsField)
+        : commentsField;
+
+      if (Array.isArray(commentsArray) && commentsArray.length > 0) {
+        // Sort by date descending to get the latest
+        const sorted = commentsArray.sort((a, b) => {
+          const dateA = new Date(a.date || 0);
+          const dateB = new Date(b.date || 0);
+          return dateB - dateA; // Latest first
+        });
+
+        // Return the latest comment
+        return sorted[0].comment || '';
+      }
+
+      return '';
+    } catch (e) {
+      // If parsing fails, return the original string
+      return commentsField;
+    }
+  };
 
   const getActiveAmendment = (plantName) => {
     const plantKey = plantName.trim().toLowerCase();
@@ -321,7 +353,9 @@ const Report = () => {
           const statusField = matchingRecord[`${amendPrefix}STATUS`];
           const updatedField = matchingRecord[`${amendPrefix}UPDATED`];
           const amendDateField = matchingRecord[`${amendPrefix}DATE`];
-          comments = matchingRecord[`${amendPrefix}COMMENTS`] || '';
+
+          // CHANGE THIS LINE - use the helper function
+          comments = getLatestComment(matchingRecord[`${amendPrefix}COMMENTS`]) || '';
 
           isCompleted = statusField !== null &&
             statusField !== undefined &&
@@ -481,8 +515,11 @@ const Report = () => {
 
       if (matchingRecord) {
         stepDate = matchingRecord.APPLY_DT || matchingRecord.applyDate || '';
-        stepComments = matchingRecord.COMMENTS || matchingRecord.Comments || '';
-
+stepComments = matchingRecord.COMMENTS || matchingRecord.Comments || '';
+// For Water process, also check REASON field
+if (processName === 'Water' && !stepComments && matchingRecord.REASON) {
+  stepComments = matchingRecord.REASON;
+}
         // For Fire process, check the appropriate field based on step type
         let updatedField;
         if (processName === 'Fire' && step.stepType) {
@@ -599,9 +636,29 @@ const Report = () => {
       return loc && loc.trim().toLowerCase() === plantName.trim().toLowerCase();
     });
 
-    if (matchingRecords.length === 0) {
-      return { process: '-', date: '', comments: '' };
-    }
+    if (matchingRecords.length > 0) {
+  // Get the most recent record (even if not completed)
+  const mostRecentRecord = matchingRecords.sort((a, b) => {
+    const dateA = new Date(a.updated_at || a.created_at || a.APPLY_DT || 0);
+    const dateB = new Date(b.updated_at || b.created_at || b.APPLY_DT || 0);
+    return dateB - dateA;
+  })[0];
+
+  let comments = mostRecentRecord.COMMENTS || mostRecentRecord.Comments || '';
+  
+  // For Water process, also check REASON field
+  if (processName === 'Water' && !comments && mostRecentRecord.REASON) {
+    comments = mostRecentRecord.REASON;
+  }
+
+  return {
+    process: mostRecentRecord.PROCESS || mostRecentRecord.STATUS || 'PENDING',
+    date: mostRecentRecord.APPLY_DT || mostRecentRecord.applyDate || '',
+    comments: comments
+  };
+}
+
+return { process: '-', date: '', comments: '' };
 
     if (processName === 'Pollution Control Board') {
       const activeAmendment = getActiveAmendment(plantName);
@@ -623,7 +680,7 @@ const Report = () => {
           return {
             process: lastCompletedStep.stepName,
             date: lastCompletedStep.date || '',
-            comments: lastCompletedStep.comments || ''
+            comments: getLatestComment(lastCompletedStep.comments) || ''
           };
         }
 
@@ -711,24 +768,24 @@ const Report = () => {
       return false;
     });
 
-    if (completedRecords.length > 0) {
-      const latestCompletedRecord = completedRecords.sort((a, b) => {
-        const dateA = new Date(a.updated_at || a.created_at || a.APPLY_DT || 0);
-        const dateB = new Date(b.updated_at || b.created_at || b.APPLY_DT || 0);
-        return dateB - dateA;
-      })[0];
+   if (completedRecords.length > 0) {
+  const latestCompletedRecord = completedRecords.sort((a, b) => {
+    const dateA = new Date(a.updated_at || a.created_at || a.APPLY_DT || 0);
+    const dateB = new Date(b.updated_at || b.created_at || b.APPLY_DT || 0);
+    return dateB - dateA;
+  })[0];
 
-      let comments = latestCompletedRecord.COMMENTS || latestCompletedRecord.Comments || '';
-      if (processName === 'Water' && !comments && latestCompletedRecord.REASON) {
-        comments = latestCompletedRecord.REASON;
-      }
+  let comments = latestCompletedRecord.COMMENTS || latestCompletedRecord.Comments || '';
+  if (processName === 'Water' && !comments && latestCompletedRecord.REASON) {
+    comments = latestCompletedRecord.REASON;
+  }
 
-      return {
-        process: latestCompletedRecord.PROCESS || latestCompletedRecord.STATUS || 'COMPLETED',
-        date: latestCompletedRecord.APPLY_DT || latestCompletedRecord.applyDate || '',
-        comments: comments
-      };
-    }
+  return {
+    process: latestCompletedRecord.PROCESS || latestCompletedRecord.STATUS || 'COMPLETED',
+    date: latestCompletedRecord.APPLY_DT || latestCompletedRecord.applyDate || '',
+    comments: comments
+  };
+}
 
     // No completed steps found
     return { process: '-', date: '', comments: '' };
@@ -805,7 +862,7 @@ const Report = () => {
         }
       });
 
-     csvContent += row.join(',') + '\n';
+      csvContent += row.join(',') + '\n';
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
