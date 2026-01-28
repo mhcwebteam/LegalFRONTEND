@@ -142,7 +142,48 @@ const Amendment = () => {
   };
 
   const handleCreate = async () => {
-  // Validation code remains same...
+  // VALIDATION 1: Check if plant is selected
+  if (!selectedPlant) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Missing Plant Selection",
+      text: "Please select a Plant before creating an amendment.",
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  // VALIDATION 2: Check if category/status is selected based on tab
+  if (key === "Pollution Control Board" && !category) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Missing Category Selection",
+      text: "Please select a Category for Pollution Control Board.",
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  if (key === "Airport Authority" && !amendmentStatus) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Missing Amendment Status",
+      text: "Please select Amendment Status for Airport Authority.",
+      confirmButtonText: 'OK',
+    });
+    return;
+  }
+
+  // For other tabs (Fire, HMDA), add validation if needed
+  // if (key === "Fire" && !someCondition) {
+  //   await Swal.fire({
+  //     icon: "warning",
+  //     title: "Missing Information",
+  //     text: "Please provide required information for Fire tab.",
+  //     confirmButtonText: 'OK',
+  //   });
+  //   return;
+  // }
 
   // Determine current category value
   const currentCategoryValue =

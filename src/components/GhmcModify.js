@@ -112,7 +112,25 @@ const GhmcModify = () => {
 
     return steps.every((step) => completedSteps.includes(step.PROCESS));
   };
+  // Add this function after your other functions, before the return statement
+  const getCurrentHeading = () => {
+    // If we're viewing a completed step, show that with "Viewing" prefix
+    if (selectedProcessDetails) {
+      return `Viewing: ${selectedProcessDetails.PROCESS} (Completed)`;
+    }
 
+    // If we're viewing a specific step but not completed (just clicked on it)
+    if (isViewingSpecificStep && viewedStep) {
+      return `Current: ${viewedStep.PROCESS}`;
+    }
+
+    // Otherwise show the immediate next step
+    if (immediateNextStep) {
+      return immediateNextStep.PROCESS;
+    }
+
+    return "Select a Plant to begin";
+  };
   // Check login
   useEffect(() => {
     if (!token) {
@@ -133,7 +151,13 @@ const GhmcModify = () => {
   useEffect(() => {
     setHeaderData(null);
   }, [setHeaderData]);
-
+  useEffect(() => {
+    // When the immediate next step changes, reset viewing states
+    if (immediateNextStep && !isViewingSpecificStep) {
+      setCurrentProcess(immediateNextStep.PROCESS);
+      setSelectedProcessDetails(null);
+    }
+  }, [immediateNextStep, isViewingSpecificStep]);
   // Validate file type - PDF only
   const validateFileType = (file) => {
     const fileExtension = file.name
@@ -181,80 +205,88 @@ const GhmcModify = () => {
   };
 
   const renderCompletionMessage = () => {
-  return (
-    <div className="position-relative text-center p-5 pt-20">
-      {/* Back Button in top right corner */}
-      <button 
-        onClick={() => {
-          // Reset everything to show fresh form
-          setSelectedPlant("");
-          setHeaderData(null);
-          setSelectedProcessDetails(null);
-          setImmediateNextStep(null);
-          setImmediateNextStepIndex(-1);
-          setFormData({
-            loc: "",
-            applyDate: "",
-            Comments: "",
-            process: "",
-            organisation: "",
-            project_name: "",
-            location: "",
-            status: "",
-            noOfTowers: "",
-            TotalProjectArea: "",
-            ProjectBuildArea: "",
-            ProjectName: "",
-            noOfFlats: "",
-            KLD: "",
-            OldAmount: "",
-            TotalAmount: "",
-            Size: "",
-            Ghmc: "",
-          });
-          setStoreData([]);
-          setSteps([]);
-        }}
-      className="position-absolute top-0 end-0 btn btn-success mt-5 me-3" 
-      >
-        <FaArrowLeft className="me-1" /> Back to Start
-      </button>
-      
-      <FaCheckCircle size={80} className="text-success mb-4" />
-      <h2 className="text-success mb-3 fw-bold">Congratulations! 🎉</h2>
-      <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-      <Alert variant="success" className="mx-auto" style={{ maxWidth: '600px' }}>
-        <Alert.Heading>Project Completion Status</Alert.Heading>
-        <p className="mb-2">
-          All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed.
-        </p>
-        <hr />
-        <p className="mb-0">
-          The project is now ready for the next phase or final approval.
-        </p>
-      </Alert>
-    </div>
-  );
-};
+    return (
+      <div className="position-relative text-center p-5 pt-20">
+        {/* Back Button in top right corner */}
+        <button
+          onClick={() => {
+            // Reset everything to show fresh form
+            setSelectedPlant("");
+            setHeaderData(null);
+            setSelectedProcessDetails(null);
+            setImmediateNextStep(null);
+            setImmediateNextStepIndex(-1);
+            setFormData({
+              loc: "",
+              applyDate: "",
+              Comments: "",
+              process: "",
+              organisation: "",
+              project_name: "",
+              location: "",
+              status: "",
+              noOfTowers: "",
+              TotalProjectArea: "",
+              ProjectBuildArea: "",
+              ProjectName: "",
+              noOfFlats: "",
+              KLD: "",
+              OldAmount: "",
+              TotalAmount: "",
+              Size: "",
+              Ghmc: "",
+              MortgageReleased: "Yes",
+            });
+            setStoreData([]);
+            setSteps([]);
+          }}
+          className="position-absolute top-0 end-0 btn btn-success mt-5 me-3"
+        >
+          <FaArrowLeft className="me-1" /> Back to Start
+        </button>
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (selectedProcessDetails) {
-      toast.info("Viewing completed step. No updates can be made.");
-      return;
-    }
-    if (!validateForm()) {
-      if (errors.feasibilityDocs) {
-        toast.error("Please upload only PDF files");
-      } else {
-        toast.error("Please fill all required fields");
-      }
-      return;
-    }
-
-    setShowEmailModal(true);
+        <FaCheckCircle size={80} className="text-success mb-4" />
+        <h2 className="text-success mb-3 fw-bold">Congratulations! 🎉</h2>
+        <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+        <Alert variant="success" className="mx-auto" style={{ maxWidth: '600px' }}>
+          <Alert.Heading>Project Completion Status</Alert.Heading>
+          <p className="mb-2">
+            All <strong>{steps.length}</strong> steps for <strong>{selectedPlant}</strong> have been completed.
+          </p>
+          <hr />
+          <p className="mb-0">
+            The project is now ready for the next phase or final approval.
+          </p>
+        </Alert>
+      </div>
+    );
   };
 
+  const handleEmailSubmit = (e) => {
+  e.preventDefault();
+  
+  // Check if NumberOfTowers is available
+  if (!NumberOfTowers && immediateNextStepIndex === 0) {
+    toast.error("Number of Towers information is not available. Please select a plant with valid data.");
+    return;
+  }
+  
+  if (selectedProcessDetails) {
+    toast.info("Viewing completed step. No updates can be made.");
+    return;
+  }
+  
+  if (!validateForm()) {
+    if (errors.feasibilityDocs) {
+      toast.error("Please upload only PDF files");
+    } else {
+      toast.error("Please fill all required fields");
+    }
+    return;
+  }
+
+  setShowEmailModal(true);
+};
   const handleEmailSelectionSubmit = async (emails) => {
     setSelectedEmails(emails);
     setShowEmailModal(false);
@@ -365,7 +397,7 @@ const GhmcModify = () => {
     let isMounted = true;
 
     if (selectedPlant) {
-      // Clear history-viewing states so form focuses on the NEW active step
+      // Clear history-viewing states so form focuses on the NEW active step process
       setNextStepDetails(null);
       setViewedStepDetails(null);
 
@@ -543,92 +575,98 @@ const GhmcModify = () => {
     }
   }, [selectedPlant, nextStepDetails, submitted, immediateNextStep]);
 
-  const handleChange = async (e) => {
-    const { name, value } = e.target;
+ const handleChange = async (e) => {
+  const { name, value } = e.target;
 
-    if (name === "loc") {
-      // 1. IMMEDIATELY CLEAR ALL STATE to prevent old data flicker
-      setSelectedPlant(value);
-      setStoreData([]);
-      setSteps([]);
-      setHeaderData(null);
-      setNextStepDetails(null);
-      setViewedStepDetails(null);
-      setSelectedProcessDetails(null);
-      setSubmitted(false);
-      setIsViewingSpecificStep(false);
-      setNextStepDetails(null);
-      setImmediateNextStepIndex(-1);
-      // Clear All Documents
-      setFeasibilityDocs([]);
+  if (name === "loc") {
+    // 1. IMMEDIATELY CLEAR ALL STATE to prevent old data flicker
+    setSelectedPlant(value);
+    setStoreData([]);
+    setSteps([]);
+    setHeaderData(null);
+    setNextStepDetails(null);
 
-      // 2. DEFINE A CLEAN EMPTY STATE
-      const emptyFormData = {
-        loc: value,
-        applyDate: "",
-        Comments: "",
-        organisation: "",
-        project_name: "",
-        location: "",
-        status: "",
-        noOfTowers: "",
-        TotalProjectArea: "",
-        ProjectBuildArea: "",
-        ProjectName: "",
-        noOfFlats: "",
-        KLD: "",
-        OldAmount: "",
-        TotalAmount: "",
-        Size: "",
-        Ghmc: "",
+    // Clear viewedStepDetails with a timestamp to force remount
+    setViewedStepDetails(prev => prev ? { ...prev, timestamp: Date.now(), _cleared: true } : null);
 
-        BG_FromDate: "",
-        BG_ToDate: "",
-        BG_Number: "",
-        CAR_FromDate: "",
-        CAR_ToDate: "",
-        CAR_Number: "",
-        PDC_Date: "",
-        PDC_Number: "",
-        MortgageReleased: "",
-      };
+    setSelectedProcessDetails(null);
+    setSubmitted(false);
+    setIsViewingSpecificStep(false);
+    setNextStepDetails(null);
+    setImmediateNextStepIndex(-1);
+    setCurrentProcess(""); // ✅ Clear currentProcess
+    setViewedStep(null); // ✅ Clear viewedStep
 
-      setFormData(emptyFormData);
+    // Clear All Documents
+    setFeasibilityDocs([]);
 
-      if (!value) return;
+    // 2. DEFINE A CLEAN EMPTY STATE
+    const emptyFormData = {
+      loc: value,
+      applyDate: "",
+      Comments: "", // 🔥 CRITICAL: Clear comments
+      organisation: "",
+      project_name: "",
+      location: "",
+      status: "",
+      noOfTowers: "", // This will be set from master data below
+      TotalProjectArea: "",
+      ProjectBuildArea: "",
+      ProjectName: "",
+      noOfFlats: "",
+      KLD: "",
+      OldAmount: "",
+      TotalAmount: "",
+      Size: "",
+      Ghmc: "",
 
-      // 3. FETCH NEW MASTER DATA
-      try {
-        const res = await getMasterByLoc(value);
-        if (res) {
-          setHeaderData(res);
-          const org = res.Organization || "GHMC";
-          setOrganizationType(org);
+      BG_FromDate: "",
+      BG_ToDate: "",
+      BG_Number: "",
+      CAR_FromDate: "",
+      CAR_ToDate: "",
+      CAR_Number: "",
+      PDC_Date: "",
+      PDC_Number: "",
+      MortgageReleased: "Yes",
+    };
 
-          setFormData((prev) => ({
-            ...emptyFormData,
-            organisation: org,
-            noOfTowers: res.NUMBER_OF_TOWERS || "",
-            TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
-            ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
-            ProjectName: res.PROJECT_NAME || "",
-            location: res.LOCATION || "",
-            status: res.STATUS || "",
-            noOfFlats: res.NUMBER_OF_FLATS || "",
-          }));
-        }
-      } catch (err) {
-        console.error("Error fetching master data:", err);
+    setFormData(emptyFormData);
+
+    if (!value) return;
+
+    // 3. FETCH NEW MASTER DATA
+    try {
+      const res = await getMasterByLoc(value);
+      if (res) {
+        setHeaderData(res);
+        const org = res.Organization || "GHMC";
+        setOrganizationType(org);
+
+        setFormData((prev) => ({
+          ...emptyFormData,
+          organisation: org,
+          noOfTowers: res.NUMBER_OF_TOWERS || "", // 🔥 Set from master data
+          TotalProjectArea: res.TOTAL_PROJECT_AREA || "",
+          ProjectBuildArea: res.PROJECT_BUILD_AREA || "",
+          ProjectName: res.PROJECT_NAME || "",
+          location: res.LOCATION || "",
+          status: res.STATUS || "",
+          noOfFlats: res.NUMBER_OF_FLATS || "",
+        }));
       }
+    } catch (err) {
+      console.error("Error fetching master data:", err);
     }
-    // ... rest of your calculations for noOfFlats / OldAmount
-    else if (name === "noOfFlats") {
-      const nocs = value ? Math.ceil(Number(value) / 2) : "";
-      setFormData((prev) => ({ ...prev, noOfFlats: value, KLD: nocs }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
+  }
+  // ... rest of your calculations for noOfFlats / OldAmount
+  else if (name === "noOfFlats") {
+    const nocs = value ? Math.ceil(Number(value) / 2) : "";
+    setFormData((prev) => ({ ...prev, noOfFlats: value, KLD: nocs }));
+  } else {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+};
 
   // updated on 26-12-2025
   const handleViewNextStep = () => {
@@ -637,6 +675,7 @@ const GhmcModify = () => {
     setViewedStep(null);
     setViewedStepDetails(null);
     setSubmitted(false);
+    setCurrentProcess("");
   };
 
   console.log("selectedProcessDetails", selectedProcessDetails);
@@ -646,6 +685,7 @@ const GhmcModify = () => {
         ...prevFormData,
         applyDate: selectedProcessDetails.applyDate,
         //   comments: selectedProcessDetails.COMMENTS || "",
+        //  Comments: "", 
       }));
 
       setFirstStep(selectedProcessDetails);
@@ -653,145 +693,170 @@ const GhmcModify = () => {
   }, [selectedProcessDetails]);
 
   const handleConfirmSubmit = async (emails) => {
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    const currentUserName = loggedInUser?.username;
-    const payload = new FormData();
+  const currentUserName = loggedInUser?.username;
+  const payload = new FormData();
 
-    // NEW: Add Fee Paid Additional Details to the payload
-    payload.append("BG_FromDate", formData.BG_FromDate || "");
-    payload.append("BG_ToDate", formData.BG_ToDate || "");
-    payload.append("BG_Number", formData.BG_Number || "");
-    payload.append("CAR_FromDate", formData.CAR_FromDate || "");
-    payload.append("CAR_ToDate", formData.CAR_ToDate || "");
-    payload.append("CAR_Number", formData.CAR_Number || "");
-    payload.append("PDC_Date", formData.PDC_Date || "");
-    payload.append("PDC_Number", formData.PDC_Number || "");
-    payload.append("MortgageReleased", formData.MortgageReleased || "");
+  // NEW: Add Fee Paid Additional Details to the payload
+  payload.append("BG_FromDate", formData.BG_FromDate || "");
+  payload.append("BG_ToDate", formData.BG_ToDate || "");
+  payload.append("BG_Number", formData.BG_Number || "");
+  payload.append("CAR_FromDate", formData.CAR_FromDate || "");
+  payload.append("CAR_ToDate", formData.CAR_ToDate || "");
+  payload.append("CAR_Number", formData.CAR_Number || "");
+  payload.append("PDC_Date", formData.PDC_Date || "");
+  payload.append("PDC_Number", formData.PDC_Number || "");
+  payload.append("MortgageReleased", formData.MortgageReleased || "");
 
-    payload.append("Organization", formData.organisation || "");
-    payload.append("project_name", formData.project_name || "");
-    payload.append("location", formData.location || "");
-    payload.append("status", formData.status || "");
+  payload.append("Organization", formData.organisation || "");
+  payload.append("project_name", formData.project_name || "");
+  payload.append("location", formData.location || "");
+  payload.append("status", formData.status || "");
 
-    // Process Specific Info
-    payload.append("loc", formData.loc);
-    payload.append("applyDate", formData.applyDate);
-    payload.append("process", immediateNextStep?.PROCESS || "");
-    payload.append("Comments", formData.Comments || "");
-    payload.append("GHMC", formData.Ghmc || "");
-    payload.append("OldAmount", formData.OldAmount || "");
-    payload.append("Size_Of_Connection", formData.Size || "");
-    payload.append("noOfFlats", formData.noOfFlats || "");
-    payload.append("totalProjectArea", formData.TotalProjectArea || "");
-    payload.append("projectBuildArea", formData.ProjectBuildArea || "");
-    payload.append("noOfTowers", formData.noOfTowers || "");
-    payload.append("TotalAmount", formData.TotalAmount || "");
-    payload.append("username", currentUserName || "");
+  // Process Specific Info
+  payload.append("loc", formData.loc);
+  payload.append("applyDate", formData.applyDate);
+  payload.append("process", immediateNextStep?.PROCESS || "");
+  payload.append("Comments", formData.Comments || "");
+  payload.append("GHMC", formData.Ghmc || "");
+  payload.append("OldAmount", formData.OldAmount || "");
+  payload.append("Size_Of_Connection", formData.Size || "");
+  payload.append("noOfFlats", formData.noOfFlats || "");
+  payload.append("totalProjectArea", formData.TotalProjectArea || "");
+  payload.append("projectBuildArea", formData.ProjectBuildArea || "");
+  
+  // 🔥 IMPORTANT CHANGE: Use NumberOfTowers from storeData instead of formData
+  payload.append("noOfTowers", NumberOfTowers || ""); // Changed from formData.noOfTowers
+  
+  payload.append("TotalAmount", formData.TotalAmount || "");
+  payload.append("username", currentUserName || "");
 
-    emails.forEach((email, i) => {
-      payload.append(`emails[${i}]`, email);
-    });
+  emails.forEach((email, i) => {
+    payload.append(`emails[${i}]`, email);
+  });
 
-    feasibilityDocs.forEach((file) => {
-      payload.append("feas_doc_name[]", file);
-    });
+  feasibilityDocs.forEach((file) => {
+    payload.append("feas_doc_name[]", file);
+  });
 
-    // 👇 ADD THIS PART TO DEBUG
   console.log("--- START PAYLOAD LOG ---");
+  console.log("Number of Towers being sent:", NumberOfTowers); // Debug log
   for (let pair of payload.entries()) {
     console.log(`${pair[0]}:`, pair[1]);
   }
   console.log("--- END PAYLOAD LOG ---");
-  
-    try {
-      const existingRecord = storeData?.find(
-        (item) =>
-          item.PROCESS?.trim().toLowerCase() ===
-            immediateNextStep?.PROCESS?.trim().toLowerCase() &&
-          item.loc?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
-      );
 
-      let apiUrl = `${API_BASE_URL}/GHMC-submit`;
-      if (existingRecord) {
-        apiUrl = `${API_BASE_URL}/GHMC-modify`;
-      }
+  try {
+    const existingRecord = storeData?.find(
+      (item) =>
+        item.PROCESS?.trim().toLowerCase() ===
+        immediateNextStep?.PROCESS?.trim().toLowerCase() &&
+        item.loc?.trim().toLowerCase() === formData.loc?.trim().toLowerCase()
+    );
 
-      const res = await axios.post(apiUrl, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      // --- TOTAL RESET LOGIC ---
-
-      // 1. Reset Global Selection States
-      setSelectedPlant(""); // CRITICAL: This clears the selection and stops flickering
-      setStoreData([]); // Clears process history
-      setSteps([]); // Clears sidebar steps
-      setHeaderData(null); // Clears top info bar
-
-      // 2. Reset Document Arrays
-      setFeasibilityDocs([]);
-      setAmountPaidDocs([]);
-      setLinkDocs([]);
-      setLandDocs([]);
-      setOthDocs([]);
-
-      // 3. Reset UI flags & Details
-      setSubmitted(false);
-      setIsViewingSpecificStep(false);
-      setNextStepDetails(null);
-      setImmediateNextStep(null);
-      setImmediateNextStepIndex(-1);
-      setSelectedProcessDetails(null);
-
-      // 4. Reset Form Object to initial empty state
-      setFormData({
-        loc: "",
-        applyDate: "",
-        Comments: "",
-        process: "",
-        organisation: "",
-        project_name: "",
-        location: "",
-        status: "",
-        noOfTowers: "",
-        TotalProjectArea: "",
-        ProjectBuildArea: "",
-        ProjectName: "",
-        noOfFlats: "",
-        KLD: "",
-        OldAmount: "",
-        TotalAmount: "",
-        Size: "",
-        Ghmc: "",
-      });
-
-      await Swal.fire({
-        icon: "success",
-        title: "Submitted!",
-        text: "Your data has been saved successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      // 6. Update context if necessary
-      if (setRespModifyData) {
-        setRespModifyData(res?.data?.data);
-      }
-    } catch (err) {
-      console.error("Submission failed:", err);
-      setDialogConfig({
-        title: "Error",
-        message:
-          "Submission failed. Please check your connection and try again.",
-        confirmText: "OK",
-        open: true,
-      });
-    } finally {
-      setIsSubmitting(false);
-      setConfirmOpen(false);
+    let apiUrl = `${API_BASE_URL}/GHMC-submit`;
+    if (existingRecord) {
+      apiUrl = `${API_BASE_URL}/GHMC-modify`;
     }
-  };
+
+    const res = await axios.post(apiUrl, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    // 🔥 SUCCESS: Show confirmation and reset EVERYTHING
+    await Swal.fire({
+      icon: "success",
+      title: "Submitted!",
+      text: "Your data has been saved successfully.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    // 🔥 CRITICAL: Clear ALL state to prevent old data from appearing
+    // 1. Clear the selected plant
+    const currentPlant = formData.loc; // Save current plant before clearing
+    setSelectedPlant(""); // This triggers the reset effects
+
+    // 2. Clear all related states
+    setStoreData([]);
+    setSteps([]);
+    setHeaderData(null);
+    setNextStepDetails(null);
+    setViewedStepDetails(null);
+    setSelectedProcessDetails(null);
+    setSubmitted(false);
+    setIsViewingSpecificStep(false);
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setCurrentProcess("");
+    setViewedStep(null);
+
+    // 3. Clear all documents
+    setFeasibilityDocs([]);
+    setAmountPaidDocs([]);
+    setLinkDocs([]);
+    setLandDocs([]);
+    setOthDocs([]);
+
+    // 4. Reset form data completely
+    setFormData({
+      loc: "",
+      applyDate: "",
+      Comments: "", 
+      process: "",
+      organisation: "",
+      project_name: "",
+      location: "",
+      status: "",
+      noOfTowers: "",
+      TotalProjectArea: "",
+      ProjectBuildArea: "",
+      ProjectName: "",
+      noOfFlats: "",
+      KLD: "",
+      OldAmount: "",
+      TotalAmount: "",
+      Size: "",
+      Ghmc: "",
+      BG_FromDate: "",
+      BG_ToDate: "",
+      BG_Number: "",
+      CAR_FromDate: "",
+      CAR_ToDate: "",
+      CAR_Number: "",
+      PDC_Date: "",
+      PDC_Number: "",
+      MortgageReleased: "Yes",
+    });
+
+    // 5. Update context if necessary
+    if (setRespModifyData) {
+      setRespModifyData(res?.data?.data);
+    }
+
+    // 🔥 OPTIONAL: Automatically re-select the same plant for convenience
+    // If you want the user to stay on the same plant, uncomment this:
+    // setTimeout(() => {
+    //   if (currentPlant) {
+    //     setSelectedPlant(currentPlant);
+    //   }
+    // }, 100);
+
+  } catch (err) {
+    console.error("Submission failed:", err);
+    setDialogConfig({
+      title: "Error",
+      message:
+        "Submission failed. Please check your connection and try again.",
+      confirmText: "OK",
+      open: true,
+    });
+  } finally {
+    setIsSubmitting(false);
+    setConfirmOpen(false);
+  }
+};
   const isProcessCompleted = (processName) => {
     return storeData?.some(
       (item) => item.PROCESS === processName && item.UPDATED === "YES"
@@ -802,7 +867,7 @@ const GhmcModify = () => {
   const handleStepClick = async (step, plant) => {
     if (!plant) return;
 
-    // 🔥 CLEAR OLD PROCESS DATA FIRST
+    // Clear old data first
     setViewedStepDetails(null);
     setSelectedProcessDetails(null);
     setSubmitted(false);
@@ -818,82 +883,90 @@ const GhmcModify = () => {
 
       let dataToParse;
 
-      if (storedCompletedStep) {
-        dataToParse = storedCompletedStep;
-        setSubmitted(true);
-        setSelectedProcessDetails(storedCompletedStep);
+     if (storedCompletedStep) {
+  // This is a COMPLETED step
+  dataToParse = storedCompletedStep;
+  setSubmitted(true);
+  setSelectedProcessDetails(storedCompletedStep); // ✅ Mark as viewing completed step
 
-        // ✅ FIX: Update formData with the fetched comments
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: storedCompletedStep.applyDate || "",
-          Comments:
-            storedCompletedStep.Comments || storedCompletedStep.COMMENTS || "",
-          noOfFlats:
-            storedCompletedStep.noOfFlats ||
-            storedCompletedStep.NUMBER_OF_FLATS ||
-            "",
-          KLD:
-            storedCompletedStep.KLD || storedCompletedStep.feas_doc_name || "",
-          OldAmount:
-            storedCompletedStep.OldAmount ||
-            storedCompletedStep.OLD_AMOUNT ||
-            "",
-          TotalAmount:
-            storedCompletedStep.TotalAmount ||
-            storedCompletedStep.TOTAL_AMOUNT ||
-            "",
-          Size:
-            storedCompletedStep.Size ||
-            storedCompletedStep.SIZE_OF_CONNECTION ||
-            "",
-          Ghmc: storedCompletedStep.Ghmc || storedCompletedStep.GHMC || "",
+  // ✅ FIX: LOAD COMMENTS FROM COMPLETED STEP
+  setFormData((prev) => ({
+    ...prev,
+    applyDate: storedCompletedStep.applyDate || "",
+    Comments: storedCompletedStep.Comments || storedCompletedStep.COMMENTS || "",
+    noOfFlats:
+      storedCompletedStep.noOfFlats ||
+      storedCompletedStep.NUMBER_OF_FLATS ||
+      "",
+    KLD:
+      storedCompletedStep.KLD || storedCompletedStep.feas_doc_name || "",
+    OldAmount:
+      storedCompletedStep.OldAmount ||
+      storedCompletedStep.OLD_AMOUNT ||
+      "",
+    TotalAmount:
+      storedCompletedStep.TotalAmount ||
+      storedCompletedStep.TOTAL_AMOUNT ||
+      "",
+    Size:
+      storedCompletedStep.Size ||
+      storedCompletedStep.SIZE_OF_CONNECTION ||
+      "",
+    Ghmc: storedCompletedStep.Ghmc || storedCompletedStep.GHMC || "",
+    // 🔥 DON'T set noOfTowers from storedCompletedStep - keep it from master data
+    // noOfTowers: storedCompletedStep.noOfTowers || "", // Remove this line
 
-          // NEW: Mapping for Additional Details
-          BG_FromDate: storedCompletedStep.BG_FromDate || "",
-          BG_ToDate: storedCompletedStep.BG_ToDate || "",
-          BG_Number: storedCompletedStep.BG_Number || "",
-          CAR_FromDate: storedCompletedStep.CAR_FromDate || "",
-          CAR_ToDate: storedCompletedStep.CAR_ToDate || "",
-          CAR_Number: storedCompletedStep.CAR_Number || "",
-          PDC_Date: storedCompletedStep.PDC_Date || "",
-          PDC_Number: storedCompletedStep.PDC_Number || "",
-          MortgageReleased: storedCompletedStep.MortgageReleased || "",
-        }));
-      } else {
-        const res = await axios.get(
-          `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
-            plant
-          )}/${encodeURIComponent(step.PROCESS)}`
-        );
+    // NEW: Mapping for Additional Details
+    BG_FromDate: storedCompletedStep.BG_FromDate || "",
+    BG_ToDate: storedCompletedStep.BG_ToDate || "",
+    BG_Number: storedCompletedStep.BG_Number || "",
+    CAR_FromDate: storedCompletedStep.CAR_FromDate || "",
+    CAR_ToDate: storedCompletedStep.CAR_ToDate || "",
+    CAR_Number: storedCompletedStep.CAR_Number || "",
+    PDC_Date: storedCompletedStep.PDC_Date || "",
+    PDC_Number: storedCompletedStep.PDC_Number || "",
+    MortgageReleased: storedCompletedStep.MortgageReleased || "Yes",
+  }));
+} else {
+  // This is the CURRENT pending step
+  const res = await axios.get(
+    `${API_BASE_URL}/GHMC-step-details/${encodeURIComponent(
+      plant
+    )}/${encodeURIComponent(step.PROCESS)}`
+  );
 
-        if (plant !== selectedPlant) return;
+  if (plant !== selectedPlant) return;
 
-        dataToParse = res.data || {};
+  dataToParse = res.data || {};
+  setSelectedProcessDetails(null); // ✅ Clear completed step flag
+  setSubmitted(false);
 
-        // ✅ FIX: Also update formData for incomplete steps
-        setFormData((prev) => ({
-          ...prev,
-          applyDate: dataToParse.applyDate || "",
-          Comments: dataToParse.Comments || dataToParse.COMMENTS || "",
-          noOfFlats: dataToParse.noOfFlats || dataToParse.NUMBER_OF_FLATS || "",
-          KLD: dataToParse.KLD || dataToParse.feas_doc_name || "",
-          OldAmount: dataToParse.OldAmount || dataToParse.OLD_AMOUNT || "",
-          TotalAmount:
-            dataToParse.TotalAmount || dataToParse.TOTAL_AMOUNT || "",
-          Size: dataToParse.Size || dataToParse.SIZE_OF_CONNECTION || "",
-          Ghmc: dataToParse.Ghmc || dataToParse.GHMC || "",
+  // For incomplete steps, keep comments empty
+  setFormData((prev) => ({
+    ...prev,
+    applyDate: dataToParse.applyDate || "",
+    Comments: "", 
+    noOfFlats: dataToParse.noOfFlats || dataToParse.NUMBER_OF_FLATS || "",
+    KLD: dataToParse.KLD || dataToParse.feas_doc_name || "",
+    OldAmount: dataToParse.OldAmount || dataToParse.OLD_AMOUNT || "",
+    TotalAmount:
+      dataToParse.TotalAmount || dataToParse.TOTAL_AMOUNT || "",
+    Size: dataToParse.Size || dataToParse.SIZE_OF_CONNECTION || "",
+    Ghmc: dataToParse.Ghmc || dataToParse.GHMC || "",
+    // 🔥 DON'T set noOfTowers from dataToParse - keep it from master data
+    // noOfTowers: dataToParse.noOfTowers || "", // Remove this line
 
-          BG_FromDate: dataToParse.BG_FromDate || "",
-          BG_ToDate: dataToParse.BG_ToDate || "",
-          BG_Number: dataToParse.BG_Number || "",
-          CAR_FromDate: dataToParse.CAR_FromDate || "",
-          CAR_ToDate: dataToParse.CAR_ToDate || "",
-          CAR_Number: dataToParse.CAR_Number || "",
-          PDC_Date: dataToParse.PDC_Date || "",
-          PDC_Number: dataToParse.PDC_Number || "",
-          MortgageReleased: dataToParse.MortgageReleased || "",
-        }));
+    BG_FromDate: dataToParse.BG_FromDate || "",
+    BG_ToDate: dataToParse.BG_ToDate || "",
+    BG_Number: dataToParse.BG_Number || "",
+    CAR_FromDate: dataToParse.CAR_FromDate || "",
+    CAR_ToDate: dataToParse.CAR_ToDate || "",
+    CAR_Number: dataToParse.CAR_Number || "",
+    PDC_Date: dataToParse.PDC_Date || "",
+    PDC_Number: dataToParse.PDC_Number || "",
+    MortgageReleased: dataToParse.MortgageReleased || "Yes",
+  }));
+
       }
 
       const parsed = {
@@ -915,13 +988,33 @@ const GhmcModify = () => {
         ),
       };
 
-      setViewedStepDetails(parsed); // ✅ correct docs now
+      setViewedStepDetails(parsed); 
     } catch (err) {
       console.error("Error fetching step details:", err);
       setViewedStepDetails(null);
+      setSelectedProcessDetails(null);
+      setFormData((prev) => ({
+        ...prev,
+        applyDate: "",
+        Comments: "",
+        noOfFlats: "",
+        KLD: "",
+        OldAmount: "",
+        TotalAmount: "",
+        Size: "",
+        Ghmc: "",
+        BG_FromDate: "",
+        BG_ToDate: "",
+        BG_Number: "",
+        CAR_FromDate: "",
+        CAR_ToDate: "",
+        CAR_Number: "",
+        PDC_Date: "",
+        PDC_Number: "",
+        MortgageReleased: "Yes",
+      }));
     }
   };
-
   const NumberOfTowers = storeData?.[0]?.noOfTowers;
 
   return (
@@ -945,7 +1038,7 @@ const GhmcModify = () => {
                 const isCompleted = storeData.some(
                   (item) =>
                     item.PROCESS?.toLowerCase().trim() ===
-                      step.PROCESS?.toLowerCase().trim() &&
+                    step.PROCESS?.toLowerCase().trim() &&
                     item.UPDATED === "YES"
                 );
 
@@ -1005,14 +1098,22 @@ const GhmcModify = () => {
             </div>
           ) : (
             <Form
-              key={selectedPlant ? `form-${selectedPlant}` : "form-empty"} // FIX: Plant marithe form fresh ga reset avthundi
+              key={selectedPlant ? `form-${selectedPlant}` : "form-empty"} 
               className="p-3 border rounded bg-light"
             >
               {selectedProcessDetails ? (
                 <div className="mb-3">
-                  <h4 className="mb-2 text-info fw-bold">
+                  <h6 className="mb-2 text-info fw-bold">
                     Viewing: {selectedProcessDetails.PROCESS} (Completed)
-                  </h4>
+                    {NumberOfTowers && (
+                      <>
+                        {" | "}
+                        Towers Count:{" "}
+                        <span className="text-dark">{NumberOfTowers}</span>
+                      </>
+                    )}
+                  </h6>
+
                   <Button
                     variant="outline-primary"
                     size="sm"
@@ -1024,11 +1125,11 @@ const GhmcModify = () => {
                 </div>
               ) : (
                 <h4 className="mb-3 text-warning fw-bold">
-                  {currentProcess || immediateNextStep?.PROCESS}
+                  {getCurrentHeading()}
                   {NumberOfTowers && (
                     <>
-                      {" "}
-                      | Towers Count :{" "}
+                      {" | "}
+                      Towers Count:{" "}
                       <span className="text-dark">{NumberOfTowers}</span>
                     </>
                   )}
@@ -1060,7 +1161,14 @@ const GhmcModify = () => {
 
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Fee Paid Date</Form.Label>
+                    <Form.Label>
+                      {(currentProcess === "Fee Paid Details" ||
+                        immediateNextStep?.PROCESS === "Fee Paid Details" ||
+                        viewedStep?.PROCESS === "Fee Paid Details" ||
+                        selectedProcessDetails?.PROCESS === "Fee Paid Details")
+                        ? "Fee Paid Date"
+                        : "Apply Date"}
+                    </Form.Label>
                     <Form.Control
                       type="date"
                       name="applyDate"
@@ -1082,7 +1190,7 @@ const GhmcModify = () => {
               </Row>
 
               {/* Inside your <Form> tag */}
-              {(currentProcess === "Fee Paid Details" ||
+              {/* {(currentProcess === "Fee Paid Details" ||
                 immediateNextStep?.PROCESS === "Fee Paid Details") && (
                 <FeePaidAdditionalDetails
                   formData={formData}
@@ -1090,7 +1198,19 @@ const GhmcModify = () => {
                   errors={errors}
                   isDisabled={!!selectedProcessDetails}
                 />
-              )}
+              )} */}
+              {(isViewingSpecificStep
+                ? viewedStep?.PROCESS === "Fee Paid Details"
+                : immediateNextStep?.PROCESS === "Fee Paid Details"
+              ) && (
+                  <FeePaidAdditionalDetails
+                    formData={formData}
+                    handleChange={handleChange}
+                    errors={errors}
+                    isDisabled={!!selectedProcessDetails}  
+                    disableMortgageOnly={false}           
+                  />
+                )}
 
               <Row className="mb-2">
                 <Col md={6}>
@@ -1128,18 +1248,17 @@ const GhmcModify = () => {
                         isProcessCompleted(viewedStep?.PROCESS) ||
                         !!selectedProcessDetails
                       }
-                      readOnly={!!selectedProcessDetails} // ✅ Add readOnly for completed steps
+                      readOnly={!!selectedProcessDetails} 
+                      placeholder={selectedProcessDetails ? "Viewing existing comments..." : "Enter comments..."}
                     />
                     {errors.Comments && (
-                      <p className="error-text text-danger">
-                        {errors.Comments}
-                      </p>
+                      <p className="error-text text-danger">{errors.Comments}</p>
                     )}
                   </Form.Group>
                 </Col>
               </Row>
 
-              <Row className="mb-3">
+              {/* <Row className="mb-3">
                 {immediateNextStepIndex === 0 && (
                   <Col md={6}>
                     <Form.Group>
@@ -1159,7 +1278,7 @@ const GhmcModify = () => {
                     </Form.Group>
                   </Col>
                 )}
-              </Row>
+              </Row> */}
 
               <div className="d-grid">
                 {areAllStepsCompleted() && isViewingSpecificStep && (
@@ -1183,8 +1302,8 @@ const GhmcModify = () => {
                   {isSubmitting
                     ? "Submitting..."
                     : submitted
-                    ? "Submitted"
-                    : "Submit"}
+                      ? "Submitted"
+                      : "Submit"}
                 </Button>
               </div>
             </Form>
@@ -1208,7 +1327,7 @@ const GhmcModify = () => {
   </div>
 )}    */}
             <PreviousGhmcDocs
-              key={`${selectedPlant}-${viewedStepDetails?.PROCESS || "empty"}`}
+              key={`${selectedPlant}-${viewedStepDetails?.PROCESS || 'empty'}-${viewedStepDetails?.timestamp || Date.now()}`} // Add timestamp
               docsData={viewedStepDetails}
               loc={selectedPlant}
               process={viewedStepDetails?.PROCESS}
@@ -1275,4 +1394,3 @@ const GhmcModify = () => {
 };
 
 export default GhmcModify;
-// hii

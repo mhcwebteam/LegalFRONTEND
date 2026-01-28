@@ -896,49 +896,98 @@ useEffect(() => {
 
     {/* View Logs button - only show when plant is selected */}
     {selectedPlant && (
-      <div className="p-2 border-top bg-light text-center">
-        <Button 
-          variant="info" 
-          size="sm" 
-          onClick={() => {
-            let logs = [];
-            try {
-              if (viewedStepDetails?.LOG) {
-                logs = JSON.parse(viewedStepDetails?.LOG);
-              }
-            } catch (error) {
-              console.error("Failed to parse logs:", error);
+  <div className="p-2 border-top bg-light text-center">
+    <Button 
+      variant="info" 
+      size="sm" 
+      onClick={() => {
+        console.log("=== DEBUG: View Logs Clicked ===");
+        console.log("viewedStepDetails:", viewedStepDetails);
+        console.log("LOG field:", viewedStepDetails?.LOG);
+        console.log("Type of LOG:", typeof viewedStepDetails?.LOG);
+        
+        let logs = [];
+        try {
+          if (viewedStepDetails?.LOG) {
+            // First, check if it's already an array
+            if (Array.isArray(viewedStepDetails.LOG)) {
+              logs = viewedStepDetails.LOG;
+              console.log("LOG is already an array:", logs);
+            } else {
+              // Try to parse it as JSON
+              logs = JSON.parse(viewedStepDetails.LOG);
+              console.log("Parsed logs from JSON:", logs);
             }
-            setSelectedLogs(logs);
-            setShowLogsModal(true);
-          }}
-        >
-          View Logs
-        </Button>
-      </div>
-    )}
+          } else {
+            console.log("No LOG field found in viewedStepDetails");
+          }
+        } catch (error) {
+          console.error("Failed to parse logs:", error);
+          console.log("Raw LOG value:", viewedStepDetails?.LOG);
+          
+          // Try alternative formats
+          if (viewedStepDetails?.LOG) {
+            // If it's a string but not JSON, create a simple log entry
+            if (typeof viewedStepDetails.LOG === 'string') {
+              logs = [{
+                date: new Date().toISOString().split('T')[0],
+                comment: viewedStepDetails.LOG
+              }];
+              console.log("Created simple log from string:", logs);
+            }
+          }
+        }
+        
+        console.log("Final logs to display:", logs);
+        setSelectedLogs(logs);
+        setShowLogsModal(true);
+      }}
+    >
+      View Logs
+    </Button>
+  </div>
+)}
   </Card>
 </Col>
       </Row>
 
       
-              <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} size="lg">
+     <Modal show={showLogsModal} onHide={() => setShowLogsModal(false)} size="lg">
   <Modal.Header closeButton>
-    <Modal.Title>Log History</Modal.Title>
+    <Modal.Title>Activity Logs</Modal.Title>
   </Modal.Header>
-   <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
-           {selectedLogs.length === 0 ? (
-             <p>No comments available</p>
-           ) : (
-             selectedLogs.map((log, i) => (
-               <div key={i}>
-                 <strong>{log?.date}:</strong> {log?.comment}
-                 <hr />
-               </div>
-             ))
-           )}
-         </Modal.Body>
- 
+  
+  <Modal.Body style={{ maxHeight: "400px", overflowY: "auto" }}>
+    {selectedLogs.length === 0 ? (
+      <p className="text-muted text-center">No logs available</p>
+    ) : (
+      selectedLogs.map((log, i) => {
+        // Handle different log formats
+        const timestamp = 
+          log?.date || 
+          log?.timestamp || 
+          log?.created_at || 
+          log?.time || 
+          "Unknown date";
+        
+        const comment = 
+          log?.comment || 
+          log?.comments || 
+          log?.action || 
+          log?.message || 
+          log?.description || 
+          (typeof log === 'string' ? log : "No comment");
+        
+        return (
+          <div key={i}>
+            <strong>{timestamp}:</strong> {comment}
+            {i < selectedLogs.length - 1 && <hr />}
+          </div>
+        );
+      })
+    )}
+  </Modal.Body>
+  
   <Modal.Footer>
     <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
       Close

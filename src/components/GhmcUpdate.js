@@ -137,31 +137,130 @@ const [recordExists, setRecordExists] = useState(false);
     useEffect(() => {
       checkRecordExists();
     }, [storeData, selectedPlant, immediateNextStep]);
+const handleEmailSubmit = () => {
+  // Only allow submit if we're viewing the immediate next step
+  if (!isViewingNextStep()) {
+    Swal.fire({
+      icon: "warning",
+      title: "Cannot Submit",
+      text: "Cannot submit a completed step. Please select the next pending step.",
+      confirmButtonText: "OK"
+    });
+    return;
+  }
 
-  const handleEmailSubmit = () => {
-    // Only allow submit if we're viewing the immediate next step
-    if (!isViewingNextStep()) {
-      alert("Cannot submit a completed step. Please select the next pending step.");
-      return;
+  if (!recordExists) {
+    Swal.fire({
+      icon: "warning",
+      title: "Process Not Initialized",
+      text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+      confirmButtonText: "OK"
+    });
+    return;
+  }
+
+  const newErrors = {};
+  
+  // Basic validations
+  if (!formData.loc) newErrors.loc = "Plant selection is required";
+  if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+  
+  // 🔥 STRICT VALIDATION: ALL Fee Paid Details fields are mandatory
+  const isFeePaidProcess = immediateNextStep?.PROCESS === "Fee Paid Details";
+  
+  if (isFeePaidProcess) {
+    // Bank Guarantee fields - ALL required
+    if (!formData.BG_FromDate) {
+      newErrors.BG_FromDate = "BG From Date is required";
+    }
+    if (!formData.BG_ToDate) {
+      newErrors.BG_ToDate = "BG To Date is required";
+    }
+    if (!formData.BG_Number || formData.BG_Number.trim() === "") {
+      newErrors.BG_Number = "BG Number is required";
     }
 
-   if (!recordExists) {
-      Swal.fire({
-        icon: "warning",
-        title: "Process Not Initialized",
-        text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
-        confirmButtonText: "OK"
-      });
-      return;
+    // CAR Policy fields - ALL required
+    if (!formData.CAR_FromDate) {
+      newErrors.CAR_FromDate = "CAR From Date is required";
     }
+    if (!formData.CAR_ToDate) {
+      newErrors.CAR_ToDate = "CAR To Date is required";
+    }
+    if (!formData.CAR_Number || formData.CAR_Number.trim() === "") {
+      newErrors.CAR_Number = "CAR Number is required";
+    }
+
+    // PDC fields - ALL required
+    if (!formData.PDC_Date) {
+      newErrors.PDC_Date = "PDC Date is required";
+    }
+    if (!formData.PDC_Number || formData.PDC_Number.trim() === "") {
+      newErrors.PDC_Number = "PDC Number is required";
+    }
+
+    // Mortgage Released - Required
+    if (!formData.MortgageReleased) {
+      newErrors.MortgageReleased = "Please select Mortgage Released option";
+    }
+  }
+  
+  // If there are validation errors, show them
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    
+    // Scroll to first error field
+    const firstErrorField = Object.keys(newErrors)[0];
+    const errorElement = document.getElementById(firstErrorField) || 
+                        document.querySelector(`[name="${firstErrorField}"]`);
+    if (errorElement) {
+      errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      errorElement.focus();
+    }
+    
+    // Show comprehensive error alert with list of missing fields
+    Swal.fire({
+      icon: "error",
+      title: "Incomplete Form",
+      html: `
+        Please fill all required fields
+      `,
+      confirmButtonText: "OK",
+      width: '500px'
+    });
+    return;
+  }
+  
+  // Clear errors if validation passes
+  setErrors({});
+  
+  // Only show email modal if all validations pass
+  setShowEmailModal(true);
+};
+  // const handleEmailSubmit = () => {
+  //   // Only allow submit if we're viewing the immediate next step
+  //   if (!isViewingNextStep()) {
+  //     alert("Cannot submit a completed step. Please select the next pending step.");
+  //     return;
+  //   }
+
+  //  if (!recordExists) {
+  //     Swal.fire({
+  //       icon: "warning",
+  //       title: "Process Not Initialized",
+  //       text: `The process "${immediateNextStep?.PROCESS}" has not been initialized for plant "${selectedPlant}". Please submit in the Modify section.`,
+  //       confirmButtonText: "OK"
+  //     });
+  //     return;
+  //   }
     
     
   
-    const newErrors = {};
-    if (!formData.loc) newErrors.loc = "Plant selection is required";
-    if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
-    setShowEmailModal(true);
-  };
+  //   const newErrors = {};
+  //   if (!formData.loc) newErrors.loc = "Plant selection is required";
+  //   if (!formData.applyDate) newErrors.applyDate = "Apply date is required";
+  //   setShowEmailModal(true);
+  // };
 
   const areAllStepsCompleted = () => {
     if (!steps.length || !storeData.length) return false;
@@ -790,9 +889,10 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
 
 {/* Optional: Add a "Viewing Mode" badge if it's a completed step */}
 {!isViewingNextStep() && isViewingSpecificStep && (
-  <div className="mb-2">
-    <span className="badge bg-info text-dark">Viewing Completed Step</span>
-  </div>
+  // <div className="mb-2">
+  //   <span className="badge bg-info text-dark">Viewing Completed Step</span>
+  // </div>'''
+  ''
 )}
 
               <Row className="mb-2">
@@ -818,9 +918,14 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
                   </Form.Group>
                 </Col>
 
-        <Col md={6}>
+       <Col md={6}>
   <Form.Group>
-    <Form.Label>Fee Paid Date</Form.Label>
+    {/* Conditional label based on current step */}
+    <Form.Label>
+      {currentProcess === "Fee Paid Details" || immediateNextStep?.PROCESS === "Fee Paid Details" 
+        ? "Fee Paid Date" 
+        : "Apply Date"}
+    </Form.Label>
     <Form.Control
       type="date"
       name="applyDate"
@@ -845,14 +950,27 @@ const NumberOfTowers = storeData?.[0]?.noOfTowers;
               </Row>
 
 {/* NEW: Conditional Rendering for Fee Paid Details Step (READONLY) */}
-{(currentProcess === "Fee Paid Details" || immediateNextStep?.PROCESS === "Fee Paid Details") && (
+{/* {(currentProcess === "Fee Paid Details" || immediateNextStep?.PROCESS === "Fee Paid Details") && (
   <FeePaidAdditionalDetails
     formData={formData}
     handleChange={handleChange}
     isDisabled={!!selectedProcessDetails}
     // isDisabled={true} // Forces all fields to be read-only/disabled
   />
+)} */}
+{(isViewingSpecificStep 
+    ? viewedStep?.PROCESS === "Fee Paid Details" 
+    : immediateNextStep?.PROCESS === "Fee Paid Details"
+) && (
+  <FeePaidAdditionalDetails
+    formData={formData}
+    handleChange={handleChange}
+    errors={errors}
+    isDisabled={false}             
+    disableMortgageOnly={true}     
+  />
 )}
+
 
               <Row className="mb-2">
                 <Col md={12}>

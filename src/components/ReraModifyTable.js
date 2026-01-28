@@ -2055,6 +2055,16 @@ const renderNextStepFields = () => {
           // If viewing the next step, get logs from nextStepDetails
           logs = JSON.parse(nextStepDetails.LOG);
         }
+        
+        // ✅ DEBUG: Log the actual structure
+        console.log("=== DEBUG: Logs Structure ===");
+        console.log("Raw logs:", logs);
+        console.log("Logs type:", typeof logs);
+        console.log("Is array?", Array.isArray(logs));
+        if (Array.isArray(logs) && logs.length > 0) {
+          console.log("First log item:", logs[0]);
+          console.log("First log item keys:", Object.keys(logs[0]));
+        }
       } catch (error) {
         console.error("Failed to parse logs:", error);
       }
@@ -2130,34 +2140,62 @@ const renderNextStepFields = () => {
       />
 
       {/* 08-12-2025: Added Logs Modal */}
-      <Modal
-        show={showLogsModal}
-        onHide={() => setShowLogsModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Logs</Modal.Title>
-        </Modal.Header>
+   
+<Modal
+  show={showLogsModal}
+  onHide={() => setShowLogsModal(false)}
+  centered
+  size="lg"
+>
+  <Modal.Header closeButton>
+    <Modal.Title>Activity Logs</Modal.Title>
+  </Modal.Header>
 
-        <Modal.Body style={{ maxHeight: "300px", overflowY: "auto" }}>
-          {selectedLogs.length === 0 ? (
-            <p>No comments available</p>
-          ) : (
-            selectedLogs.map((log, i) => (
-              <div key={i}>
-                <strong>{log?.date}:</strong> {log?.comment}
-                <hr />
-              </div>
-            ))
-          )}
-        </Modal.Body>
+  <Modal.Body style={{ maxHeight: "400px", overflowY: "auto" }}>
+    {!selectedLogs || selectedLogs.length === 0 ? (
+      <p className="text-muted text-center">No activity logs available</p>
+    ) : (
+      <div>
+        {selectedLogs.map((log, i) => {
+          // Extract timestamp and comment from log object
+          const timestamp = 
+            log?.timestamp || 
+            log?.date || 
+            log?.created_at || 
+            log?.time || 
+            "Unknown date";
+          
+          const comment = 
+            log?.comment || 
+            log?.comments || 
+            log?.action || 
+            log?.description || 
+            log?.message || 
+            "No comment";
 
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+          return (
+            <div key={i} className="mb-3">
+              <strong>{timestamp}</strong>
+              <p>{typeof comment === 'object' ? JSON.stringify(comment) : comment}</p>
+              {i < selectedLogs.length - 1 && <hr />}
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </Modal.Body>
+
+  <Modal.Footer>
+    <div className="d-flex justify-content-between align-items-center w-100">
+      <small className="text-muted">
+        {selectedLogs?.length || 0} log(s) found
+      </small>
+      <Button variant="secondary" onClick={() => setShowLogsModal(false)}>
+        Close
+      </Button>
+    </div>
+  </Modal.Footer>
+</Modal>
     </>
   );
 };

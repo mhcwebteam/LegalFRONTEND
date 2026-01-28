@@ -143,61 +143,134 @@ const navigate = useNavigate();
     }, [token, navigate]);
 
   // Initialize data when modal opens
-  useEffect(() => {
+  // useEffect(() => {
+  //   if (show && storeInfo) {
+  //     // Extract existing amendment data based on category
+  //     const docPathKey = `${category}_DOC_PATH`;
+  //     const docNameKey = `${category}_DOC_NAME`;
+  //     const commentsKey = `${category}_COMMENTS`;
+  //     const dateKey = `${category}_DATE`;
+      
+  //     let existingDocs = [];
+  //     let existingNames = [];
+      
+  //     try {
+  //       existingDocs = JSON.parse(storeInfo[docPathKey] || '[]');
+  //       existingNames = JSON.parse(storeInfo[docNameKey] || '[]');
+  //     } catch (e) {
+  //       console.error('Error parsing existing docs:', e);
+  //     }
+      
+  //     // Extract the latest comment with date
+  //     const latestComment = getLatestComment(storeInfo[commentsKey]);
+      
+  //      // 1. Check if the main process was ever updated
+  //   const isMainUpdated = storeInfo.UPDATED === 'YES';
+    
+  //   // 2. Format dates
+  //   const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '') || new Date().toISOString().split('T')[0];
+  //   const dbApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
+    
+  //   // 3. Logic: If main process is NOT updated, use amendment date as apply date
+  //   const finalApplyDate = !isMainUpdated ? formattedAmendDate : dbApplyDate;
+
+  //     // Format dates for input fields
+  //     const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
+  //     // const formattedReceivedDate = formatDateForInput(storeInfo.RECEIVED_DT || '');
+  //     // const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
+
+  //     const formattedAmendReceivedDate = formatDateForInput(storeInfo[dateKey] || '');
+
+   
+      
+  //     setAmendData(prev => ({
+  //       ...prev,
+  //       plant: plant,
+  //       process: process,
+  //       category: category,
+  //       // applyDate: formattedApplyDate,
+  //        applyDate: finalApplyDate,
+  //       amendreceivedDate: formattedAmendReceivedDate,
+  //       amendDate: formattedAmendDate || new Date().toISOString().split('T')[0],
+  //       commentDate: latestComment.date,
+  //       commentText: latestComment.comment,
+  //       existingDocs: existingDocs,
+  //       existingNames: existingNames
+  //     }));
+  // }
+  // }, [show, plant, process, category, storeInfo]);
+
+
+   useEffect(() => {
     if (show && storeInfo) {
-      // Extract existing amendment data based on category
       const docPathKey = `${category}_DOC_PATH`;
       const docNameKey = `${category}_DOC_NAME`;
       const commentsKey = `${category}_COMMENTS`;
       const dateKey = `${category}_DATE`;
-      
-      let existingDocs = [];
-      let existingNames = [];
-      
-      try {
-        existingDocs = JSON.parse(storeInfo[docPathKey] || '[]');
-        existingNames = JSON.parse(storeInfo[docNameKey] || '[]');
-      } catch (e) {
-        console.error('Error parsing existing docs:', e);
+
+      // --- NEW LOGIC: Check sequence of previous statuses ---
+      const statusSequence = [
+        "UPDATED",
+        "AMEND1_STATUS",
+        "AMEND2_STATUS",
+        "AMEND3_STATUS",
+        "AMEND4_STATUS",
+        "AMEND5_STATUS",
+      ];
+
+      // Determine which statuses are "previous" to the current category
+      let previousStatusesToCheck = ["UPDATED"];
+      if (category.startsWith("AMEND")) {
+        const currentLevel = parseInt(category.replace("AMEND", "")); // e.g., "AMEND2" -> 2
+        for (let i = 1; i < currentLevel; i++) {
+          previousStatusesToCheck.push(`AMEND${i}_STATUS`);
+        }
       }
-      
-      // Extract the latest comment with date
+
+      // Check if ALL previous statuses are empty/null
+      const isChainEmpty = previousStatusesToCheck.every(
+        (key) =>
+          !storeInfo[key] || storeInfo[key] === "" || storeInfo[key] === null,
+      );
+
+      // Format dates
+      const formattedAmendDate =
+        formatDateForInput(storeInfo[dateKey] || "") ||
+        new Date().toISOString().split("T")[0];
+      const dbApplyDate = formatDateForInput(storeInfo.APPLY_DT || "");
+
+      // If chain is empty, use amendment date as apply date, otherwise use database apply date
+      const finalApplyDate = isChainEmpty ? formattedAmendDate : dbApplyDate;
+      const formattedAmendReceivedDate = formatDateForInput(
+        storeInfo[dateKey] || "",
+      );
+
+      // Set existing docs...
+      let existingDocs = [],
+        existingNames = [];
+      try {
+        existingDocs = JSON.parse(storeInfo[docPathKey] || "[]");
+        existingNames = JSON.parse(storeInfo[docNameKey] || "[]");
+      } catch (e) {
+        console.error(e);
+      }
+
       const latestComment = getLatestComment(storeInfo[commentsKey]);
-      
-       // 1. Check if the main process was ever updated
-    const isMainUpdated = storeInfo.UPDATED === 'YES';
-    
-    // 2. Format dates
-    const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '') || new Date().toISOString().split('T')[0];
-    const dbApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
-    
-    // 3. Logic: If main process is NOT updated, use amendment date as apply date
-    const finalApplyDate = !isMainUpdated ? formattedAmendDate : dbApplyDate;
 
-      // Format dates for input fields
-      const formattedApplyDate = formatDateForInput(storeInfo.APPLY_DT || '');
-      // const formattedReceivedDate = formatDateForInput(storeInfo.RECEIVED_DT || '');
-      // const formattedAmendDate = formatDateForInput(storeInfo[dateKey] || '');
-
-      const formattedAmendReceivedDate = formatDateForInput(storeInfo[dateKey] || '');
-
-   
-      
-      setAmendData(prev => ({
+      setAmendData((prev) => ({
         ...prev,
-        plant: plant,
-        process: process,
-        category: category,
-        // applyDate: formattedApplyDate,
-         applyDate: finalApplyDate,
+        plant,
+        process,
+        category,
+        applyDate: finalApplyDate,
         amendreceivedDate: formattedAmendReceivedDate,
-        amendDate: formattedAmendDate || new Date().toISOString().split('T')[0],
+        amendDate: formattedAmendDate,
         commentDate: latestComment.date,
         commentText: latestComment.comment,
-        existingDocs: existingDocs,
-        existingNames: existingNames
+        existingDocs,
+        existingNames,
       }));
-  }
+    }
   }, [show, plant, process, category, storeInfo]);
 
   // Validate form
@@ -512,7 +585,7 @@ const receivedDateProcesses = [
               <Form.Label>
                 Amendment Date <span style={{ color: "red" }}>*</span>
               </Form.Label>
-          <Form.Control
+      { /*   <Form.Control
   type="date"
   value={amendData.amendDate || ""}
   max={new Date().toISOString().split("T")[0]}
@@ -528,6 +601,41 @@ const receivedDateProcesses = [
       }));
     }}
 />
+*/}
+
+<Form.Control
+                type="date"
+                value={amendData.amendDate || ""}
+                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) => {
+                  const newDate = e.target.value;
+
+                  // Check the chain again for manual changes
+                  let previousStatusesToCheck = ["UPDATED"];
+                  if (category.startsWith("AMEND")) {
+                    const currentLevel = parseInt(
+                      category.replace("AMEND", ""),
+                    );
+                    for (let i = 1; i < currentLevel; i++) {
+                      previousStatusesToCheck.push(`AMEND${i}_STATUS`);
+                    }
+                  }
+
+                  const isChainEmpty = previousStatusesToCheck.every(
+                    (key) =>
+                      !storeInfo[key] ||
+                      storeInfo[key] === "" ||
+                      storeInfo[key] === null,
+                  );
+
+                  setAmendData((prev) => ({
+                    ...prev,
+                    amendDate: newDate,
+                    // If the chain is empty, sync the apply date to the new amendment date
+                    applyDate: isChainEmpty ? newDate : prev.applyDate,
+                  }));
+                }}
+              />
 
               {errors.amendDate && (
                 <div className="text-danger" style={{ fontSize: "14px" }}>

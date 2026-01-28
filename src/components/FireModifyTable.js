@@ -42,24 +42,31 @@ const FireModifyTable = () => {
   const [emailRecipients, setEmailRecipients] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    loc: "",
-    applyDate: "",
-    document: null,
-    comments: "",
-    prjName: "",
-    address: "",
-    feePaid: "",
-    feeAmount: "",
-    acknowledgeName: "",
-    noOfTowers: "",
-    feepaidstatus: "YES",
-    stepStatus_1: "YES",
-    site: "",
-    queries: "",
-    committe: "",
-    provisional: ""
-  });
+const [formData, setFormData] = useState({
+  loc: "",
+  applyDate: "",
+  document: null,
+  comments: "",
+  prjName: "",
+  address: "",
+  feePaid: "",
+  feeAmount: "",
+  acknowledgeName: "",
+  noOfTowers: "",
+  feepaidstatus: "YES",
+  stepStatus_1: "YES",
+  stepStatus_2: "YES", 
+  stepStatus_3: "YES",
+  stepStatus_4: "YES",
+  stepStatus_6: "YES",
+  stepStatus_7: "YES",
+  stepStatus_8: "YES",
+  stepStatus_9: "YES",
+  site: "YES",
+  queries: "YES",
+  committe: "YES",
+  provisional: "YES"
+});
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedLogs, setSelectedLogs] = useState([]);
   const [stepdata, setSetData] = useState([]);
@@ -291,7 +298,7 @@ const FireModifyTable = () => {
             // const allOCStepsCompleted = PROVISIONAL_NOC_STEP_INDICES.every(
             //   (index) =>
             //     steps[index] &&
-           //     fetchedData.some(
+            //     fetchedData.some(
             //       (item) =>
             //         item.PROCESS === steps[index].PROCESS &&
             //         item.OC_UPDATED === "YES"
@@ -303,153 +310,186 @@ const FireModifyTable = () => {
             // return Promise.resolve(null);
           }
         })
-        .then((detailsRes) => {
-          if (detailsRes && detailsRes.data) {
-            const details = detailsRes.data;
-            setNextStepDetails(details);
-            setLatestLogs(details);
-            setSetData(details);
+      // In your main useEffect (around line 270-280), update the setFormData call:
+// In the main useEffect that runs when selectedPlant changes, update the setFormData part:
+.then((detailsRes) => {
+  if (detailsRes && detailsRes.data) {
+    const details = detailsRes.data;
+    setNextStepDetails(details);
+    setLatestLogs(details);
+    setSetData(details);
 
-            let stepStatus = details.STATUS || "";
+    // Check if this step should have radio buttons (steps 1-4 for Provisional, 6-9 for OC)
+    const shouldHaveRadioButtons =
+      (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || // Steps 1-4
+      (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9); // Steps 6-9
 
-            // Check if this step should have radio buttons (steps 1-4 for Provisional, 6-9 for OC)
-            const shouldHaveRadioButtons =
-              (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || // Steps 1-4
-              (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9); // Steps 6-9
+    // Always default to "YES" for radio button steps
+    const stepStatus = "YES";
 
-            // If this step should have radio buttons and no status is set, default to "YES"
-            if (shouldHaveRadioButtons && !stepStatus) {
-              stepStatus = "YES";
-              console.log(
-                `Setting default YES for step ${immediateNextStepIndex}`
-              );
-            }
-
-            const currentStepRecord = storeData.find(
-              (item) =>
-                item.PROCESS?.trim() === immediateNextStep?.PROCESS?.trim() &&
-                item.STEPTYPE === currentProcess
-            );
-
-
-            setFormData((prev) => ({
-              ...prev,
-              applyDate: details.APPLY_DT || "",
-              comments: details.COMMENTS || "",
-              logs: details.LOG || "",
-              feePaid: details.FEE_PAID || "",
-              feeAmount: details.FEE_AMOUNT || "",
-              acknowledgeName: details.ACKNOWLEDGE_NAME || "",
-              noOfTowers: details.NO_OF_TOWERS || "",
-              feepaidstatus: details.FEE_PAID_STATUS || "YES",
-              site: details.SIT_INFSTIN_STATUS || "YES",
-              queries: details.QUERIES_RECIEVED || "YES",
-              committe: details.COMMITE_APRVD || "YES",
-              provisional: details.PROVSINL_STATUS || "YES",
-
-              // [`stepStatus_${immediateNextStepIndex}`]:
-              //   currentStepRecord?.LEVEL_STATUS || "", // Load feepaidstatus from backend
-            }));
-          } else {
-            setNextStepDetails(null);
-            setFormData((prev) => ({
-              ...prev,
-              applyDate: "",
-              comments: "",
-              logs: "",
-              feePaid: "",
-              feeAmount: "",
-              acknowledgeName: "",
-              noOfTowers: "",
-              feepaidstatus: "",
-              site: "",
-              queries: "",
-              committe: "",
-              provisional: ""
-            }));
-          }
-        })
+    setFormData((prev) => ({
+      ...prev,
+      applyDate: details.APPLY_DT || "",
+      comments: details.COMMENTS || "",
+      logs: details.LOG || "",
+      feePaid: details.FEE_PAID || "",
+      feeAmount: details.FEE_AMOUNT || "",
+      acknowledgeName: details.ACKNOWLEDGE_NAME || "",
+      noOfTowers: details.NO_OF_TOWERS || "",
+      feepaidstatus: details.FEE_PAID_STATUS || "YES",
+      site: "YES", // Default to YES
+      queries: "YES", // Default to YES
+      committe: "YES", // Default to YES
+      provisional: "YES", // Default to YES
+      // Set radio button status to YES
+      ...(shouldHaveRadioButtons && {
+        [`stepStatus_${immediateNextStepIndex}`]: "YES",
+      }),
+    }));
+  } else {
+    setNextStepDetails(null);
+    setFormData((prev) => ({
+      ...prev,
+      applyDate: "",
+      comments: "",
+      logs: "",
+      feePaid: "",
+      feeAmount: "",
+      acknowledgeName: "",
+      noOfTowers: "",
+      feepaidstatus: "",
+      site: "YES", // Still default to YES
+      queries: "YES", // Still default to YES
+      committe: "YES", // Still default to YES
+      provisional: "YES", // Still default to YES
+      // Also reset all stepStatus fields
+      stepStatus_1: "YES",
+      stepStatus_2: "YES",
+      stepStatus_3: "YES",
+      stepStatus_4: "YES",
+      stepStatus_6: "YES",
+      stepStatus_7: "YES",
+      stepStatus_8: "YES",
+      stepStatus_9: "YES",
+    }));
+  }
+})
         .catch((err) =>
           console.error("Error during data fetching process:", err)
         );
     }
   }, [selectedPlant, steps, PROVISIONAL_NOC_STEP_INDICES]);
+// Add this useEffect near your other useEffects:
+useEffect(() => {
+  // Reset radio buttons to "YES" when step index changes to a radio button step
+  const shouldHaveRadioButtons =
+    (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || 
+    (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9);
 
+  if (shouldHaveRadioButtons && !isViewingCompletedStep) {
+    console.log(`Resetting step ${immediateNextStepIndex} to YES`);
+    
+    // Update the specific step status
+    setFormData((prev) => ({
+      ...prev,
+      [`stepStatus_${immediateNextStepIndex}`]: "YES",
+    }));
+
+    // Also update the specific field names
+    if (immediateNextStepIndex === 1) {
+      setFormData((prev) => ({ ...prev, site: "YES" }));
+    } else if (immediateNextStepIndex === 2) {
+      setFormData((prev) => ({ ...prev, queries: "YES" }));
+    } else if (immediateNextStepIndex === 3) {
+      setFormData((prev) => ({ ...prev, committe: "YES" }));
+    } else if (immediateNextStepIndex === 4) {
+      setFormData((prev) => ({ ...prev, provisional: "YES" }));
+    }
+  }
+}, [immediateNextStepIndex, isViewingCompletedStep]);
   //added on 26-12-2025 by rajakumari.m---------------------------------------------------------
   // Handler for clicking on process tiles
   // Update your handleStepClick function (around line 274)
-  const handleStepClick = async (processName, stepType, conceptualIndex) => {
-    if (!selectedPlant) {
-      Swal.fire("Error", "Please select a plant first", "error");
-      return;
+ const handleStepClick = async (processName, stepType, conceptualIndex) => {
+  if (!selectedPlant) {
+    Swal.fire("Error", "Please select a plant first", "error");
+    return;
+  }
+
+  setViewedStepConceptualIndex(conceptualIndex);
+
+  try {
+    const apiUrl = `${API_BASE_URL}/fire-step-details/${encodeURIComponent(
+      selectedPlant
+    )}/${encodeURIComponent(processName)}/${encodeURIComponent(stepType)}`;
+
+    const detailsRes = await axios.get(apiUrl);
+    const details = detailsRes.data;
+
+    console.log("✅ Fetched Data for " + processName + ":", details);
+    setViewedStepDetails(details);
+
+    // Check if this step is completed
+    const isCompleted = storeData.some(
+      (item) =>
+        item.PROCESS === processName &&
+        (item.UPDATED === "YES" || item.OC_UPDATED === "YES") &&
+        item.STEPTYPE === stepType
+    );
+
+    setIsViewingCompletedStep(isCompleted);
+
+    // Check if this is a radio button step
+    const isRadioStep = 
+      (conceptualIndex > 0 && conceptualIndex < 5) || 
+      (conceptualIndex >= 6 && conceptualIndex <= 9);
+
+    // Prepare form data
+    const formUpdate = {
+      applyDate: details?.APPLY_DT || "",
+      comments: details?.COMMENTS || "",
+      noOfTowers: details?.NO_OF_TOWERS || "",
+      feepaidstatus: details?.FEE_PAID_STATUS || "",
+      feePaid: details?.FEE_PAID || "",
+      feeAmount: details?.FEE_AMOUNT || "",
+      site: "YES", // Default to YES
+      queries: "YES", // Default to YES
+      committe: "YES", // Default to YES
+      provisional: "YES", // Default to YES
+      loc: selectedPlant,
+    };
+
+    // For radio button steps, set to "YES" as default
+    if (isRadioStep) {
+      // Only override if it's not a completed step (completed steps should show their actual status)
+      if (!isCompleted) {
+        formUpdate[`stepStatus_${conceptualIndex}`] = "YES";
+      } else {
+        formUpdate[`stepStatus_${conceptualIndex}`] = details?.STATUS || "YES";
+      }
     }
 
-    setViewedStepConceptualIndex(conceptualIndex);
+    setFormData((prev) => ({ ...prev, ...formUpdate }));
 
-    try {
-      const apiUrl = `${API_BASE_URL}/fire-step-details/${encodeURIComponent(
-        selectedPlant
-      )}/${encodeURIComponent(processName)}/${encodeURIComponent(stepType)}`;
-
-      const detailsRes = await axios.get(apiUrl);
-      const details = detailsRes.data;
-
-      // 👇 ADD THIS LINE HERE
-      console.log("✅ Fetched Data for " + processName + ":", details);
-      setViewedStepDetails(details);
-
-      // Check if this step is completed
-      const isCompleted = storeData.some(
-        (item) =>
-          item.PROCESS === processName &&
-          (item.UPDATED === "YES" || item.OC_UPDATED === "YES") &&
-          item.STEPTYPE === stepType
-      );
-
-      setIsViewingCompletedStep(isCompleted);
-
-      // Load form data with step details
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: details?.APPLY_DT || "",
-        comments: details?.COMMENTS || "",
-        noOfTowers: details?.NO_OF_TOWERS || "",
-        feepaidstatus: details?.FEE_PAID_STATUS || "",
-        feePaid: details?.FEE_PAID || "",
-        feeAmount: details?.FEE_AMOUNT || "",
-        site: details.SIT_INFSTIN_STATUS || "",
-        queries: details?.QUERIES_RECIEVED || "",
-        committe: details?.COMMITE_APRVD || "",
-        provisional: details?.PROVSINL_STATUS || "",
-        loc: selectedPlant, // Ensure plant is set
-        // Set status for steps with radio buttons
-        ...((conceptualIndex > 0 && conceptualIndex < 5) ||
-          (conceptualIndex >= 6 && conceptualIndex <= 9)
-          ? {
-            [`stepStatus_${conceptualIndex}`]: details?.STATUS || "YES",
-          }
-          : {}),
-      }));
-
-      // Load logs for the clicked step
-      if (details?.LOG) {
-        try {
-          const logs = JSON.parse(details.LOG);
-          setSelectedLogs(Array.isArray(logs) ? logs : []);
-        } catch (error) {
-          console.error("Failed to parse LOG JSON:", error);
-          setSelectedLogs([]);
-        }
-      } else {
+    // Load logs for the clicked step
+    if (details?.LOG) {
+      try {
+        const logs = JSON.parse(details.LOG);
+        setSelectedLogs(Array.isArray(logs) ? logs : []);
+      } catch (error) {
+        console.error("Failed to parse LOG JSON:", error);
         setSelectedLogs([]);
       }
-    } catch (error) {
-      console.error("Error fetching step details:", error);
-      setViewedStepDetails(null);
+    } else {
       setSelectedLogs([]);
-      setIsViewingCompletedStep(false);
-   }
-  };
+    }
+  } catch (error) {
+    console.error("Error fetching step details:", error);
+    setViewedStepDetails(null);
+    setSelectedLogs([]);
+    setIsViewingCompletedStep(false);
+  }
+};
   //----------------------------------------------------------------------------------------------------------
   useEffect(() => {
     console.log("Step index changed:", immediateNextStepIndex);
@@ -622,9 +662,9 @@ const FireModifyTable = () => {
     payload.append("username", currentUserName || "");
 
     payload.append("site", formData.site || "");
-     payload.append("queries", formData.queries || "");
-payload.append("committe", formData.committe || "");
-   payload.append("provisional", formData.provisional || "");
+    payload.append("queries", formData.queries || "");
+    payload.append("committe", formData.committe || "");
+    payload.append("provisional", formData.provisional || "");
     emails.forEach((email, i) => {
       payload.append(`emails[${i}]`, email);
     });
@@ -739,7 +779,7 @@ payload.append("committe", formData.committe || "");
       //   feePaid: "",
       //   feeAmount: "",
       //   acknowledgeName: "",
-     //   noOfTowers: "",
+      //   noOfTowers: "",
       //   feepaidstatus: "",
       // }));
       setNewDocs([]);
@@ -759,25 +799,41 @@ payload.append("committe", formData.committe || "");
 
   // Add this function near your other handler functions (around line 400)
   // Add this function near your other handler functions (around line 400)
-  const handleBackToCurrentStep = () => {
-    setViewedStepConceptualIndex(-1);
-    setViewedStepDetails(null);
-    setIsViewingCompletedStep(false);
+// Update the handleBackToCurrentStep function:
+const handleBackToCurrentStep = () => {
+  setViewedStepConceptualIndex(-1);
+  setViewedStepDetails(null);
+  setIsViewingCompletedStep(false);
 
-    // Reset form data to current step data
-    if (nextStepDetails) {
-      setFormData((prev) => ({
-        ...prev,
-        applyDate: nextStepDetails.APPLY_DT || "",
-        comments: "",
-        noOfTowers: nextStepDetails.NO_OF_TOWERS || "",
-        feepaidstatus: nextStepDetails.FEE_PAID_STATUS || "",
-        feePaid: nextStepDetails.FEE_PAID || "",
-        feeAmount: nextStepDetails.FEE_AMOUNT || "",
-        site: nextStepDetails.SIT_INFSTIN_STATUS || "",
-      }));
-    }
-  };
+  // Reset form data to current step data with YES as default
+  if (nextStepDetails) {
+    // Always set to "YES" for radio button steps when returning to current step
+    let stepStatus = "YES"; // Force default to YES
+    
+    // Check if this is a step that should have radio buttons (1-4, 6-9)
+    const shouldHaveRadioButtons = 
+      (immediateNextStepIndex > 0 && immediateNextStepIndex < 5) || 
+      (immediateNextStepIndex >= 6 && immediateNextStepIndex <= 9);
+    
+    setFormData((prev) => ({
+      ...prev,
+      applyDate: nextStepDetails.APPLY_DT || "",
+      comments: "", // Clear comments for fresh input
+      noOfTowers: nextStepDetails.NO_OF_TOWERS || "",
+      feepaidstatus: nextStepDetails.FEE_PAID_STATUS || "",
+      feePaid: nextStepDetails.FEE_PAID || "",
+      feeAmount: nextStepDetails.FEE_AMOUNT || "",
+      site: "YES", // Force to YES
+      queries: "YES", // Force to YES
+      committe: "YES", // Force to YES
+      provisional: "YES", // Force to YES
+      // Set the radio button status to YES for all steps
+      ...(shouldHaveRadioButtons && {
+        [`stepStatus_${immediateNextStepIndex}`]: "YES",
+      }),
+    }));
+  }
+};
   const handleDeleteDocument = async (docType, fileName, index) => {
     try {
       const result = await Swal.fire({
@@ -1281,75 +1337,75 @@ payload.append("committe", formData.committe || "");
   const FeeAmount = storeData[0]?.FEE_AMOUNT;
   const NumberOfTowers = storeData[0]?.NO_OF_TOWERS;
 
-    const handleBackClick = () => {
- setSelectedPlant("");
+  const handleBackClick = () => {
+    setSelectedPlant("");
 
-      // 2. Reset Context Data (Clears Left Side Colors and Header)
-      setStoreData([]);
-      setHeaderData(null);
+    // 2. Reset Context Data (Clears Left Side Colors and Header)
+    setStoreData([]);
+    setHeaderData(null);
 
-      // 3. Reset Step Tracking (Clears Right Side Docs and Middle Form)
-      setImmediateNextStep(null);
-      setImmediateNextStepIndex(-1);
-      setNextStepDetails(null);
-      setLatestLogs([]);
-      setCurrentProcess("");
-      setProvisionalNOCCompleted(false);
+    // 3. Reset Step Tracking (Clears Right Side Docs and Middle Form)
+    setImmediateNextStep(null);
+    setImmediateNextStepIndex(-1);
+    setNextStepDetails(null);
+    setLatestLogs([]);
+    setCurrentProcess("");
+    setProvisionalNOCCompleted(false);
 
-      // 4. Reset View Modes (Exit any "View Mode")
-      setViewedStepConceptualIndex(-1);
-      setViewedStepDetails(null);
-      setIsViewingCompletedStep(false);
-      setIsAllStepsCompleted(false);
+    // 4. Reset View Modes (Exit any "View Mode")
+    setViewedStepConceptualIndex(-1);
+    setViewedStepDetails(null);
+    setIsViewingCompletedStep(false);
+    setIsAllStepsCompleted(false);
 
-      // 5. Reset Files and Errors
-      setNewDocs([]);
-      setAcknowledgeDocs([]);
-      setErrors({});
+    // 5. Reset Files and Errors
+    setNewDocs([]);
+    setAcknowledgeDocs([]);
+    setErrors({});
 
-      // 6. Reset Form Data to Initial State
-      setFormData({
-        loc: "",
-        applyDate: "",
-        document: null,
-        comments: "",
-        prjName: "",
-        address: "",
-        feePaid: "",
-        feeAmount: "",
-        acknowledgeName: "",
-        noOfTowers: "",
-        feepaidstatus: "",
-        site: "",
-        queries: "",
-        committe: "",
-        provisional: "",
-        stepStatus_1: "YES",
-        stepStatus_2: "YES",
-        stepStatus_3: "YES",
-        stepStatus_4: "YES",
-        stepStatus_6: "YES",
-        stepStatus_7: "YES",
-        stepStatus_8: "YES",
-        stepStatus_9: "YES",
-      });
+    // 6. Reset Form Data to Initial State
+    setFormData({
+      loc: "",
+      applyDate: "",
+      document: null,
+      comments: "",
+      prjName: "",
+      address: "",
+      feePaid: "",
+      feeAmount: "",
+      acknowledgeName: "",
+      noOfTowers: "",
+      feepaidstatus: "",
+      site: "",
+      queries: "",
+      committe: "",
+      provisional: "",
+      stepStatus_1: "YES",
+      stepStatus_2: "YES",
+      stepStatus_3: "YES",
+      stepStatus_4: "YES",
+      stepStatus_6: "YES",
+      stepStatus_7: "YES",
+      stepStatus_8: "YES",
+      stepStatus_9: "YES",
+    });
 
-      // --- END OF RESET LOGIC ---
-      // setFormData((prev) => ({
-      //   ...prev,
-      //   loc: "",
-      //   applyDate: "",
-      //   comments: "",
-      //   feePaid: "",
-      //   feeAmount: "",
-      //   acknowledgeName: "",
-     //   noOfTowers: "",
-      //   feepaidstatus: "",
-      // }));
-      setNewDocs([]);
-      setAcknowledgeDocs([]);
-   
-};
+    // --- END OF RESET LOGIC ---
+    // setFormData((prev) => ({
+    //   ...prev,
+    //   loc: "",
+    //   applyDate: "",
+    //   comments: "",
+    //   feePaid: "",
+    //   feeAmount: "",
+    //   acknowledgeName: "",
+    //   noOfTowers: "",
+    //   feepaidstatus: "",
+    // }));
+    setNewDocs([]);
+    setAcknowledgeDocs([]);
+
+  };
 
 
   return (
@@ -1365,42 +1421,42 @@ payload.append("committe", formData.committe || "");
             </Row>
           </div>
         </Col>
-<Col md={5} className="d-flex flex-column">
+        <Col md={5} className="d-flex flex-column">
           <Form className="p-3 border rounded bg-light">
-        
+
             {isAllStepsCompleted && viewedStepConceptualIndex === -1 ? (
-           <div className="d-flex align-items-center justify-content-center h-100">
-  <Card className="p-4 shadow-sm text-center position-relative" style={{ maxWidth: '600px' }}>
-    
-    {/* Button in top-right corner of card */}
-    <button 
-    onClick={handleBackClick}
-      className="btn btn-success position-absolute"
-      style={{ top: '15px', right: '15px' }}
-    >
-              <FaArrowLeft className="me-1" /> Back to Start
-    </button>
-    
-    <Card.Body>
-      <FaCheckCircle size={64} className="text-success mb-3" />
-      <h3 className="text-success mb-3">Congratulations! 🎉</h3>
-      <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
-      <Alert variant="success">
-        <Alert.Heading>Project Completion Status</Alert.Heading>
-        <p>
-          All <strong>{PROVISIONAL_NOC_STEP_INDICES.length * 2}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
-        </p>
-        <p>
-          Both <strong>Provisional NOC</strong> and <strong>OC Process</strong> are fully completed.
-        </p>
-        <hr />
-        <p className="mb-0">
-          Click on any completed step above to view its details.
-        </p>
-      </Alert>
-    </Card.Body>
-  </Card>
-</div>
+              <div className="d-flex align-items-center justify-content-center h-100">
+                <Card className="p-4 shadow-sm text-center position-relative" style={{ maxWidth: '600px' }}>
+
+                  {/* Button in top-right corner of card */}
+                  <button
+                    onClick={handleBackClick}
+                    className="btn btn-success position-absolute"
+                    style={{ top: '15px', right: '15px' }}
+                  >
+                    <FaArrowLeft className="me-1" /> Back to Start
+                  </button>
+
+                  <Card.Body>
+                    <FaCheckCircle size={64} className="text-success mb-3" />
+                    <h3 className="text-success mb-3">Congratulations! 🎉</h3>
+                    <h5 className="text-muted mb-4">All process steps have been completed successfully!</h5>
+                    <Alert variant="success">
+                      <Alert.Heading>Project Completion Status</Alert.Heading>
+                      <p>
+                        All <strong>{PROVISIONAL_NOC_STEP_INDICES.length * 2}</strong> steps for <strong>{selectedPlant}</strong> have been completed successfully.
+                      </p>
+                      <p>
+                        Both <strong>Provisional NOC</strong> and <strong>OC Process</strong> are fully completed.
+                      </p>
+                      <hr />
+                      <p className="mb-0">
+                        Click on any completed step above to view its details.
+                      </p>
+                    </Alert>
+                  </Card.Body>
+                </Card>
+              </div>
             ) : viewedStepConceptualIndex !== -1 && isViewingCompletedStep ? (
               // Show this when viewing a completed step
               // <div className="mb-4">
@@ -1511,7 +1567,7 @@ payload.append("committe", formData.committe || "");
                                 }}
                               />
                             </Form.Group>
-                         </Col>
+                          </Col>
                         </Col>
                       )}
                       {viewedStepDetails?.FEE_AMOUNT && (
@@ -1546,7 +1602,7 @@ payload.append("committe", formData.committe || "");
                           type="text"
                           value={viewedStepDetails.FEE_PAID_STATUS}
                           readOnly
-                         // added on 4-1-2026 by rajakumari.m-------------------------------------------------
+                          // added on 4-1-2026 by rajakumari.m-------------------------------------------------
                           style={{
                             backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
                             color: isViewingCompletedStep ? '#6c757d' : '',
@@ -1560,88 +1616,88 @@ payload.append("committe", formData.committe || "");
                 )}
 
                 {/* Show status for steps with radio buttons */}
-            {isViewingCompletedStep && (
-  <>
-   
-    {viewedStepConceptualIndex === 1 && (
-      <Row className="mb-3">
-        <Col md={12}>
-          <Form.Group>
-            <Form.Label>Site Inspection Status</Form.Label>
-            <Form.Control
-              type="text"
-              value={
-                viewedStepDetails?.SIT_INFSTIN_STATUS || 
-                formData.site || 
-                "YES"
-              }
-              readOnly
-              className="bg-light"
-            />
-          </Form.Group>
-        </Col>
-      </Row>
-    )}
-   {viewedStepConceptualIndex === 2 && (
-      <Row className="mb-3">
-        <Col md={12}>
-          <Form.Group>
-            <Form.Label>Queries Received?</Form.Label>
-            <Form.Control
-              type="text"
-              value={
-                viewedStepDetails?.QUERIES_RECIEVED || 
-                formData.queries || 
-                "Not Available"
-              }
-              readOnly
-              className="bg-light"
-            />
-          </Form.Group>
-        </Col>
-      </Row>
-    )}
-    {viewedStepConceptualIndex === 3 && (
-      <Row className="mb-3">
-        <Col md={12}>
-          <Form.Group>
-            <Form.Label>Committee Approved?</Form.Label>
-            <Form.Control
-              type="text"
-              value={
-                viewedStepDetails?.COMMITE_APRVD || 
-                formData.committe || 
-                "Not Available"
-              }
-              readOnly
-              className="bg-light"
-            />
-          </Form.Group>
-        </Col>
-      </Row>
-    )}
+                {isViewingCompletedStep && (
+                  <>
 
-    {/* Step 4: Provisional Status */}
-    {viewedStepConceptualIndex === 4 && (
-      <Row className="mb-3">
-        <Col md={12}>
-          <Form.Group>
-            <Form.Label>Provisional Status?</Form.Label>
-            <Form.Control
-              type="text"
-              value={
-                viewedStepDetails?.PROVSINL_STATUS || 
-                formData.provisional || 
-                "Not Available"
-              }
-              readOnly
-              className="bg-light"
-            />
-          </Form.Group>
-        </Col>
-      </Row>
-    )}  </>
-)}
+                    {viewedStepConceptualIndex === 1 && (
+                      <Row className="mb-3">
+                        <Col md={12}>
+                          <Form.Group>
+                            <Form.Label>Site Inspection Status</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={
+                                viewedStepDetails?.SIT_INFSTIN_STATUS ||
+                                formData.site ||
+                                "YES"
+                              }
+                              readOnly
+                              className="bg-light"
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                    )}
+                    {viewedStepConceptualIndex === 2 && (
+                      <Row className="mb-3">
+                        <Col md={12}>
+                          <Form.Group>
+                            <Form.Label>Queries Received?</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={
+                                viewedStepDetails?.QUERIES_RECIEVED ||
+                                formData.queries ||
+                                "Not Available"
+                              }
+                              readOnly
+                              className="bg-light"
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                    )}
+                    {viewedStepConceptualIndex === 3 && (
+                      <Row className="mb-3">
+                        <Col md={12}>
+                          <Form.Group>
+                            <Form.Label>Committee Approved?</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={
+                                viewedStepDetails?.COMMITE_APRVD ||
+                                formData.committe ||
+                                "Not Available"
+                              }
+                              readOnly
+                              className="bg-light"
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                    )}
+
+                    {/* Step 4: Provisional Status */}
+                    {viewedStepConceptualIndex === 4 && (
+                      <Row className="mb-3">
+                        <Col md={12}>
+                          <Form.Group>
+                            <Form.Label>Provisional Status?</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={
+                                viewedStepDetails?.PROVSINL_STATUS ||
+                                formData.provisional ||
+                                "Not Available"
+                              }
+                              readOnly
+                              className="bg-light"
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                    )}  </>
+                )}
 
 
 
@@ -1746,7 +1802,7 @@ payload.append("committe", formData.committe || "");
                           backgroundColor: isViewingCompletedStep ? '#e9ecef' : '',
                           color: isViewingCompletedStep ? '#6c757d' : '',
                           cursor: isViewingCompletedStep ? 'not-allowed' : ''
-                       }}
+                        }}
                       />
                       <Form.Control.Feedback type="invalid">
                         {errors.applyDate}
@@ -1808,8 +1864,8 @@ payload.append("committe", formData.committe || "");
                             name="noOfTowers"
                             value={formData.noOfTowers || ""}
                             disabled
-                            // disabled={!formData.loc || isViewingCompletedStep}
-                            // onChange={handleChange}
+                          // disabled={!formData.loc || isViewingCompletedStep}
+                          // onChange={handleChange}
                           />
                         </Form.Group>
                       </Col>
@@ -1846,43 +1902,42 @@ payload.append("committe", formData.committe || "");
                 </Row>
 
 
-                {
-                  immediateNextStepIndex === 1 && (
-                    <Form.Group>
-                      <Form.Label>Site Inspection Status</Form.Label>
-                      <Form.Check
-                        type="radio"
-                        label="Yes"
-                        name="site"
-                        value="YES"
-                        checked={formData.site === "YES"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            site: "YES",
-                            stepStatus_1: "YES",
-                          }))
-                        }
-                        disabled={isViewingCompletedStep}
-                      />
-                      <Form.Check
-                        type="radio"
-                        label="No"
-                        name="site"
-                        value="NO"
-                        checked={formData.site === "NO"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            site: "NO",
-                            stepStatus_1: "NO",
-                          }))
-                        }
-                        disabled={isViewingCompletedStep}
-                      />
-                    </Form.Group>
-                  )
-                }
+                {immediateNextStepIndex === 1 && (
+  <Form.Group>
+    <Form.Label>Site Inspection Status</Form.Label>
+    <Form.Check
+      type="radio"
+      label="Yes"
+      name="site"
+      value="YES"
+      checked={formData.site === "YES" || formData.stepStatus_1 === "YES"}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          site: "YES",
+          stepStatus_1: "YES",
+        }))
+      }
+      disabled={isViewingCompletedStep}
+    />
+    <Form.Check
+      type="radio"
+      label="No"
+      name="site"
+      value="NO"
+      checked={formData.site === "NO" || formData.stepStatus_1 === "NO"}
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          site: "NO",
+          stepStatus_1: "NO",
+        }))
+      }
+      disabled={isViewingCompletedStep}
+    />
+  </Form.Group>
+)}
+               
 
                 {
                   immediateNextStepIndex === 2 && (
@@ -2083,20 +2138,20 @@ payload.append("committe", formData.committe || "");
                   </Col>
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label>Comments</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={1}
-                        name="comments"
-                        value={formData.comments || ""}
-                        disabled={!formData.loc || isViewingCompletedStep}
-                        onChange={handleChange}
-                        isInvalid={!!errors.comments}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.comments}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+  <Form.Label>Comments</Form.Label>
+  <Form.Control
+    as="textarea"
+    rows={1}
+    name="comments"
+    value={formData.comments || ""}
+    disabled={!formData.loc || isViewingCompletedStep}
+    onChange={handleChange}
+    isInvalid={!!errors.comments}
+  />
+  <Form.Control.Feedback type="invalid">
+    {errors.comments}
+  </Form.Control.Feedback>
+</Form.Group>
                   </Col>
                 </Row>
 
@@ -2127,7 +2182,7 @@ payload.append("committe", formData.committe || "");
                         This step has already been completed and cannot be
                         modified
                       </p>
-                   </div>
+                    </div>
                   )}
                 </div>
               </> // {/*added on 23-12-2025 by rajakumari.m */}

@@ -19,7 +19,7 @@ const ReraForm = () => {
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const { setFormReraData, totalMasterData = [], setHeaderData, headerData } = useContext(Context);
-
+const [originalComments, setOriginalComments] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [amountPaidDocModal, setAmountPaidDocModal] = useState(false);
   const [planDocs, setplanDocs] = useState([]);
@@ -29,7 +29,8 @@ const ReraForm = () => {
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
-  
+  const [commentHistoryData, setCommentHistoryData] = useState([]);
+const [showCommentHistory, setShowCommentHistory] = useState(false);
   // Edit mode states
   const [plantExists, setPlantExists] = useState(false);
   const [existingPlantData, setExistingPlantData] = useState(null);
@@ -160,16 +161,13 @@ useEffect(() => {
   // };
 
   // Fetch existing data when plant or process changes
-  useEffect(() => {
+ useEffect(() => {
     if (!formData.loc || !formData.process || formData.loc === "" || formData.process === "") {
       return;
     }
 
     const fetchExistingData = async () => {
       try {
-        // First check update status
-        // await checkReraUpdateStatus(formData.loc);
-
         const res = await axios.get(`${API_BASE_URL}/getProcessDatarera`, {
           params: {
             plant: formData.loc,
@@ -199,7 +197,6 @@ useEffect(() => {
                 }
               } catch (parseErr) {
                 console.error("JSON parse failed, trying string format:", parseErr);
-                // Try comma-separated format
                 if (docStr.includes(',')) {
                   const paths = docStr.split(',').filter(p => p && p.trim() !== '');
                   existingFiles = paths.map((path, index) => ({
@@ -217,13 +214,66 @@ useEffect(() => {
             console.error("Error parsing document data:", err);
             setExistingUploadedFiles([]);
           }
-const isCompleted = data?.UPDATED && data?.UPDATED?.toUpperCase() === 'YES';
+
+          const isCompleted = data?.UPDATED && data?.UPDATED?.toUpperCase() === 'YES';
+          
+          // 🔧 FIX: Get current comments
+const dbComments = data.COMMENTS === null || data.COMMENTS === undefined || data.COMMENTS === "nil" 
+  ? "" 
+  : String(data.COMMENTS);
+
+console.log('📥 DB Comments:', dbComments);
+console.log('📝 Setting originalComments to:', dbComments);
+setOriginalComments(dbComments);
+          
+          // 🔧 NEW: Parse comment history from LOG field
+          let historyComments = [];
+          if (data.LOG && data.LOG !== 'null' && data.LOG !== 'undefined') {
+            try {
+              const logData = typeof data.LOG === 'string' ? JSON.parse(data.LOG) : data.LOG;
+              if (Array.isArray(logData)) {
+                historyComments = logData
+                  .filter(log => log.comments && log.comments.trim() !== '')
+                  .map(log => ({
+                    timestamp: log.timestamp || '',
+                    user: log.user || 'Unknown',
+                    comments: log.comments || '',
+                    action: log.action || 'Updated'
+                  }));
+                console.log('📝 Comment History:', historyComments);
+              }
+            } catch (err) {
+              console.error('Error parsing LOG data:', err);
+            }
+          }
+          
+          setCommentHistoryData(historyComments);
+          
+          // 🔧 OPTION: Show combined comments (current + all history)
+          // If you want to show ALL comments including history in the textarea:
+          let displayComments = dbComments;
+          
+          // Uncomment this if you want to show full history in the textarea:
+          /*
+          if (historyComments.length > 0) {
+            const historyText = historyComments
+              .map(log => `[${log.timestamp} - ${log.user}]\n${log.comments}`)
+              .join('\n\n');
+            
+            if (dbComments && dbComments.trim() !== '') {
+              displayComments = `${historyText}\n\n[Current]\n${dbComments}`;
+            } else {
+              displayComments = historyText;
+            }
+          }
+          */
+          
           // Update form data
           const updatedFormData = {
             loc: formData.loc,
             process: formData.process,
             applyDate: (data.APPLY_DT && data.APPLY_DT !== "nil") ? data.APPLY_DT : "",
-            Comments: (data.COMMENTS && data.COMMENTS !== "nil") ? data.COMMENTS : "",
+            Comments: displayComments, // Show current or current+history
             projectDetails: (data.PROJECT_NAME && data.PROJECT_NAME !== "nil") ? data.PROJECT_NAME : "",
             address: (data.ADDRESS && data.ADDRESS !== "nil") ? data.ADDRESS : "",
           };
@@ -232,20 +282,20 @@ const isCompleted = data?.UPDATED && data?.UPDATED?.toUpperCase() === 'YES';
           setDataExists(true);
           setPlantExists(true);
           setExistingPlantData(data);
-          setIsEditMode(false); // Start in view mode
-          setAmountPaidDocs([]); // Clear new uploads
+          setIsEditMode(false);
+          setAmountPaidDocs([]);
           setNewAmountPaidDocs([]);
-            setCanEdit(!isCompleted); 
+          setCanEdit(!isCompleted); 
 
-      if (isCompleted) {
-                toast.info(`Application for ${formData.loc} is completed and cannot be edited.`, {
-                  autoClose: 4000
-                });
-              } else {
-                toast.info(`Data loaded for ${formData.loc}.`, {
-                  autoClose: 3000
-                });
-              }
+          if (isCompleted) {
+            toast.info(`Application for ${formData.loc} is completed and cannot be edited.`, {
+              autoClose: 4000
+            });
+          } else {
+            toast.info(`Data loaded for ${formData.loc}.`, {
+              autoClose: 3000
+            });
+          }
 
         } else {
           console.log("ℹ️ No existing data found");
@@ -253,14 +303,16 @@ const isCompleted = data?.UPDATED && data?.UPDATED?.toUpperCase() === 'YES';
           setPlantExists(false);
           setExistingPlantData(null);
           setExistingUploadedFiles([]);
-          setIsEditMode(true); // Allow editing since no data exists
+          setIsEditMode(true);
           setCanEdit(true);
+          setOriginalComments('');
+          setCommentHistoryData([]);
 
-          // Reset form fields
           setFormData(prev => ({
             ...prev,
             applyDate: "",
-            Comments: "",
+          // Comments: originalComments,
+          Comments: "",
             projectDetails: "",
             address: "",
           }));
@@ -273,6 +325,8 @@ const isCompleted = data?.UPDATED && data?.UPDATED?.toUpperCase() === 'YES';
         setExistingUploadedFiles([]);
         setIsEditMode(true);
         setCanEdit(true);
+        setOriginalComments('');
+        setCommentHistoryData([]);
 
         setFormData(prev => ({
           ...prev,
@@ -286,7 +340,6 @@ const isCompleted = data?.UPDATED && data?.UPDATED?.toUpperCase() === 'YES';
 
     fetchExistingData();
   }, [formData.loc, formData.process]);
-
   const checkIfPlantExists = async (plant) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/check-plant-exists-rera`, { loc: plant });
@@ -308,8 +361,7 @@ const isCompleted = data?.UPDATED && data?.UPDATED?.toUpperCase() === 'YES';
     }
   };
 
-  // Toggle edit mode
- // Toggle edit mode
+  
 const toggleEditMode = () => {
   if (plantExists && dataExists) {
     if (!canEdit) {
@@ -319,7 +371,6 @@ const toggleEditMode = () => {
       return;
     }
 
-    // Check if user has edit permission
     if (!userHasEditPermission) {
       toast.error("You don't have permission to edit records.", {
         autoClose: 4000
@@ -327,30 +378,44 @@ const toggleEditMode = () => {
       return;
     }
 
-    setIsEditMode(!isEditMode);
     if (!isEditMode) {
+      // Enabling edit mode
       toast.info("Edit mode enabled. You can now modify the form.", {
         autoClose: 3000
       });
+      setIsEditMode(true);
     } else {
-      toast.info("Edit mode disabled. Form is now read-only.", {
+      // Disabling edit mode - RESTORE ALL FIELDS
+      toast.info("Edit mode disabled. Restoring original values.", {
         autoClose: 3000
       });
-      // Refresh data when disabling edit mode
-      if (formData.loc && formData.process) {
-        // fetchExistingData();
-      }
+      
+      console.log('🔄 Restoring original comments:', originalComments); // ✅ ADD THIS LOG
+      
+      // Restore ALL fields to original state
+      setFormData(prev => ({
+        ...prev,
+        // Comments: originalComments,
+        // Optionally restore other fields too:
+        applyDate: existingPlantData?.APPLY_DT || prev.applyDate,
+        projectDetails: existingPlantData?.PROJECT_NAME || prev.projectDetails,
+        address: existingPlantData?.ADDRESS || prev.address,
+      }));
+      
+      // Clear any new file uploads
+      setNewAmountPaidDocs([]);
+      
+      setIsEditMode(false);
     }
   }
 };
-
   // View documents
   const viewDocuments = (files) => {
     setCurrentViewFiles(files);
     setDocumentViewModal(true);
   };
 
-  const validateForm = () => {
+const validateForm = () => {
   const newErrors = {};
   
   // Required fields validation
@@ -366,7 +431,7 @@ const toggleEditMode = () => {
   const isUpdate = plantExists && dataExists && isEditMode;
   
   if (!isUpdate) {
-    // For new submission
+    // For new submission - all fields required
     if (!formData.applyDate || formData.applyDate.trim() === '') {
       newErrors.applyDate = 'Application Date is required';
     }
@@ -383,13 +448,13 @@ const toggleEditMode = () => {
       newErrors.Comments = 'Comments are required';
     }
     
-    // ✅ Document validation for new submission - check both existing and new
     const totalFiles = [...existingUploadedFiles, ...newAmountPaidDocs];
     if (totalFiles.length === 0) {
       newErrors.AmountPaidDoc = 'At least one document is required';
     }
   } else {
-    // ✅ For update - only validate if NO files exist at all (neither existing nor new)
+    // 🔧 FIX: For update - Comments are NOT required (can be empty/cleared)
+    // Only validate documents
     const totalFiles = [...existingUploadedFiles, ...newAmountPaidDocs];
     if (totalFiles.length === 0) {
       newErrors.AmountPaidDoc = 'At least one document is required';
@@ -408,7 +473,6 @@ const toggleEditMode = () => {
   
   return newErrors;
 };
-
   const handleChange = async (e) => {
     const { name, value, type } = e.target;
 
@@ -418,8 +482,18 @@ const toggleEditMode = () => {
         [name]: value,
       }));
       return;
-    }
+   
 
+  
+  if (errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: '' }));
+  }
+};
+if (name === "Comments") {
+  setFormData((prev) => ({ ...prev, [name]: value }));
+  if (errors.Comments) setErrors(prev => ({ ...prev, Comments: '' }));
+  return;
+}
     if (name === "loc") {
       setFormData((prev) => ({
         ...prev,
@@ -1103,20 +1177,20 @@ const toggleEditMode = () => {
                   Comments*
                 </label>
                 <div className="input-wrapper">
-                  <textarea
-                    id="comments"
-                    name="Comments"
-                    value={formData.Comments}
-                    onChange={handleChange}
-                    className={`modern-input ${errors.Comments ? 'error' : ''}`}
-                    placeholder="Enter comments"
-                    style={{
-                      border: errors.Comments ? '2px solid #ef4444' : '1px solid #d1d5db',
-                      backgroundColor: plantExists && dataExists && !isEditMode ? '#f5f5f5' : 'white',
-                      color: plantExists && dataExists && !isEditMode ? '#666' : 'inherit'
-                    }}
-                    readOnly={plantExists && dataExists && !isEditMode}
-                  />
+                <textarea
+  id="comments"
+  name="Comments"
+  value={formData.Comments || ""} // ✅ Ensure it's always a string
+  onChange={handleChange}
+  className={`modern-input ${errors.Comments ? 'error' : ''}`}
+  placeholder="Enter comments"
+  style={{
+    border: errors.Comments ? '2px solid #ef4444' : '1px solid #d1d5db',
+    backgroundColor: plantExists && dataExists && !isEditMode ? '#f5f5f5' : 'white',
+    color: plantExists && dataExists && !isEditMode ? '#666' : 'inherit'
+  }}
+  readOnly={plantExists && dataExists && !isEditMode}
+/>
                 </div>
                 {errors.Comments && (
                   <p style={{
